@@ -6,7 +6,7 @@ services:
     ports:
       - "4000:4000"
     env_file:
-      - .env
+      - .env.prod
     volumes:
       - .:/app
     restart: unless-stopped
@@ -43,7 +43,7 @@ services:
     ports:
       - "5555:5555"
     env_file:
-      - .env
+      - .env.prod
     volumes:
       - .:/app
     depends_on:
