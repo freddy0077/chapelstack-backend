@@ -1,0 +1,238 @@
+enum ContentStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MediaType {
+  AUDIO_FILE
+  VIDEO
+  IMAGE
+  DOCUMENT_PDF
+  DOCUMENT_WORD
+  SLIDESHOW
+  OTHER
+}
+
+type Speaker {
+  id: ID!
+  name: String!
+  bio: String
+  memberId: String
+  member: Member
+  sermons: [Sermon!]
+  branchId: String
+  branch: Branch
+  imageUrl: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Series {
+  id: ID!
+  title: String!
+  description: String
+  startDate: DateTime
+  endDate: DateTime
+  artworkUrl: String
+  sermons: [Sermon!]
+  branchId: String
+  branch: Branch
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Sermon {
+  id: ID!
+  title: String!
+  description: String
+  datePreached: DateTime!
+  speakerId: String!
+  speaker: Speaker!
+  seriesId: String
+  series: Series
+  mainScripture: String
+  audioUrl: String
+  videoUrl: String
+  transcriptUrl: String
+  transcriptText: String
+  duration: Int
+  status: ContentStatus!
+  branchId: String!
+  branch: Branch!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type MediaItem {
+  id: ID!
+  title: String!
+  description: String
+  fileUrl: String!
+  mimeType: String!
+  fileSize: Int!
+  type: MediaType!
+  branchId: String!
+  branch: Branch!
+  uploadedBy: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input CreateSpeakerInput {
+  name: String!
+  bio: String
+  memberId: String
+  imageUrl: String
+  branchId: String!
+}
+
+input UpdateSpeakerInput {
+  id: ID!
+  name: String
+  bio: String
+  memberId: String
+  imageUrl: String
+  branchId: String
+}
+
+input CreateSeriesInput {
+  title: String!
+  description: String
+  startDate: DateTime
+  endDate: DateTime
+  artworkUrl: String
+  branchId: String!
+}
+
+input UpdateSeriesInput {
+  id: ID!
+  title: String
+  description: String
+  startDate: DateTime
+  endDate: DateTime
+  artworkUrl: String
+  branchId: String
+}
+
+input CreateSermonInput {
+  title: String!
+  description: String
+  datePreached: DateTime!
+  speakerId: String!
+  seriesId: String
+  mainScripture: String
+  audioUrl: String
+  videoUrl: String
+  transcriptUrl: String
+  transcriptText: String
+  duration: Int
+  branchId: String!
+  status: ContentStatus
+}
+
+input UpdateSermonInput {
+  id: ID!
+  title: String
+  description: String
+  datePreached: DateTime
+  speakerId: String
+  seriesId: String
+  mainScripture: String
+  audioUrl: String
+  videoUrl: String
+  transcriptUrl: String
+  transcriptText: String
+  duration: Int
+  branchId: String
+  status: ContentStatus
+}
+
+input CreateMediaItemInput {
+  title: String!
+  description: String
+  fileUrl: String!
+  mimeType: String!
+  fileSize: Int!
+  type: MediaType!
+  branchId: String!
+  uploadedBy: String!
+}
+
+input UpdateMediaItemInput {
+  id: ID!
+  title: String
+  description: String
+  fileUrl: String
+  mimeType: String
+  fileSize: Int
+  type: MediaType
+  branchId: String
+}
+
+type Query {
+  # Speaker queries
+  speakers(branchId: String): [Speaker!]!
+  speaker(id: ID!): Speaker!
+  speakerByMember(memberId: ID!): Speaker
+
+  # Series queries
+  allSeries(branchId: String): [Series!]!
+  series(id: ID!): Series!
+  activeSeries(branchId: String): [Series!]!
+
+  # Sermon queries
+  sermons(branchId: String, speakerId: String, seriesId: String, status: ContentStatus): [Sermon!]!
+  sermon(id: ID!): Sermon!
+  recentSermons(limit: Int, branchId: String): [Sermon!]!
+  searchSermons(query: String!, branchId: String): [Sermon!]!
+
+  # MediaItem queries
+  mediaItems(branchId: String, type: MediaType): [MediaItem!]!
+  mediaItem(id: ID!): MediaItem!
+  mediaItemsByType(type: MediaType!, branchId: String): [MediaItem!]!
+  searchMediaItems(query: String!, branchId: String, type: MediaType): [MediaItem!]!
+}
+
+type FileUploadResponse {
+  uploadUrl: String!
+  fileUrl: String!
+  mediaItemId: String
+}
+
+input FileUploadInput {
+  fileName: String!
+  contentType: String!
+  mediaType: MediaType!
+  description: String
+  branchId: String!
+  directory: String
+}
+
+type Mutation {
+  # Speaker mutations
+  createSpeaker(createSpeakerInput: CreateSpeakerInput!): Speaker!
+  updateSpeaker(updateSpeakerInput: UpdateSpeakerInput!): Speaker!
+  removeSpeaker(id: ID!): Speaker!
+
+  # Series mutations
+  createSeries(createSeriesInput: CreateSeriesInput!): Series!
+  updateSeries(updateSeriesInput: UpdateSeriesInput!): Series!
+  removeSeries(id: ID!): Series!
+
+  # Sermon mutations
+  createSermon(createSermonInput: CreateSermonInput!): Sermon!
+  updateSermon(updateSermonInput: UpdateSermonInput!): Sermon!
+  removeSermon(id: ID!): Sermon!
+  updateSermonStatus(id: ID!, status: ContentStatus!): Sermon!
+
+  # MediaItem mutations
+  createMediaItem(createMediaItemInput: CreateMediaItemInput!): MediaItem!
+  updateMediaItem(updateMediaItemInput: UpdateMediaItemInput!): MediaItem!
+  removeMediaItem(id: ID!): MediaItem!
+  
+  # File Upload mutations
+  getPresignedUploadUrl(input: FileUploadInput!): FileUploadResponse!
+  deleteFile(mediaItemId: ID!): Boolean!
+}

@@ -1,0 +1,116 @@
+// Forms Module Models
+
+enum FormStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum FormFieldType {
+  TEXT
+  TEXTAREA
+  EMAIL
+  NUMBER
+  PHONE
+  DATE
+  TIME
+  DATETIME
+  SELECT
+  MULTISELECT
+  CHECKBOX
+  RADIO
+  FILE
+  HEADING
+  PARAGRAPH
+  DIVIDER
+}
+
+model Form {
+  id              String     @id @default(uuid())
+  title           String
+  description     String?
+  status          FormStatus @default(DRAFT)
+  isPublic        Boolean    @default(false)
+  slug            String     @unique
+  successMessage  String?
+  redirectUrl     String?
+  enableCaptcha   Boolean    @default(false)
+  notifyEmails    String[]
+  branchId        String?
+  createdById     String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  expiresAt       DateTime?
+  submissionCount Int        @default(0)
+  
+  // Relations
+  fields          FormField[]
+  submissions     FormSubmission[]
+  branch          Branch?          @relation(fields: [branchId], references: [id])
+  
+  @@index([branchId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model FormField {
+  id                String        @id @default(uuid())
+  formId            String
+  type              FormFieldType
+  label             String
+  placeholder       String?
+  helpText          String?
+  defaultValue      String?
+  options           Json?         // For SELECT, MULTISELECT, CHECKBOX, RADIO
+  isRequired        Boolean       @default(false)
+  isUnique          Boolean       @default(false)
+  validations       Json?         // Custom validations like min/max length, pattern, etc.
+  order             Int
+  width             Int           @default(100)  // Percentage width (50 for half, 100 for full)
+  conditionalLogic  Json?         // Logic for showing/hiding based on other fields
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  form              Form          @relation(fields: [formId], references: [id], onDelete: Cascade)
+  fieldValues       FormFieldValue[]
+  
+  @@index([formId])
+  @@index([type])
+}
+
+model FormSubmission {
+  id              String           @id @default(uuid())
+  formId          String
+  submittedAt     DateTime         @default(now())
+  ipAddress       String?
+  userAgent       String?
+  status          String           @default("COMPLETED")
+  branchId        String?
+  submittedById   String?          // Optional - if user is logged in
+  
+  // Relations
+  form            Form             @relation(fields: [formId], references: [id])
+  fieldValues     FormFieldValue[]
+  branch          Branch?          @relation(fields: [branchId], references: [id])
+  
+  @@index([formId])
+  @@index([submittedAt])
+  @@index([branchId])
+}
+
+model FormFieldValue {
+  id              String         @id @default(uuid())
+  submissionId    String
+  fieldId         String
+  value           String?        // Text value
+  fileUrl         String?        // For file uploads
+  createdAt       DateTime       @default(now())
+  
+  // Relations
+  submission      FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  field           FormField      @relation(fields: [fieldId], references: [id])
+  
+  @@index([submissionId])
+  @@index([fieldId])
+}

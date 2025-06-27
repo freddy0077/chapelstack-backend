@@ -1,0 +1,499 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String          @id @default(uuid())
+  email           String          @unique
+  passwordHash    String
+  firstName       String?
+  lastName        String?
+  phoneNumber     String?
+  isActive        Boolean         @default(true)
+  isEmailVerified Boolean         @default(false)
+  lastLoginAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  auditLogs       AuditLog[]
+  backups         Backup[]
+  dataOperations  DataOperation[]
+  refreshTokens   RefreshToken[]
+  userBranches    UserBranch[]
+  roles           Role[]          @relation("UserRoles")
+}
+
+model Role {
+  id           String       @id @default(uuid())
+  name         String       @unique
+  description  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  userBranches UserBranch[]
+  permissions  Permission[] @relation("RolePermissions")
+  users        User[]       @relation("UserRoles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  action      String
+  subject     String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  roles       Role[]   @relation("RolePermissions")
+
+  @@unique([action, subject])
+}
+
+model Branch {
+  id                    String          @id @default(uuid())
+  name                  String
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  address               String?
+  city                  String?
+  country               String?
+  email                 String?         @unique
+  establishedAt         DateTime?
+  isActive              Boolean         @default(true)
+  phoneNumber           String?
+  postalCode            String?
+  state                 String?
+  website               String?
+  auditLogs             AuditLog[]
+  settings              BranchSetting[]
+  members               Member[]
+  settingsModuleEntries Setting[]       @relation("SettingsModuleBranchSpecific")
+  userBranches          UserBranch[]
+  Ministry              Ministry[]
+  SmallGroup            SmallGroup[]
+}
+
+model UserBranch {
+  userId     String
+  branchId   String
+  roleId     String
+  assignedAt DateTime @default(now())
+  assignedBy String?
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, branchId, roleId])
+  @@index([userId])
+  @@index([branchId])
+  @@index([roleId])
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  hashedToken String   @unique
+  userId      String
+  expiresAt   DateTime
+  isRevoked   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model BranchSetting {
+  id        String   @id @default(uuid())
+  branchId  String
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, key])
+  @@index([branchId])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String
+  value     String
+  branchId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch?  @relation("SettingsModuleBranchSpecific", fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([key, branchId])
+  @@index([key])
+  @@index([branchId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  branchId   String?
+  entityType String?
+  entityId   String?
+  action     String
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  branch     Branch?  @relation(fields: [branchId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([branchId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model DataOperation {
+  id          String    @id @default(uuid())
+  type        String
+  status      String
+  entityType  String
+  description String?
+  metadata    Json?
+  filePath    String?
+  fileSize    Int?
+  recordCount Int?
+  errorCount  Int?
+  startedAt   DateTime  @default(now())
+  userId      String?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  user        User?     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model Member {
+  id                  String               @id @default(uuid())
+  firstName           String
+  middleName          String?
+  lastName            String
+  gender              String
+  dateOfBirth         DateTime?
+  email               String?
+  phoneNumber         String?
+  address             String?
+  city                String?
+  state               String?
+  postalCode          String?
+  country             String?
+  membershipDate      DateTime?
+  membershipStatus    String?
+  baptismDate         DateTime?
+  maritalStatus       String?
+  occupation          String?
+  employer            String?
+  emergencyContact    String?
+  emergencyPhone      String?
+  notes               String?
+  status              String // ACTIVE, INACTIVE, DECEASED, TRANSFERRED
+  customFields        Json?
+  profilePictureUrl   String?
+  branchId            String?
+  parentId            String?
+  spouseId            String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  rfidCardId          String?              @unique // Added for RFID card scanning
+  isRegularAttendee   Boolean              @default(false) // Added for absence tracking
+  lastAttendanceDate  DateTime?            // Added for absence tracking
+  attendanceRecords   AttendanceRecord[]   // Relation to attendance records
+  memberRelationships FamilyRelationship[] @relation("MemberRelationships")
+  relatedTo           FamilyRelationship[] @relation("RelatedMemberRelationships")
+  groupMemberships    GroupMember[]
+  branch              Branch?              @relation(fields: [branchId], references: [id])
+  parent              Member?              @relation("MemberParent", fields: [parentId], references: [id])
+  children            Member[]             @relation("MemberParent")
+  spouse              Member?              @relation("MemberSpouse", fields: [spouseId], references: [id])
+  spouseOf            Member?              @relation("MemberSpouse")
+  spiritualMilestones SpiritualMilestone[]
+  families            Family[]             @relation("MemberFamilies")
+
+  @@index([branchId])
+  @@index([status])
+  @@index([membershipDate])
+  @@index([rfidCardId]) // Index for RFID lookup
+}
+
+model SpiritualMilestone {
+  id                String   @id @default(uuid())
+  type              String
+  date              DateTime
+  location          String?
+  performedBy       String?
+  description       String?
+  additionalDetails Json?
+  memberId          String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  member            Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([type])
+  @@index([date])
+}
+
+model Family {
+  id            String               @id @default(uuid())
+  name          String
+  address       String?
+  city          String?
+  state         String?
+  postalCode    String?
+  country       String?
+  phoneNumber   String?
+  customFields  Json?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  relationships FamilyRelationship[]
+  members       Member[]             @relation("MemberFamilies")
+
+  @@index([name])
+}
+
+model FamilyRelationship {
+  id               String   @id @default(uuid())
+  relationshipType String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  memberId         String
+  relatedMemberId  String
+  familyId         String?
+  family           Family?  @relation(fields: [familyId], references: [id])
+  member           Member   @relation("MemberRelationships", fields: [memberId], references: [id], onDelete: Cascade)
+  relatedMember    Member   @relation("RelatedMemberRelationships", fields: [relatedMemberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([relatedMemberId])
+  @@index([familyId])
+  @@index([relationshipType])
+}
+
+model License {
+  id               String   @id
+  key              String   @unique
+  type             String
+  status           String
+  startDate        DateTime
+  expiryDate       DateTime
+  organizationName String?
+  contactEmail     String?
+  contactPhone     String?
+  features         Json?
+  maxUsers         Int?
+  maxBranches      Int?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+
+  @@index([expiryDate])
+  @@index([key])
+  @@index([status])
+  @@index([type])
+}
+
+// Ministry model
+model Ministry {
+  id            String     @id @default(uuid())
+  name          String
+  description   String?
+  type          String // e.g., WORSHIP, OUTREACH, EDUCATION, PRAYER, YOUTH, CHILDREN, MISSIONS, ADMINISTRATION, OTHER
+  status        String // ACTIVE, INACTIVE
+  branchId      String?
+  branch        Branch?    @relation(fields: [branchId], references: [id])
+  parentId      String?
+  parent        Ministry?  @relation("SubMinistries", fields: [parentId], references: [id])
+  subMinistries Ministry[] @relation("SubMinistries")
+
+  // Relationships
+  members     GroupMember[]
+  smallGroups SmallGroup[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([branchId])
+  @@index([parentId])
+  @@index([type])
+  @@index([status])
+}
+
+// Small Group model
+model SmallGroup {
+  id              String    @id @default(uuid())
+  name            String
+  description     String?
+  type            String // e.g., BIBLE_STUDY, PRAYER, INTEREST_BASED, DISCIPLESHIP, SUPPORT, FELLOWSHIP, OTHER
+  meetingSchedule String? // day, time, frequency
+  location        String?
+  maximumCapacity Int?
+  status          String // ACTIVE, INACTIVE, FULL
+  branchId        String?
+  branch          Branch?   @relation(fields: [branchId], references: [id])
+  ministryId      String?
+  ministry        Ministry? @relation(fields: [ministryId], references: [id])
+
+  // Relationships
+  members GroupMember[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([branchId])
+  @@index([ministryId])
+  @@index([type])
+  @@index([status])
+}
+
+// Group Member model (for both Ministry and Small Group members)
+model GroupMember {
+  id       String   @id @default(uuid())
+  role     String // LEADER, CO_LEADER, MEMBER
+  joinDate DateTime @default(now())
+  status   String // ACTIVE, INACTIVE
+
+  // Relationships
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  // Ministry relationship (optional)
+  ministryId String?
+  ministry   Ministry? @relation(fields: [ministryId], references: [id])
+
+  // Small Group relationship (optional)
+  smallGroupId String?
+  smallGroup   SmallGroup? @relation(fields: [smallGroupId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([memberId, ministryId, smallGroupId])
+  @@index([memberId])
+  @@index([ministryId])
+  @@index([smallGroupId])
+  @@index([role])
+  @@index([status])
+}
+
+// Attendance Session model
+model AttendanceSession {
+  id               String             @id @default(uuid())
+  name             String
+  date             DateTime
+  startTime        DateTime
+  endTime          DateTime?
+  status           String // PLANNED, ACTIVE, COMPLETED, CANCELLED
+  type             String // REGULAR_SERVICE, SPECIAL_EVENT, MINISTRY_MEETING, SMALL_GROUP
+  location         String?
+  latitude         Float?             // Added for geolocation
+  longitude        Float?             // Added for geolocation
+  notes            String?
+  branchId         String
+  ministryId       String?
+  smallGroupId     String?
+  eventId          String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  attendanceRecords AttendanceRecord[]
+  qrCodeTokens     QRCodeToken[]      // Added for mobile check-in
+
+  @@index([date])
+  @@index([status])
+  @@index([branchId])
+  @@index([ministryId])
+  @@index([smallGroupId])
+  @@index([eventId])
+}
+
+// Attendance Record model
+model AttendanceRecord {
+  id            String            @id @default(uuid())
+  sessionId     String
+  memberId      String?
+  visitorName   String?
+  visitorEmail  String?
+  visitorPhone  String?
+  checkInTime   DateTime
+  checkOutTime  DateTime?
+  checkedInById  String?
+  checkedOutById String?
+  branchId      String
+  checkInMethod String?           // Added for tracking check-in method (RFID, MOBILE, MANUAL)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  session       AttendanceSession @relation(fields: [sessionId], references: [id])
+  member        Member?           @relation(fields: [memberId], references: [id])
+
+  @@index([sessionId])
+  @@index([memberId])
+  @@index([checkInTime])
+  @@index([branchId])
+  @@index([checkInMethod])
+}
+
+// QR Code Token model for mobile check-in
+model QRCodeToken {
+  id        String            @id @default(uuid())
+  token     String            @unique
+  sessionId String
+  expiresAt DateTime
+  createdAt DateTime          @default(now())
+  session   AttendanceSession @relation(fields: [sessionId], references: [id])
+
+  @@index([token])
+  @@index([sessionId])
+  @@index([expiresAt])
+}
+
+// Notification model for absence alerts
+model Notification {
+  id        String   @id @default(uuid())
+  type      String   // ABSENCE_ALERT, SYSTEM, etc.
+  title     String
+  message   String
+  status    String   // PENDING, SENT, READ
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sentAt    DateTime?
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Backup model
+model Backup {
+  id          String   @id @default(uuid())
+  filename    String
+  size        Int
+  contentType String
+  path        String
+  createdById String
+  createdAt   DateTime @default(now())
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@index([createdById])
+  @@index([createdAt])
+}

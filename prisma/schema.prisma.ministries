@@ -1,0 +1,71 @@
+// Ministry model
+model Ministry {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  type        String   // e.g., Worship, Outreach, Education
+  status      String   // Active, Inactive
+  branchId    String?
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+  parentId    String?
+  parent      Ministry? @relation("SubMinistries", fields: [parentId], references: [id])
+  subMinistries Ministry[] @relation("SubMinistries")
+  
+  // Relationships
+  members     GroupMember[]
+  smallGroups SmallGroup[]
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Small Group model
+model SmallGroup {
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  type             String   // e.g., Bible Study, Prayer, Interest-based
+  meetingSchedule  String?  // day, time, frequency
+  location         String?
+  maximumCapacity  Int?
+  status           String   // Active, Inactive, Full
+  branchId         String?
+  branch           Branch?  @relation(fields: [branchId], references: [id])
+  ministryId       String?
+  ministry         Ministry? @relation(fields: [ministryId], references: [id])
+  
+  // Relationships
+  members          GroupMember[]
+  
+  // Timestamps
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// Group Member model (for both Ministry and Small Group members)
+model GroupMember {
+  id          String   @id @default(uuid())
+  role        String   // Leader, Co-Leader, Member
+  joinDate    DateTime @default(now())
+  status      String   // Active, Inactive
+  
+  // Relationships
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id])
+  
+  // Ministry relationship (optional)
+  ministryId  String?
+  ministry    Ministry? @relation(fields: [ministryId], references: [id])
+  
+  // Small Group relationship (optional)
+  smallGroupId String?
+  smallGroup   SmallGroup? @relation(fields: [smallGroupId], references: [id])
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Constraints
+  @@unique([memberId, ministryId, smallGroupId])
+}

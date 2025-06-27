@@ -1,0 +1,66 @@
+version: '3.9'
+services:
+  backend:
+    build: .
+    container_name: chapel-backend
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && npm run start:prod"
+
+  db:
+    image: postgres:14
+    container_name: chapel-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: chapel
+      POSTGRES_USER: chapel
+      POSTGRES_PASSWORD: chapel
+      PGDATA: /var/lib/postgresql/data/pgdata
+      TZ: Africa/Accra
+      PGTZ: Africa/Accra
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chapel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  prisma-studio:
+    build: .
+    container_name: prisma-studio
+    command: npx prisma studio --port 5555
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  portainer:
+    image: portainer/portainer-ce
+    container_name: portainer
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  portainer_data:

@@ -1,0 +1,55 @@
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { BaseModule } from './base/base.module';
+import { ConfigModule } from '@nestjs/config';
+import { GraphQLModule, GraphQLISODateTime } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { join } from 'path';
+import { AppResolver } from './app.resolver';
+import { AuthModule } from './auth/auth.module';
+import { BranchesModule } from './branches/branches.module';
+import { SettingsModule } from './settings/settings.module';
+import { Branch } from './branches/entities/branch.entity';
+import { SystemSettingsModule } from './system-settings/system-settings.module';
+import { AdminModule } from './admin/admin.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { CommonModule } from './common/common.module';
+import { GraphQLJSON } from 'graphql-type-json';
+import { // EventsModule } from './events/events.module';
+import { MembersModule } from './members/members.module';
+import { MinistriesModule } from './ministries/ministries.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    BaseModule,
+    CommonModule,
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      sortSchema: true,
+      playground: true, // Simplified for now, can be made env-dependent later
+      // Custom scalars from BaseModule (imported in AppModule) should be automatically picked up.
+      buildSchemaOptions: {
+        orphanedTypes: [Branch],
+        scalarsMap: [
+          { type: Date, scalar: GraphQLISODateTime },
+          { type: Object, scalar: GraphQLJSON },
+        ],
+      },
+    }),
+    AuthModule,
+    BranchesModule,
+    SystemSettingsModule,
+    AdminModule,
+    PrismaModule,
+    SettingsModule,
+    MembersModule,
+    // EventsModule,
+    MinistriesModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService, AppResolver],
+})
+export class AppModule {}

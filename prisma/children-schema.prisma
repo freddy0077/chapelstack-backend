@@ -1,0 +1,164 @@
+// Children's Ministry Module Models
+
+// Child model
+model Child {
+  id                   String                @id @default(uuid())
+  firstName            String
+  lastName             String
+  dateOfBirth          DateTime
+  gender               String?
+  allergies            String?
+  specialNeeds         String?
+  emergencyContactName String
+  emergencyContactPhone String
+  photoConsent         Boolean               @default(false)
+  notes                String?
+  branchId             String
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  
+  // Relations
+  branch               Branch                @relation(fields: [branchId], references: [id])
+  guardianRelations    ChildGuardianRelation[]
+  checkInRecords       CheckInRecord[]
+  
+  @@index([branchId])
+}
+
+// Guardian model
+model Guardian {
+  id                String                @id @default(uuid())
+  memberId          String?
+  firstName         String?
+  lastName          String?
+  relationship      String
+  isPrimaryGuardian Boolean               @default(false)
+  canPickup         Boolean               @default(true)
+  phone             String
+  email             String?
+  address           String?
+  notes             String?
+  branchId          String
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  // Relations
+  member            Member?               @relation(fields: [memberId], references: [id])
+  branch            Branch                @relation(fields: [branchId], references: [id])
+  childRelations    ChildGuardianRelation[]
+  checkInsPerformed CheckInRecord[]       @relation("CheckedInBy")
+  checkOutsPerformed CheckInRecord[]      @relation("CheckedOutBy")
+  
+  @@index([branchId])
+  @@index([memberId])
+}
+
+// Child-Guardian Relationship
+model ChildGuardianRelation {
+  id           String   @id @default(uuid())
+  childId      String
+  guardianId   String
+  relationship String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  child        Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  guardian     Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  
+  @@unique([childId, guardianId])
+  @@index([childId])
+  @@index([guardianId])
+}
+
+// Check-In/Check-Out Record
+model CheckInRecord {
+  id                  String    @id @default(uuid())
+  childId             String
+  eventId             String?
+  checkedInById       String
+  checkedInAt         DateTime  @default(now())
+  checkedOutById      String?
+  checkedOutAt        DateTime?
+  guardianIdAtCheckIn String
+  guardianIdAtCheckOut String?
+  notes               String?
+  branchId            String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  child               Child     @relation(fields: [childId], references: [id])
+  event               ChildrenEvent? @relation(fields: [eventId], references: [id])
+  checkedInBy         Guardian  @relation("CheckedInBy", fields: [checkedInById], references: [id])
+  checkedOutBy        Guardian? @relation("CheckedOutBy", fields: [checkedOutById], references: [id])
+  branch              Branch    @relation(fields: [branchId], references: [id])
+  
+  @@index([childId])
+  @@index([eventId])
+  @@index([branchId])
+}
+
+// Children's Ministry Volunteer
+model ChildrenMinistryVolunteer {
+  id                     String   @id @default(uuid())
+  memberId               String
+  role                   String
+  backgroundCheckDate    DateTime?
+  backgroundCheckStatus  String?
+  trainingCompletionDate DateTime?
+  isActive               Boolean  @default(true)
+  notes                  String?
+  branchId               String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  
+  // Relations
+  member                 Member   @relation(fields: [memberId], references: [id])
+  branch                 Branch   @relation(fields: [branchId], references: [id])
+  eventAssignments       VolunteerEventAssignment[]
+  
+  @@index([memberId])
+  @@index([branchId])
+}
+
+// Children's Event
+model ChildrenEvent {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  startDateTime   DateTime
+  endDateTime     DateTime
+  location        String
+  ageRange        String?
+  capacity        Int?
+  volunteersNeeded Int?
+  branchId        String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  branch          Branch   @relation(fields: [branchId], references: [id])
+  checkInRecords  CheckInRecord[]
+  volunteerAssignments VolunteerEventAssignment[]
+  
+  @@index([branchId])
+}
+
+// Volunteer Event Assignment
+model VolunteerEventAssignment {
+  id          String   @id @default(uuid())
+  volunteerId String
+  eventId     String
+  role        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  volunteer   ChildrenMinistryVolunteer @relation(fields: [volunteerId], references: [id])
+  event       ChildrenEvent @relation(fields: [eventId], references: [id])
+  
+  @@unique([volunteerId, eventId])
+  @@index([volunteerId])
+  @@index([eventId])
+}

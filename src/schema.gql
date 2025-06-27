@@ -1,0 +1,3365 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input AbsenceAlertConfigInput {
+  absenceThresholdDays: Int!
+  branchId: String!
+  sendEmailAlerts: Boolean! = true
+  sendSmsAlerts: Boolean! = false
+}
+
+type AbsenceAlertResult {
+  count: Int!
+  members: [AbsentMember!]!
+  success: Boolean!
+}
+
+type AbsentMember {
+  email: String
+  firstName: String!
+  id: String!
+  lastAttendance: DateTime
+  lastName: String!
+  phone: String
+}
+
+type AgeDistribution {
+  ageGroup: String!
+  count: Float!
+  percentage: Float!
+}
+
+input AllMessagesFilterInput {
+  branchId: String
+  endDate: DateTime
+  organisationId: String
+  startDate: DateTime
+  types: [String!]
+}
+
+type Announcement {
+  content: String!
+  endDate: DateTime!
+  id: ID!
+  isActive: Boolean!
+  key: String!
+  startDate: DateTime!
+  targetBranchIds: [ID!]
+  targetRoleIds: [ID!]
+  title: String!
+}
+
+type AnnouncementItem {
+  author: String
+  content: String!
+  date: DateTime!
+  id: String!
+  priority: String
+  title: String!
+}
+
+type AnnouncementsWidget {
+  announcements: [AnnouncementItem!]!
+  title: String!
+  widgetType: WidgetType!
+}
+
+input AssignRfidCardInput {
+  memberId: ID!
+  rfidCardId: String!
+}
+
+type AttendanceByDemographicsStat {
+  count: Float!
+  group: String!
+}
+
+type AttendanceByEventStat {
+  count: Float!
+  eventType: String!
+}
+
+input AttendanceCheckOutInput {
+  checkOutTime: DateTime
+  recordId: ID!
+}
+
+type AttendanceDataPoint {
+  count: Float!
+  date: DateTime!
+  percentChange: Float
+}
+
+input AttendanceFilterInput {
+  branchId: ID
+  checkInMethod: String
+  endDate: DateTime
+  memberId: ID
+  startDate: DateTime
+  visitorNameContains: String
+}
+
+type AttendanceFrequencyStat {
+  count: Float!
+  label: String!
+}
+
+type AttendanceRecord {
+  branch: Branch
+  checkInMethod: String!
+  checkInTime: DateTime!
+  checkOutTime: DateTime
+  createdAt: DateTime!
+  id: ID!
+  member: Member
+  notes: String
+  recordedBy: User
+  session: AttendanceSession
+  updatedAt: DateTime!
+  visitorEmail: String
+  visitorName: String
+  visitorPhone: String
+}
+
+type AttendanceSession {
+  branchId: String
+  createdAt: DateTime!
+  date: DateTime!
+  description: String
+  endTime: DateTime
+  id: ID!
+  latitude: Float
+  location: String
+  longitude: Float
+  name: String!
+  organisationId: String
+  startTime: DateTime!
+  status: String!
+  type: String!
+  updatedAt: DateTime!
+}
+
+type AttendanceStats {
+  BY_AGE_GROUP: [AttendanceByDemographicsStat!]
+  BY_BRANCH: [AttendanceByDemographicsStat!]
+  BY_EVENT_TYPE: [AttendanceByEventStat!]
+  BY_GENDER: [AttendanceByDemographicsStat!]
+  FIRST_TIME_VISITORS: [FirstTimeVisitorsStat!]
+  FREQUENCY: [AttendanceFrequencyStat!]
+  GROWTH_RATE: [GrowthRateStat!]
+  RETENTION_RATE: [RetentionRateStat!]
+  TOTAL_ATTENDANCE: [TotalAttendanceStat!]
+  UNIQUE_MEMBERS: [UniqueMembersStat!]
+  VISITORS: [VisitorsStat!]
+  branchId: String!
+  endDate: String!
+  period: AttendanceStatsPeriod!
+  startDate: String!
+}
+
+input AttendanceStatsInput {
+  branchId: String
+  endDate: String!
+  organisationId: String
+  period: AttendanceStatsPeriod! = WEEKLY
+  sessionTypeId: String
+  startDate: String!
+  statsTypes: [AttendanceStatsType!]! = [TOTAL_ATTENDANCE]
+}
+
+enum AttendanceStatsPeriod {
+  DAILY
+  MONTHLY
+  QUARTERLY
+  WEEKLY
+  YEARLY
+}
+
+enum AttendanceStatsType {
+  FIRST_TIME_VISITORS
+  GROWTH_RATE
+  RETENTION_RATE
+  TOTAL_ATTENDANCE
+  UNIQUE_MEMBERS
+  VISITORS
+}
+
+type AttendanceTrendData {
+  averageAttendance: Float!
+  branchId: ID
+  branchName: String
+  endDate: DateTime!
+  eventTypeId: String
+  eventTypeName: String
+  organisationId: ID
+  percentChangeFromPreviousPeriod: Float
+  startDate: DateTime!
+  totalAttendance: Float!
+  trendData: [AttendanceDataPoint!]!
+}
+
+type AuditLog {
+  action: String!
+  branch: Branch
+  branchId: ID
+  createdAt: DateTime!
+  description: String!
+  entityId: String
+  entityType: String!
+  id: ID!
+  ipAddress: String
+  metadata: JSON
+  user: AuthUser
+  userAgent: String
+  userId: ID
+}
+
+input AuditLogFilterInput {
+  action: String
+  branchId: ID
+  createdAfter: String
+  createdBefore: String
+  descriptionContains: String
+  entityId: String
+  entityType: String
+  userId: ID
+}
+
+type AuthPayload {
+  accessToken: String!
+  refreshToken: String!
+  user: UserProfile!
+}
+
+type AuthUser {
+  createdAt: DateTime!
+  email: String!
+  firstName: String
+  id: ID!
+  isActive: Boolean!
+  isEmailVerified: Boolean!
+  lastLoginAt: DateTime
+  lastName: String
+  phoneNumber: String
+  roles: [Role]
+  updatedAt: DateTime!
+  userBranches: [UserBranch]
+}
+
+type Backup {
+  completedAt: DateTime
+  createdAt: DateTime!
+  description: String
+  duration: Float
+  errorDetails: JSON
+  filePath: String
+  fileSize: Float
+  id: ID!
+  metadata: JSON
+  status: BackupStatus!
+  type: BackupType!
+  user: AuthUser
+  userId: ID
+}
+
+input BackupFilterInput {
+  createdAfter: String
+  createdBefore: String
+  endDate: String
+  id: ID
+  startDate: String
+  status: BackupStatus
+  type: BackupType
+  userId: ID
+}
+
+"""Status of a backup operation"""
+enum BackupStatus {
+  COMPLETED
+  FAILED
+  IN_PROGRESS
+  PENDING
+}
+
+"""Type of backup operation"""
+enum BackupType {
+  FULL
+  INCREMENTAL
+  MANUAL
+  SCHEDULED
+}
+
+type Branch {
+  address: String
+  city: String
+  country: String
+  createdAt: DateTime!
+  email: String
+  establishedAt: DateTime
+  id: ID!
+  isActive: Boolean!
+  name: String!
+  phoneNumber: String
+  postalCode: String
+  settings: [BranchSetting]
+  state: String
+  statistics: BranchStatistics!
+  updatedAt: DateTime!
+  website: String
+}
+
+input BranchFilterInput {
+  """Filter by city (case-insensitive, partial match)"""
+  cityContains: String
+
+  """Filter by country (case-insensitive, partial match)"""
+  countryContains: String
+
+  """Filter by email (case-insensitive, partial match)"""
+  emailContains: String
+
+  """Filter by branch ID"""
+  id: String
+
+  """Filter by active status"""
+  isActive: Boolean
+
+  """Filter by name (case-insensitive, partial match)"""
+  nameContains: String
+
+  """Filter by organisation ID"""
+  organisationId: String
+
+  """Filter by state (case-insensitive, partial match)"""
+  stateContains: String
+}
+
+type BranchProfile {
+  address: String
+  city: String
+  country: String
+  createdAt: DateTime!
+  email: String
+  establishedAt: DateTime
+  id: ID!
+  isActive: Boolean!
+  name: String!
+  phoneNumber: String
+  postalCode: String
+  state: String
+  updatedAt: DateTime!
+  website: String
+}
+
+type BranchSetting {
+  """ID of the branch these settings belong to"""
+  branchId: ID!
+  createdAt: DateTime!
+  id: ID!
+  key: String!
+  updatedAt: DateTime!
+  value: String!
+}
+
+type BranchStatistics {
+  """Number of active members in this branch."""
+  activeMembers: Int!
+
+  """Number of inactive members in this branch."""
+  inactiveMembers: Int!
+
+  """Statistics for the previous month."""
+  lastMonth: BranchStatistics
+
+  """
+  Number of new members who joined this branch in the relevant period (current or last month).
+  """
+  newMembersInPeriod: Int!
+
+  """Total number of members in this branch."""
+  totalMembers: Int!
+}
+
+type Budget {
+  branchId: String
+  description: String
+  endDate: DateTime!
+  fiscalYear: Int!
+  fundId: String!
+  id: String!
+  ministryId: String
+  name: String!
+  notes: String
+  organisationId: String
+  startDate: DateTime!
+  status: String!
+  totalAmount: Float!
+  totalSpent: Float!
+}
+
+input CardScanInput {
+  branchId: ID
+  cardId: String!
+  notes: String
+  recordedById: ID
+  scanMethod: String = "RFID"
+  scanTime: DateTime
+  sessionId: ID!
+}
+
+type ChartData {
+  chartType: String!
+  data: JSON!
+  title: String!
+  widgetType: WidgetType!
+}
+
+type CheckInEventStats {
+  _count: Int!
+  eventId: ID!
+}
+
+input CheckInInput {
+  branchId: String!
+  checkedInById: String!
+  childId: String!
+  eventId: String
+  guardianIdAtCheckIn: String!
+  notes: String
+}
+
+type CheckInRecord {
+  branchId: String!
+  checkedInAt: DateTime!
+  checkedInById: String!
+  checkedOutAt: DateTime
+  checkedOutById: String
+  childId: String!
+  createdAt: DateTime!
+  eventId: String
+  guardianIdAtCheckIn: String!
+  guardianIdAtCheckOut: String
+  id: ID!
+  notes: String
+  updatedAt: DateTime!
+}
+
+type CheckInStatsOutput {
+  checkInsByEvent: [CheckInEventStats!]!
+  totalCheckIns: Int!
+  totalCheckOuts: Int!
+  uniqueChildrenCount: Int!
+}
+
+type Child {
+  age: Float
+  allergies: String
+  branchId: String!
+  createdAt: DateTime!
+  dateOfBirth: DateTime!
+  emergencyContactName: String!
+  emergencyContactPhone: String!
+  firstName: String!
+  fullName: String
+  gender: String
+  guardians: [Guardian!]!
+  id: ID!
+  lastName: String!
+  notes: String
+  photoConsent: Boolean!
+  recentCheckIns: [CheckInRecord!]!
+  specialNeeds: String
+  updatedAt: DateTime!
+}
+
+input ChildCheckOutInput {
+  checkInRecordId: String!
+  checkedOutById: String!
+  guardianIdAtCheckOut: String!
+  notes: String
+}
+
+input ChildFilterInput {
+  branchId: String
+  dateOfBirthFrom: DateTime
+  dateOfBirthTo: DateTime
+  firstName: String
+  gender: String
+  lastName: String
+}
+
+type ChildGuardianRelation {
+  childId: String!
+  createdAt: DateTime!
+  guardianId: String!
+  id: ID!
+  relationship: String!
+  updatedAt: DateTime!
+}
+
+type ChildrenEvent {
+  ageRange: String
+  branchId: String!
+  capacity: Int
+  createdAt: DateTime!
+  description: String
+  endDateTime: DateTime!
+  id: ID!
+  location: String!
+  name: String!
+  startDateTime: DateTime!
+  updatedAt: DateTime!
+  volunteers: [ChildrenMinistryVolunteer!]!
+  volunteersNeeded: Int
+}
+
+type ChildrenMinistryVolunteer {
+  backgroundCheckDate: DateTime
+  backgroundCheckStatus: String
+  branchId: String!
+  createdAt: DateTime!
+  id: ID!
+  isActive: Boolean!
+  memberId: String!
+  notes: String
+  role: String!
+  trainingCompletionDate: DateTime
+  upcomingEvents: [ChildrenEvent!]!
+  updatedAt: DateTime!
+}
+
+type CommunicationChannelStats {
+  channel: String!
+  deliveryRate: Int!
+  messagesSent: Int!
+  openRate: Int
+}
+
+type CommunicationStatsEntity {
+  activeTemplates: Int!
+  averageResponseTime: Int
+  deliveryRate: Int!
+  emailStatusCounts: [MessageStatusCount!]!
+  messagesByDate: [MessageTimeSeriesData!]!
+  smsStatusCounts: [MessageStatusCount!]!
+  totalEmailsSent: Int!
+  totalNotifications: Int!
+  totalSmsSent: Int!
+}
+
+input CommunicationStatsFilterInput {
+  branchId: ID
+  channels: [String!]
+  endDate: String
+  groupBy: String
+  startDate: String
+  statuses: [String!]
+}
+
+input CompleteOnboardingStepInput {
+  address: String
+  branchId: ID!
+  city: String
+  country: String
+  description: String
+  email: String
+  name: String
+  phoneNumber: String
+  selectedModules: [String!]
+  state: String
+  stepKey: OnboardingStep!
+  website: String
+  zipCode: String
+}
+
+"""Status of the content/sermon"""
+enum ContentStatus {
+  ARCHIVED
+  DRAFT
+  PUBLISHED
+}
+
+type Contribution {
+  amount: Float!
+  anonymous: Boolean
+  branchId: String
+  contributionType: ContributionType!
+  contributionTypeId: String!
+  date: DateTime!
+  fund: Fund!
+  fundId: String!
+  id: String!
+  member: Member
+  memberId: String
+  notes: String
+  organisationId: String
+  paymentMethod: PaymentMethod!
+  paymentMethodId: String!
+  pledgeId: String
+}
+
+type ContributionType {
+  branchId: String
+  description: String
+  id: ID!
+  isActive: Boolean!
+  name: String!
+  organisationId: String
+}
+
+type CpuUsage {
+  system: Float!
+  user: Float!
+}
+
+input CreateAnnouncementInput {
+  content: String!
+  endDate: String!
+  startDate: String!
+  targetBranchIds: [ID!]
+  targetRoleIds: [ID!]
+  title: String!
+}
+
+input CreateAttendanceSessionInput {
+  branchId: String
+  date: DateTime!
+  description: String
+  endTime: DateTime
+  latitude: Float
+  location: String
+  longitude: Float
+  name: String!
+  organisationId: String!
+  startTime: DateTime!
+  status: String = "PLANNED"
+  type: String!
+}
+
+input CreateAuditLogInput {
+  action: String!
+  branchId: ID
+  description: String!
+  entityId: String
+  entityType: String!
+  ipAddress: String
+  metadata: JSON
+  userAgent: String
+  userId: ID
+}
+
+input CreateBackupInput {
+  description: String
+  metadata: JSON
+  type: BackupType!
+  userId: ID
+}
+
+input CreateBranchAdminInput {
+  branchId: ID!
+  email: String!
+  firstName: String!
+  lastName: String!
+  organisationId: ID!
+  password: String!
+}
+
+input CreateBranchInput {
+  address: String
+  city: String
+  country: String
+  email: String
+  establishedAt: DateTime
+  isActive: Boolean = true
+  name: String!
+  organisationId: String!
+  phoneNumber: String
+  postalCode: String
+  state: String
+  website: String
+}
+
+input CreateBudgetInput {
+  branchId: String
+  description: String
+  endDate: DateTime!
+  fiscalYear: Int!
+  fundId: String!
+  ministryId: String
+  name: String!
+  notes: String
+  organisationId: String
+  startDate: DateTime!
+  status: String!
+  totalAmount: Float!
+}
+
+input CreateChildGuardianRelationInput {
+  childId: String!
+  guardianId: String!
+  relationship: String!
+}
+
+input CreateChildInput {
+  allergies: String
+  branchId: String!
+  dateOfBirth: DateTime!
+  emergencyContactName: String!
+  emergencyContactPhone: String!
+  firstName: String!
+  gender: String
+  lastName: String!
+  notes: String
+  photoConsent: Boolean! = false
+  specialNeeds: String
+}
+
+input CreateChildrenEventInput {
+  ageRange: String
+  branchId: String!
+  capacity: Int
+  description: String
+  endDateTime: DateTime!
+  location: String!
+  name: String!
+  startDateTime: DateTime!
+  volunteersNeeded: Int
+}
+
+input CreateContributionInput {
+  amount: Float!
+  anonymous: Boolean
+  branchId: String
+  contributionTypeId: String!
+  date: DateTime!
+  fundId: String!
+  memberId: String
+  notes: String
+  organisationId: String
+  paymentMethodId: String!
+  pledgeId: String
+}
+
+input CreateDataExportInput {
+  description: String
+  entityType: String!
+  metadata: JSON
+  userId: ID
+}
+
+input CreateDataImportInput {
+  description: String
+  entityType: String!
+  filePath: String
+  metadata: JSON
+  userId: ID
+}
+
+input CreateEmailTemplateInput {
+  bodyHtml: String!
+  bodyText: String
+  branchId: String
+  description: String
+  isActive: Boolean
+  name: String!
+  organisationId: String
+  subject: String!
+}
+
+input CreateEventInput {
+  branchId: String
+  category: String
+  description: String
+  endDate: DateTime
+  location: String
+  organisationId: String
+  startDate: DateTime!
+  title: String!
+}
+
+input CreateExpenseCategoryInput {
+  branchId: String
+  description: String
+  name: String!
+  organisationId: String
+}
+
+input CreateExpenseInput {
+  amount: Float!
+  branchId: String
+  budgetId: String
+  date: DateTime!
+  description: String!
+  expenseCategoryId: String!
+  fundId: String!
+  invoiceNumber: String
+  organisationId: String
+  paymentMethodId: String!
+  receiptNumber: String
+  vendorContact: String
+  vendorId: String
+  vendorName: String
+}
+
+input CreateFamilyInput {
+  address: String
+  city: String
+  country: String
+  customFields: JSON
+  memberIds: [ID!]
+  name: String!
+  phoneNumber: String
+  postalCode: String
+  state: String
+}
+
+input CreateFamilyRelationshipInput {
+  familyId: ID
+  memberId: ID!
+  relatedMemberId: ID!
+  relationshipType: FamilyRelationshipType!
+}
+
+input CreateFormFieldInput {
+  conditionalLogic: JSON
+  defaultValue: String
+  formId: String!
+  helpText: String
+  isRequired: Boolean = false
+  isUnique: Boolean = false
+  label: String!
+  options: JSON
+  order: Float!
+  placeholder: String
+  type: FormFieldType!
+  validations: JSON
+  width: Float = 100
+}
+
+input CreateFormFieldValueInput {
+  fieldId: String!
+  fileUrl: String
+  value: String
+}
+
+input CreateFormInput {
+  branchId: String
+  description: String
+  enableCaptcha: Boolean = false
+  expiresAt: DateTime
+  isPublic: Boolean = false
+  notifyEmails: [String!] = []
+  redirectUrl: String
+  slug: String
+  status: FormStatus = DRAFT
+  successMessage: String
+  title: String!
+}
+
+input CreateFormSubmissionInput {
+  branchId: String
+  fieldValues: [CreateFormFieldValueInput!]!
+  formId: String!
+  ipAddress: String
+  submittedById: String
+  userAgent: String
+}
+
+input CreateFundInput {
+  branchId: String
+  description: String
+  endDate: DateTime
+  goal: Float
+  name: String!
+  organisationId: String
+  startDate: DateTime
+  status: String!
+}
+
+input CreateGuardianInput {
+  address: String
+  branchId: String!
+  canPickup: Boolean! = true
+  email: String
+  firstName: String
+  isPrimaryGuardian: Boolean! = false
+  lastName: String
+  memberId: String
+  notes: String
+  phone: String!
+  relationship: String!
+}
+
+input CreateLicenseInput {
+  contactEmail: String
+  contactPhone: String
+  expiryDate: DateTime!
+  features: JSON
+  key: String!
+  maxBranches: Float
+  maxUsers: Float
+  notes: String
+  organizationName: String
+  startDate: DateTime!
+  status: LicenseStatus!
+  type: LicenseType!
+}
+
+input CreateMediaItemInput {
+  branchId: String!
+  description: String
+  fileSize: Float!
+  fileUrl: String!
+  mimeType: String!
+  title: String!
+  type: String!
+  uploadedBy: String!
+}
+
+input CreateMemberInput {
+  address: String
+  baptismDate: DateTime
+  branchId: ID
+  city: String
+  confirmationDate: DateTime
+  country: String
+  customFields: JSON
+  dateOfBirth: DateTime
+  email: String
+  employerName: String
+  firstName: String!
+  gender: Gender
+  lastName: String!
+  maritalStatus: MaritalStatus
+  membershipDate: DateTime
+  middleName: String
+  notes: String
+  occupation: String
+  organisationId: ID
+  parentId: ID
+  phoneNumber: String
+  postalCode: String
+  privacySettings: JSON
+  spouseId: ID
+  state: String
+  status: MemberStatus! = ACTIVE
+  userId: ID
+}
+
+input CreateMinistryInput {
+  branchId: String
+  description: String
+  name: String!
+  organisationId: ID
+  parentId: String
+  status: String!
+  type: String!
+}
+
+input CreateNotificationInput {
+  branchId: String
+  link: String
+  memberId: String
+  message: String!
+  organisationId: String
+  title: String!
+  type: NotificationType!
+  userId: String!
+}
+
+input CreateOrganisationInput {
+  accentColor: String
+  address: String
+  brandFont: String
+  city: String
+  country: String
+  currency: String
+  denomination: String
+  description: String
+  email: String
+  faviconUrl: String
+  fontFamily: String
+  foundingYear: Float
+  logoUrl: String
+  missionStatement: String
+  name: String!
+  phoneNumber: String
+  primaryColor: String!
+  secondaryColor: String!
+  size: String
+  slogan: String
+  socialHandle: String
+  state: String
+  timezone: String
+  vision: String
+  website: String
+  zipCode: String
+}
+
+input CreatePermissionInput {
+  action: String!
+  description: String
+  subject: String!
+}
+
+input CreatePledgeInput {
+  amount: Float!
+  branchId: String
+  endDate: DateTime
+  frequency: String!
+  fundId: String!
+  memberId: String!
+  notes: String
+  organisationId: String
+  startDate: DateTime!
+  status: String!
+}
+
+input CreatePrayerRequestInput {
+  branchId: ID!
+  memberId: ID!
+  organisationId: ID!
+  requestText: String!
+}
+
+input CreateRoleInput {
+  description: String
+  name: String!
+}
+
+input CreateRoleWithPermissionsInput {
+  description: String
+  name: String!
+  permissionIds: [ID!]!
+}
+
+input CreateSacramentalRecordInput {
+  branchId: String!
+  certificateNumber: String
+  certificateUrl: String
+  dateOfSacrament: DateTime!
+  godparent1Name: String
+  godparent2Name: String
+  locationOfSacrament: String!
+  memberId: String!
+  notes: String
+  officiantId: String
+  officiantName: String!
+  organisationId: String
+  sacramentType: SacramentType!
+  sponsorName: String
+  witness1Name: String
+  witness2Name: String
+}
+
+input CreateSettingInput {
+  branchId: ID
+  key: String!
+  value: String!
+}
+
+input CreateSmallGroupInput {
+  branchId: String
+  description: String
+  location: String
+  maximumCapacity: Int
+  meetingSchedule: String
+  ministryId: String
+  name: String!
+  status: String!
+  type: String!
+}
+
+input CreateSpiritualMilestoneInput {
+  additionalDetails: JSON
+  date: DateTime!
+  description: String
+  location: String
+  memberId: ID!
+  performedBy: String
+  type: MilestoneType!
+}
+
+input CreateUsersWithRoleInput {
+  organisationId: ID!
+  users: [UserInput!]!
+}
+
+input CreateVendorInput {
+  address: String
+  branchId: String
+  contactEmail: String
+  contactPerson: String
+  name: String!
+  organisationId: String
+  phone: String!
+}
+
+input CreateVolunteerAssignmentInput {
+  eventId: String!
+  role: String
+  volunteerId: String!
+}
+
+input CreateVolunteerInput {
+  backgroundCheckDate: DateTime
+  backgroundCheckStatus: String
+  branchId: String!
+  isActive: Boolean! = true
+  memberId: String!
+  notes: String
+  role: String!
+  trainingCompletionDate: DateTime
+}
+
+type CreatedUserResult {
+  email: String!
+  error: String
+  firstName: String!
+  id: String
+  lastName: String!
+  roleName: String!
+}
+
+type DashboardData {
+  announcements: AnnouncementsWidget
+  branchId: ID
+  branchName: String
+  charts: [ChartData!]!
+  dashboardType: DashboardType!
+  generatedAt: DateTime!
+  kpiCards: [KpiCard!]!
+  layout: JSON
+  myGroups: MyGroupsWidget
+  notifications: NotificationsWidget
+  organisationId: ID
+  quickLinks: QuickLinksWidget
+  tasks: TasksWidget
+  upcomingEvents: UpcomingEventsWidget
+  widgets: [JSON!]!
+}
+
+type DashboardEvent {
+  date: DateTime!
+  id: ID!
+  location: String!
+  name: String!
+}
+
+type DashboardGroup {
+  id: ID!
+  name: String!
+  role: String!
+}
+
+type DashboardMilestone {
+  baptismDate: DateTime
+  confirmationDate: DateTime
+}
+
+type DashboardStat {
+  attendance: Float!
+  giving: String!
+  groups: Int!
+}
+
+"""Types of dashboards available in the system"""
+enum DashboardType {
+  ADMIN
+  BRANCH_ADMIN
+  FINANCE
+  MEMBER
+  MINISTRY
+  PASTORAL
+  SUPER_ADMIN
+}
+
+type DataOperation {
+  completedAt: DateTime
+  createdAt: DateTime!
+  description: String
+  entityType: String!
+  errorCount: Float
+  errors: JSON
+  filePath: String
+  fileSize: Float
+  id: ID!
+  metadata: JSON
+  recordCount: Float
+  status: DataOperationStatus!
+  type: DataOperationType!
+  user: AuthUser
+  userId: ID
+}
+
+input DataOperationFilterInput {
+  endDate: String
+  entityType: String
+  id: ID
+  startDate: String
+  status: String
+  type: DataOperationType
+  userId: ID
+}
+
+"""Status of a data operation"""
+enum DataOperationStatus {
+  CANCELLED
+  COMPLETED
+  FAILED
+  IN_PROGRESS
+  PENDING
+}
+
+"""Type of data operation (import or export)"""
+enum DataOperationType {
+  EXPORT
+  IMPORT
+}
+
+type DatabaseHealth {
+  latency: Int!
+  status: String!
+}
+
+input DateRangeInput {
+  endDate: DateTime!
+  startDate: DateTime!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+"""Email custom scalar type"""
+scalar Email
+
+type EmailMessageDto {
+  bodyHtml: String!
+  bodyText: String
+  branchId: String
+  createdAt: DateTime!
+  id: ID!
+  recipients: [String!]!
+  senderEmail: String!
+  sentAt: DateTime
+  status: String!
+  subject: String!
+  templateId: String
+  updatedAt: DateTime!
+}
+
+type EmailTemplateDto {
+  bodyHtml: String!
+  bodyText: String
+  branchId: String
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  isActive: Boolean!
+  name: String!
+  subject: String!
+  updatedAt: DateTime!
+}
+
+type Event {
+  branchId: String
+  category: String
+  createdBy: String
+  description: String
+  endDate: DateTime
+  id: ID!
+  location: String
+  organisationId: String
+  startDate: DateTime!
+  title: String!
+  updatedBy: String
+}
+
+type EventAttendanceOutput {
+  checkIns: [CheckInRecord!]!
+  event: ChildrenEvent!
+  stats: EventAttendanceStats!
+}
+
+type EventAttendanceStats {
+  currentlyPresent: Int!
+  totalCheckedIn: Int!
+  totalCheckedOut: Int!
+}
+
+type EventItem {
+  description: String
+  endDate: DateTime
+  id: String!
+  location: String
+  startDate: DateTime!
+  title: String!
+}
+
+type Expense {
+  amount: Float!
+  branchId: String
+  budgetId: String
+  date: DateTime!
+  description: String!
+  expenseCategoryId: String!
+  fundId: String!
+  id: String!
+  invoiceNumber: String
+  organisationId: String
+  paymentMethodId: String!
+  receiptNumber: String
+  vendorContact: String
+  vendorId: String
+  vendorName: String
+}
+
+type ExpenseCategory {
+  branchId: String
+  description: String
+  id: String!
+  name: String!
+  organisationId: String
+}
+
+type Family {
+  address: String
+  city: String
+  country: String
+  createdAt: DateTime!
+  customFields: JSON
+  id: ID!
+  members: [Member!]
+  name: String!
+  phoneNumber: String
+  postalCode: String
+  state: String
+  updatedAt: DateTime!
+}
+
+type FamilyRelationship {
+  createdAt: DateTime!
+  family: Family
+  familyId: ID
+  id: ID!
+  member: Member
+  memberId: ID!
+  relatedMember: Member!
+  relatedMemberId: ID!
+  relationshipType: FamilyRelationshipType!
+  updatedAt: DateTime!
+}
+
+"""Type of family relationship"""
+enum FamilyRelationshipType {
+  CHILD
+  GRANDCHILD
+  GRANDPARENT
+  OTHER
+  PARENT
+  SIBLING
+  SPOUSE
+}
+
+input FileUploadInput {
+  branchId: String!
+  contentType: String!
+  description: String
+  directory: String
+  fileName: String!
+  mediaType: String!
+}
+
+type FileUploadResponse {
+  fileUrl: String!
+  mediaItemId: String
+  uploadUrl: String!
+}
+
+type FirstTimeVisitorsStat {
+  first_time_visitors: Float!
+  period: String!
+}
+
+type Form {
+  branchId: String
+  createdAt: DateTime!
+  createdById: String!
+  description: String
+  enableCaptcha: Boolean!
+  expiresAt: DateTime
+  fields: [FormField!]
+  id: ID!
+  isPublic: Boolean!
+  notifyEmails: [String!]!
+  redirectUrl: String
+  slug: String!
+  status: FormStatus!
+  submissionCount: Float!
+  submissions: [FormSubmission!]
+  successMessage: String
+  title: String!
+  updatedAt: DateTime!
+}
+
+type FormField {
+  conditionalLogic: JSON
+  createdAt: DateTime!
+  defaultValue: String
+  fieldValues: [FormFieldValue!]
+  form: Form
+  formId: String!
+  helpText: String
+  id: ID!
+  isRequired: Boolean!
+  isUnique: Boolean!
+  label: String!
+  options: JSON
+  order: Float!
+  placeholder: String
+  type: FormFieldType!
+  updatedAt: DateTime!
+  validations: JSON
+  width: Float!
+}
+
+"""Type of form field"""
+enum FormFieldType {
+  ADDRESS
+  CHECKBOX
+  CUSTOM
+  DATE
+  DATETIME
+  DIVIDER
+  EMAIL
+  FILE
+  HEADING
+  HIDDEN
+  IMAGE
+  MULTISELECT
+  NAME
+  NUMBER
+  PARAGRAPH
+  PHONE
+  RADIO
+  SELECT
+  SIGNATURE
+  SPACER
+  TEXT
+  TEXTAREA
+  TIME
+}
+
+type FormFieldValue {
+  createdAt: DateTime!
+  field: FormField
+  fieldId: String!
+  fileUrl: String
+  id: ID!
+
+  """FormSubmission"""
+  submission: String
+  submissionId: String!
+  value: String
+}
+
+input FormFilterInput {
+  branchId: String
+  search: String
+  status: FormStatus
+}
+
+"""Status of a form"""
+enum FormStatus {
+  ARCHIVED
+  CLOSED
+  DRAFT
+  PUBLISHED
+}
+
+type FormSubmission {
+  branch: Branch
+  branchId: String
+
+  """FormFieldValue array"""
+  fieldValues: [String!]
+  form: Form
+  formId: String!
+  id: ID!
+  ipAddress: String
+  status: SubmissionStatus!
+  submittedAt: DateTime!
+  submittedBy: User
+  submittedById: String
+  userAgent: String
+}
+
+type Fund {
+  branchId: String
+  description: String
+  endDate: DateTime
+  goal: Float
+  id: String!
+  name: String!
+  organisationId: String
+  startDate: DateTime
+  status: String!
+}
+
+"""Gender options"""
+enum Gender {
+  FEMALE
+  MALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+type GenderDistribution {
+  femaleCount: Float!
+  femalePercentage: Float!
+  maleCount: Float!
+  malePercentage: Float!
+  otherCount: Float!
+  otherPercentage: Float!
+}
+
+input GenerateQRTokenInput {
+  expiresInMinutes: Float = 60
+  sessionId: ID!
+}
+
+type GroupItem {
+  id: String!
+  meetingDay: String
+  meetingTime: String
+  name: String!
+  nextMeeting: DateTime
+  role: String
+  type: String
+}
+
+type GroupMember {
+  createdAt: DateTime!
+  id: ID!
+  joinDate: DateTime!
+  member: Member
+  memberId: String!
+  ministry: Ministry
+  ministryId: String
+  role: String!
+  smallGroup: SmallGroup
+  smallGroupId: String
+  status: String!
+  updatedAt: DateTime!
+}
+
+input GroupMemberFilterInput {
+  id: ID
+  memberId: ID
+  ministryId: ID
+  role: String
+  smallGroupId: ID
+  status: String
+}
+
+type GrowthRateStat {
+  growth_rate: Float!
+  period: String!
+}
+
+type Guardian {
+  address: String
+  branchId: String!
+  canPickup: Boolean!
+  children: [Child!]!
+  createdAt: DateTime!
+  email: String
+  firstName: String
+  fullName: String
+  id: ID!
+  isPrimaryGuardian: Boolean!
+  lastName: String
+  memberId: String
+  notes: String
+  phone: String!
+  relationship: String!
+  updatedAt: DateTime!
+}
+
+type ImportError {
+  column: String!
+  message: String!
+  row: Float!
+}
+
+type ImportResult {
+  errors: [ImportError!]
+  importedRecords: Float!
+  message: String
+  success: Boolean!
+  totalRecords: Float!
+}
+
+input InitialBranchSetupInput {
+  address: String
+  city: String
+  country: String
+  currency: String
+  email: String
+  name: String!
+  organisationId: String!
+  phoneNumber: String
+  timezone: String
+}
+
+input InitialSettingsInput {
+  logo: Upload
+  organizationDescription: String
+  organizationName: String!
+  primaryColor: String
+  secondaryColor: String
+  websiteUrl: String
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+type KpiCard {
+  icon: String
+  percentChange: Float
+  title: String!
+  value: String!
+  widgetType: WidgetType!
+}
+
+type License {
+  contactEmail: String
+  contactPhone: String
+  createdAt: DateTime!
+  expiryDate: DateTime!
+  features: JSON
+  id: ID!
+  key: String!
+  maxBranches: Float
+  maxUsers: Float
+  notes: String
+  organizationName: String
+  startDate: DateTime!
+  status: LicenseStatus!
+  type: LicenseType!
+  updatedAt: DateTime!
+}
+
+input LicenseFilterInput {
+  id: ID
+  key: String
+  organizationName: String
+  status: LicenseStatus
+  type: LicenseType
+}
+
+"""Status of a license"""
+enum LicenseStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PENDING
+}
+
+"""Type of license"""
+enum LicenseType {
+  BASIC
+  ENTERPRISE
+  PREMIUM
+  STANDARD
+}
+
+"""Marital status options"""
+enum MaritalStatus {
+  DIVORCED
+  MARRIED
+  OTHER
+  SEPARATED
+  SINGLE
+  WIDOWED
+}
+
+type MediaItem {
+  branchId: String!
+  description: String
+  fileSize: Float!
+  fileUrl: String!
+  id: ID!
+  mimeType: String!
+  title: String!
+  type: MediaType!
+}
+
+"""Type of media item"""
+enum MediaType {
+  AUDIO
+  AUDIO_FILE
+  DOCUMENT
+  DOCUMENT_PDF
+  DOCUMENT_WORD
+  IMAGE
+  OTHER
+  SLIDESHOW
+  VIDEO
+}
+
+type Member {
+  address: String
+  attendanceRecords: [JSON!]
+  baptismDate: DateTime
+  branchId: String
+  children: [Member!]
+  city: String
+  confirmationDate: DateTime
+  contributions: [JSON!]
+  country: String
+  createdAt: DateTime!
+  customFields: JSON
+  dateOfBirth: DateTime
+  email: String
+  employerName: String
+  families: [Family!]
+  familyRelationships: [FamilyRelationship!]
+  firstName: String!
+  gender: Gender
+  groupMemberships: [JSON!]
+  guardianProfile: JSON
+  id: ID!
+  lastName: String!
+  maritalStatus: MaritalStatus
+  membershipDate: DateTime
+  middleName: String
+  notes: String
+  notifications: [JSON!]
+  occupation: String
+  organisationId: String
+  parentId: String
+  phoneNumber: String
+  postalCode: String
+  prayerRequests: [JSON!]
+  privacySettings: JSON
+  profileImageUrl: String
+  rfidCardId: String
+  sacramentalRecords: [JSON!]
+  spouseId: String
+  state: String
+  status: MemberStatus!
+  statusChangeDate: DateTime
+  statusChangeReason: String
+  updatedAt: DateTime!
+}
+
+type MemberDashboard {
+  firstName: String!
+  groups: [DashboardGroup!]!
+  id: ID!
+  lastName: String!
+  membershipDate: DateTime
+  membershipStatus: String!
+  milestones: DashboardMilestone!
+  profileImageUrl: String
+  stats: DashboardStat!
+  upcomingEvents: [DashboardEvent!]!
+}
+
+type MemberDemographicsData {
+  ageDistribution: [AgeDistribution!]!
+  branchId: ID
+  branchName: String
+  endDate: DateTime!
+  genderDistribution: GenderDistribution!
+  membershipStatusDistribution: [MembershipStatusDistribution!]!
+  newMembersInPeriod: Float!
+  organisationId: ID
+  startDate: DateTime!
+  totalMembers: Float!
+}
+
+type MemberProfile {
+  firstName: String!
+  id: ID!
+  lastName: String!
+  profileImageUrl: String
+  status: String
+}
+
+type MemberStatistics {
+  activeMembers: Int!
+  inactiveMembers: Int!
+  lastMonth: MemberStatisticsPeriod
+  newMembersInPeriod: Int!
+  totalMembers: Int!
+  visitorsInPeriod: Int!
+}
+
+type MemberStatisticsPeriod {
+  activeMembers: Int!
+  inactiveMembers: Int!
+  newMembersInPeriod: Int!
+  totalMembers: Int!
+  visitorsInPeriod: Int!
+}
+
+"""Status of a church member"""
+enum MemberStatus {
+  ACTIVE
+  DECEASED
+  INACTIVE
+  TRANSFERRED
+  VISITOR
+}
+
+type MembershipStatusDistribution {
+  count: Float!
+  percentage: Float!
+  status: String!
+}
+
+type MemoryUsage {
+  external: Float!
+  heapTotal: Float!
+  heapUsed: Float!
+  rss: Float!
+}
+
+type MessagePerformanceEntity {
+  overallDeliveryRate: Float!
+  overallOpenRate: Float
+  overallResponseRate: Float
+  templates: [MessagePerformanceMetrics!]!
+}
+
+type MessagePerformanceMetrics {
+  averageResponseTime: String
+  clickRate: Float
+  delivered: Int!
+  deliveryRate: Float!
+  openRate: Float
+  opened: Int
+  responseRate: Float
+  templateName: String!
+  totalSent: Int!
+}
+
+type MessageStatusCount {
+  count: Int!
+  status: String!
+}
+
+type MessageTimeSeriesData {
+  count: Int!
+  date: String!
+}
+
+union MessageUnion = EmailMessageDto | NotificationDto | SmsMessageDto
+
+"""Type of spiritual milestone"""
+enum MilestoneType {
+  BAPTISM
+  CONFIRMATION
+  DEDICATION
+  FIRST_COMMUNION
+  MARRIAGE
+  ORDINATION
+  OTHER
+}
+
+type Ministry {
+  branchId: ID
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  members: [GroupMember!]
+  name: String!
+  organisationId: ID
+  parent: Ministry
+  parentId: ID
+  smallGroups: [SmallGroup!]
+  status: String!
+  subMinistries: [Ministry!]
+  type: String!
+  updatedAt: DateTime!
+}
+
+input MinistryFilterInput {
+  branchId: String
+  id: ID
+  name: String
+  organisationId: ID
+  parentId: String
+  status: String
+  type: String
+}
+
+type Mutation {
+  addMemberToBranch(branchId: String!, memberId: String!): Member!
+  addMemberToFamily(familyId: String!, memberId: String!): Family!
+  addMemberToFamilyByRfidCard(familyId: String!, relatedMemberId: String!, relationship: String!, rfidCardId: String!): Family!
+  addMemberToGroup(groupId: ID!, memberId: ID!, roleInGroup: String): GroupMember!
+  archiveForm(id: String!): Form!
+  assignBranchRoleToUser(assignedBy: ID, branchId: ID!, roleId: ID!, userId: ID!): UserBranch!
+  assignGroupLeader(groupId: ID!, memberId: ID!): GroupMember!
+  assignPermissionToRole(permissionId: ID!, roleId: ID!): Role!
+  assignRfidCardToMember(assignRfidCardInput: AssignRfidCardInput!): Member!
+  assignRoleToUser(roleId: ID!, userId: ID!): AuthUser!
+  assignVolunteerToEvent(input: CreateVolunteerAssignmentInput!): VolunteerEventAssignment!
+  cancelDataOperation(id: ID!): DataOperation!
+  checkInChild(input: CheckInInput!): CheckInRecord!
+  checkOut(input: AttendanceCheckOutInput!): AttendanceRecord!
+  checkOutChild(input: ChildCheckOutInput!): CheckInRecord!
+  completeOnboardingStep(input: CompleteOnboardingStepInput!): OnboardingProgress!
+  configureInitialSettings(branchId: ID!, input: InitialSettingsInput!): Boolean!
+  create(createMediaItemInput: CreateMediaItemInput!): MediaItem!
+  createAnnouncement(input: CreateAnnouncementInput!): Announcement!
+  createAttendanceSession(input: CreateAttendanceSessionInput!): AttendanceSession!
+  createAuditLog(input: CreateAuditLogInput!): AuditLog!
+  createBackup(input: CreateBackupInput!): Backup!
+  createBranch(createBranchInput: CreateBranchInput!): Branch!
+  createBranchAdmin(input: CreateBranchAdminInput!): UserBranch!
+  createBranchSetting(input: CreateSettingInput!): Setting!
+  createBudget(createBudgetInput: CreateBudgetInput!): Budget!
+  createChild(input: CreateChildInput!): Child!
+  createChildGuardianRelation(input: CreateChildGuardianRelationInput!): ChildGuardianRelation!
+  createChildrenEvent(input: CreateChildrenEventInput!): ChildrenEvent!
+  createChildrenMinistryVolunteer(input: CreateVolunteerInput!): ChildrenMinistryVolunteer!
+  createContribution(createContributionInput: CreateContributionInput!): Contribution!
+  createDataExport(input: CreateDataExportInput!): DataOperation!
+  createDataImport(input: CreateDataImportInput!): DataOperation!
+  createEmailTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
+  createEvent(input: CreateEventInput!): Event!
+  createExpense(createExpenseInput: CreateExpenseInput!): Expense!
+  createExpenseCategory(createExpenseCategoryInput: CreateExpenseCategoryInput!): ExpenseCategory!
+  createFamily(createFamilyInput: CreateFamilyInput!): Family!
+  createFamilyRelationship(createFamilyRelationshipInput: CreateFamilyRelationshipInput!): FamilyRelationship!
+  createForm(input: CreateFormInput!): Form!
+  createFormField(input: CreateFormFieldInput!): FormField!
+  createFormFields(inputs: [CreateFormFieldInput!]!): [FormField!]!
+  createFund(createFundInput: CreateFundInput!): Fund!
+  createGuardian(input: CreateGuardianInput!): Guardian!
+  createLicense(input: CreateLicenseInput!): License!
+  createMember(createMemberInput: CreateMemberInput!): Member!
+  createMinistry(input: CreateMinistryInput!): Ministry!
+  createNotification(input: CreateNotificationInput!): NotificationDto!
+  createOrganisation(input: CreateOrganisationInput!): Organisation!
+  createPermission(input: CreatePermissionInput!): Permission!
+  createPledge(createPledgeInput: CreatePledgeInput!): Pledge!
+  createPrayerRequest(data: CreatePrayerRequestInput!): PrayerRequest!
+  createRole(input: CreateRoleInput!): Role!
+  createRoleWithPermissions(input: CreateRoleWithPermissionsInput!): Role!
+  createSacramentalRecord(input: CreateSacramentalRecordInput!): SacramentalRecord!
+  createSmallGroup(input: CreateSmallGroupInput!): SmallGroup!
+  createSpiritualMilestone(createSpiritualMilestoneInput: CreateSpiritualMilestoneInput!): SpiritualMilestone!
+  createSuperAdminUser(branchId: ID, email: String!, firstName: String!, lastName: String!, organisationId: ID!, password: String!): ID!
+  createTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
+  createUsersWithRole(input: CreateUsersWithRoleInput!): [CreatedUserResult!]!
+  createVendor(createVendorInput: CreateVendorInput!): Vendor!
+  deleteAnnouncement(id: ID!): Announcement!
+  deleteAttendanceSession(id: ID!): AttendanceSession!
+  deleteEmailTemplate(id: ID!): Boolean!
+  deleteFile(id: String!): Boolean!
+  deleteLicense(id: ID!): Boolean!
+  deleteMinistry(id: ID!): Boolean!
+  deleteNotification(notificationId: ID!): Boolean!
+  deleteOrganisation(id: ID!): Boolean!
+  deletePermission(id: ID!): Permission!
+  deleteRole(id: ID!): Role!
+  deleteSacramentalRecord(id: ID!): Boolean!
+  deleteSmallGroup(id: ID!): Boolean!
+  deleteTemplate(id: ID!): Boolean!
+  generateAbsenceAlerts(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
+  generateQRToken(input: GenerateQRTokenInput!): QRCodeToken!
+  getPresignedUploadUrl(input: FileUploadInput!): FileUploadResponse!
+  importFinancialData(branchId: ID!, file: Upload!, mapping: String!, type: String!): ImportResult!
+  importMemberData(branchId: ID!, file: Upload!, mapping: String!): ImportResult!
+  initializeOnboarding(branchId: ID!): OnboardingProgress!
+  initiateBranchSetup(input: InitialBranchSetupInput!): ID!
+  login(input: SignInDto!): AuthPayload!
+  logout(input: RefreshTokenInput!): SuccessMessage!
+  markAllNotificationsAsRead(userId: ID!): Boolean!
+  markNotificationAsRead(notificationId: ID!): NotificationDto!
+  processCardScan(input: CardScanInput!): AttendanceRecord!
+  publishForm(id: String!): Form!
+  recordAttendance(input: RecordAttendanceInput!): AttendanceRecord!
+  recordBulkAttendance(input: RecordBulkAttendanceInput!): Boolean!
+  refreshToken(input: RefreshTokenInput!): TokenPayloadDto!
+  register(input: SignUpDto!): UserProfile!
+  remove(id: ID!): MediaItem!
+  removeBranch(id: ID!): Branch!
+  removeBranchRoleFromUser(branchId: ID!, roleId: ID!, userId: ID!): UserBranch!
+  removeBudget(id: String!): Budget!
+  removeChild(id: ID!): Child!
+  removeChildGuardianRelation(childId: ID!, guardianId: ID!): Boolean!
+  removeChildrenEvent(id: ID!): ChildrenEvent!
+  removeChildrenMinistryVolunteer(id: ID!): ChildrenMinistryVolunteer!
+  removeContribution(id: String!): Contribution!
+  removeEvent(id: ID!): Event!
+  removeExpense(id: String!): Expense!
+  removeExpenseCategory(id: String!): ExpenseCategory!
+  removeFamily(id: String!): Boolean!
+  removeFamilyRelationship(id: String!): Boolean!
+  removeForm(id: String!): Form!
+  removeFormField(id: String!): FormField!
+  removeFormSubmission(id: String!): FormSubmission!
+  removeFund(id: String!): Fund!
+  removeGuardian(id: ID!): Guardian!
+  removeMember(id: String!): Boolean!
+  removeMemberFromBranch(branchId: String!, memberId: String!): Member!
+  removeMemberFromFamily(familyId: String!, memberId: String!): Family!
+  removeMemberFromGroup(groupId: ID!, memberId: ID!): Boolean!
+  removePermissionFromRole(permissionId: ID!, roleId: ID!): Role!
+  removePledge(id: String!): Pledge!
+  removePrayerRequest(id: ID!): PrayerRequest!
+  removeRfidCardFromMember(memberId: String!): Member!
+  removeRoleFromUser(roleId: ID!, userId: ID!): AuthUser!
+  removeSpiritualMilestone(id: String!): Boolean!
+  removeVendor(id: String!): Vendor!
+  removeVolunteerFromEvent(eventId: ID!, volunteerId: ID!): Boolean!
+  reorderFormFields(fieldIds: [String!]!, formId: String!): [FormField!]!
+  resetOnboarding(branchId: ID!): OnboardingProgress!
+  restoreBackup(input: RestoreBackupInput!): Backup!
+  saveUserDashboardPreference(branchId: ID!, dashboardType: DashboardType!, layoutConfig: JSON!, organisationId: ID): UserDashboardPreference!
+  scheduleAbsenceCheck(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
+  sendEmail(input: SendEmailInput!): Boolean!
+  sendSms(input: SendSmsInput!): Boolean!
+  submitForm(input: CreateFormSubmissionInput!): FormSubmission!
+  transferMember(fromBranchId: String!, id: String!, reason: String, toBranchId: String!): Member!
+  update(updateMediaItemInput: UpdateMediaItemInput!): MediaItem!
+  updateAnnouncement(id: ID!, input: UpdateAnnouncementInput!): Announcement!
+  updateAttendanceSession(input: UpdateAttendanceSessionInput!): AttendanceSession!
+  updateBackgroundCheck(backgroundCheckDate: DateTime!, backgroundCheckStatus: String!, id: ID!): ChildrenMinistryVolunteer!
+  updateBranch(id: ID!, updateBranchInput: UpdateBranchInput!): Branch!
+  updateBranchSetting(branchId: ID!, updateSettingInput: UpdateBranchSettingInput!): BranchSetting!
+  updateBudget(updateBudgetInput: UpdateBudgetInput!): Budget!
+  updateChild(input: UpdateChildInput!): Child!
+  updateChildrenEvent(input: UpdateChildrenEventInput!): ChildrenEvent!
+  updateChildrenMinistryVolunteer(input: UpdateVolunteerInput!): ChildrenMinistryVolunteer!
+  updateContribution(updateContributionInput: UpdateContributionInput!): Contribution!
+  updateEmailTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
+  updateEvent(input: UpdateEventInput!): Event!
+  updateExpense(updateExpenseInput: UpdateExpenseInput!): Expense!
+  updateExpenseCategory(updateExpenseCategoryInput: UpdateExpenseCategoryInput!): ExpenseCategory!
+  updateFamily(id: String!, updateFamilyInput: UpdateFamilyInput!): Family!
+  updateFamilyRelationship(id: String!, updateFamilyRelationshipInput: UpdateFamilyRelationshipInput!): FamilyRelationship!
+  updateForm(input: UpdateFormInput!): Form!
+  updateFormField(input: UpdateFormFieldInput!): FormField!
+  updateFund(updateFundInput: UpdateFundInput!): Fund!
+  updateGroupMember(id: ID!, input: UpdateGroupMemberInput!): GroupMember!
+  updateGuardian(input: UpdateGuardianInput!): Guardian!
+  updateLicense(id: ID!, input: UpdateLicenseInput!): License!
+  updateMember(id: String!, updateMemberInput: UpdateMemberInput!): Member!
+  updateMemberStatus(id: String!, reason: String, status: MemberStatus!): Member!
+  updateMinistry(id: ID!, input: UpdateMinistryInput!): Ministry!
+  updateOrganisation(input: UpdateOrganisationInput!): Organisation!
+  updatePermission(id: ID!, input: UpdatePermissionInput!): Permission!
+  updatePledge(updatePledgeInput: UpdatePledgeInput!): Pledge!
+  updatePrayerRequest(data: UpdatePrayerRequestInput!, id: ID!): PrayerRequest!
+  updateRole(id: ID!, input: UpdateRoleInput!): Role!
+  updateSacramentalRecord(input: UpdateSacramentalRecordInput!): SacramentalRecord!
+  updateSermonStatus(id: ID!, status: String!): Sermon!
+  updateSetting(id: ID!, input: UpdateSettingInput!): Setting!
+  updateSmallGroup(id: ID!, input: UpdateSmallGroupInput!): SmallGroup!
+  updateSpiritualMilestone(id: String!, updateSpiritualMilestoneInput: UpdateSpiritualMilestoneInput!): SpiritualMilestone!
+  updateTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
+  updateTrainingCompletion(id: ID!, trainingCompletionDate: DateTime!): ChildrenMinistryVolunteer!
+  updateUserActiveStatus(id: ID!, isActive: Boolean!): AuthUser!
+  updateVendor(updateVendorInput: UpdateVendorInput!): Vendor!
+  uploadOrganisationBrandingFile(file: Upload!, organisationId: ID!): String!
+  uploadSacramentalCertificate(file: Upload!, recordId: ID!): SacramentalRecord!
+}
+
+type MyGroupsWidget {
+  groups: [GroupItem!]!
+  title: String!
+  widgetType: WidgetType!
+}
+
+type NotificationDto {
+  branchId: String
+  createdAt: DateTime!
+  id: ID!
+  isRead: Boolean!
+  link: String
+  memberId: String
+  message: String!
+  readAt: DateTime
+  title: String!
+  type: String!
+  updatedAt: DateTime!
+  userId: String!
+}
+
+type NotificationItem {
+  date: DateTime!
+  id: String!
+  message: String!
+  read: Boolean!
+  type: String!
+}
+
+"""Type of notification"""
+enum NotificationType {
+  ERROR
+  EVENT_REMINDER
+  INFO
+  SUCCESS
+  WARNING
+}
+
+type NotificationsWidget {
+  notifications: [NotificationItem!]!
+  title: String!
+  widgetType: WidgetType!
+}
+
+type OnboardingProgress {
+  branchId: ID!
+  completedAt: DateTime
+  completedSteps: [OnboardingStep!]!
+  currentStep: OnboardingStep!
+  id: ID!
+  importedFinances: Boolean!
+  importedMembers: Boolean!
+  isCompleted: Boolean!
+  lastUpdatedAt: DateTime!
+  startedAt: DateTime!
+}
+
+"""Steps in the onboarding process"""
+enum OnboardingStep {
+  ADMIN_SETUP
+  BRANCH_SETUP
+  BRANDING
+  COMPLETION
+  FINANCIAL_SETUP
+  MEMBER_IMPORT
+  MODULE_QUICK_START
+  ORGANIZATION_DETAILS
+  ROLE_CONFIGURATION
+  USER_INVITATIONS
+  WELCOME
+}
+
+type Organisation {
+  accentColor: String
+  address: String
+  brandFont: String
+  city: String
+  country: String
+  createdAt: DateTime!
+  currency: String
+  denomination: String
+  description: String
+  email: String
+  faviconUrl: String
+  foundingYear: Float
+  id: ID!
+  logoUrl: String
+  missionStatement: String
+  name: String!
+  phoneNumber: String
+  primaryColor: String!
+  secondaryColor: String!
+  size: String
+  slogan: String
+  socialHandle: String
+  state: String
+  timezone: String
+  updatedAt: DateTime!
+  vision: String
+  website: String
+  zipCode: String
+}
+
+"""Available output formats for reports"""
+enum OutputFormat {
+  CSV
+  EXCEL
+  JSON
+  PDF
+}
+
+type PaginatedBranches {
+  """Indicates if there are more branches to fetch"""
+  hasNextPage: Boolean!
+
+  """A list of branches for the current page"""
+  items: [Branch!]!
+
+  """Total number of branches matching the filter"""
+  totalCount: Int!
+}
+
+type PaginatedUsers {
+  hasNextPage: Boolean!
+  items: [AuthUser!]!
+  totalCount: Int!
+}
+
+input PaginationInput {
+  """Number of items to skip"""
+  skip: Int = 0
+
+  """Number of items to take (limit)"""
+  take: Int = 10
+}
+
+type PaymentMethod {
+  branchId: String
+  description: String
+  id: ID!
+  isActive: Boolean!
+  name: String!
+  organisationId: String
+}
+
+type Permission {
+  action: String!
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  roles: [Role]
+  subject: String!
+  updatedAt: DateTime!
+}
+
+"""Phone number custom scalar type (E.164 format)"""
+scalar PhoneNumber
+
+type Pledge {
+  amount: Float!
+  amountFulfilled: Float!
+  branchId: String
+  endDate: DateTime
+  frequency: String!
+  fundId: String!
+  id: String!
+  memberId: String!
+  notes: String
+  organisationId: String
+  startDate: DateTime!
+  status: String!
+}
+
+type PrayerRequest {
+  assignedPastorId: String
+  branchId: String!
+  createdAt: DateTime!
+  id: ID!
+  member: Member!
+  memberId: String!
+  organisationId: String
+  requestText: String!
+  status: PrayerRequestStatusEnum!
+  updatedAt: DateTime!
+}
+
+enum PrayerRequestStatusEnum {
+  ANSWERED
+  IN_PROGRESS
+  NEW
+}
+
+type QRCodeToken {
+  createdAt: DateTime!
+  expiresAt: DateTime!
+  id: ID!
+  sessionId: String!
+  token: String!
+  updatedAt: DateTime!
+}
+
+type Query {
+  activeCheckIns(branchId: String!, eventId: String): [CheckInRecord!]!
+  adminPermission(id: ID!): Permission!
+  adminPermissions: [Permission!]!
+  adminRole(id: ID!): Role!
+  adminRoles: [Role!]!
+  adminUser(id: ID!): AuthUser!
+  adminUsers(filter: UserFilterInput, pagination: PaginationInput): PaginatedUsers!
+  allMessages(filter: AllMessagesFilterInput): [MessageUnion!]!
+  announcements(branchId: ID): [Announcement!]!
+  attendanceRecords(filter: AttendanceFilterInput, sessionId: ID!): [AttendanceRecord!]!
+  attendanceSession(id: ID!): AttendanceSession!
+  attendanceSessions(branchId: ID, organisationId: ID): [AttendanceSession!]!
+  attendanceStats(input: AttendanceStatsInput!): AttendanceStats!
+  attendanceTrendReport(branchId: ID, dateRange: DateRangeInput, eventTypeId: ID, organisationId: ID): AttendanceTrendData!
+  auditLog(id: ID!): AuditLog!
+  auditLogs(filter: AuditLogFilterInput, pagination: PaginationInput): [AuditLog!]!
+  backup(id: ID!): Backup!
+  backups(filter: BackupFilterInput): [Backup!]!
+  branch(id: ID!): Branch
+  branches(filterInput: BranchFilterInput, paginationInput: PaginationInput): PaginatedBranches!
+  budget(id: String!): Budget!
+  budgets(organisationId: String): [Budget!]!
+  checkInHistory(branchId: String!, childId: String, dateFrom: DateTime, dateTo: DateTime, eventId: String): [CheckInRecord!]!
+  checkInStats(branchId: String!, dateFrom: DateTime, dateTo: DateTime): CheckInStatsOutput!
+  child(id: ID!): Child!
+  children(filter: ChildFilterInput): [Child!]!
+  childrenEvent(id: ID!): ChildrenEvent!
+  childrenEvents(branchId: String): [ChildrenEvent!]!
+  childrenMinistryVolunteer(id: ID!): ChildrenMinistryVolunteer!
+  childrenMinistryVolunteerByMember(memberId: ID!): ChildrenMinistryVolunteer
+  childrenMinistryVolunteers(branchId: String, isActive: Boolean): [ChildrenMinistryVolunteer!]!
+  communicationChannelStats(filter: CommunicationStatsFilterInput): [CommunicationChannelStats!]!
+  communicationStats(filter: CommunicationStatsFilterInput): CommunicationStatsEntity!
+  contribution(id: String!): Contribution!
+  contributionTypes(organisationId: String!): [ContributionType!]!
+  contributions(organisationId: String): [Contribution!]!
+  currentChildrenEvents(branchId: String!): [ChildrenEvent!]!
+  dashboardData(branchId: ID!, dashboardType: DashboardType!, organisationId: ID): DashboardData!
+  dataOperation(id: ID!): DataOperation!
+  dataOperations(filter: DataOperationFilterInput): [DataOperation!]!
+  emails(branchId: ID, organisationId: ID): [EmailMessageDto!]!
+  event(id: ID!): Event!
+  eventAttendance(eventId: ID!): EventAttendanceOutput!
+  events(branchId: String, organisationId: String): [Event!]!
+  expense(id: String!): Expense!
+  expenseCategories(organisationId: String): [ExpenseCategory!]!
+  expenseCategory(id: String!): ExpenseCategory!
+  expenses(organisationId: String): [Expense!]!
+  exportFormSubmissions(formId: String!): JSON!
+  families(skip: Int = 0, take: Int = 10): [Family!]!
+  familiesCount: Int!
+  family(id: String!): Family!
+  familyRelationship(id: String!): FamilyRelationship!
+  familyRelationships(skip: Int = 0, take: Int = 10): [FamilyRelationship!]!
+  familyRelationshipsByMember(memberId: String!): [FamilyRelationship!]!
+  familyRelationshipsCount: Int!
+  findAbsentMembers(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
+  findAll(branchId: String, type: String): [MediaItem!]!
+  findByMember(memberId: ID!): Speaker
+  findByType(branchId: String, type: String!): [MediaItem!]!
+  findOne(id: ID!): MediaItem!
+  findRecent(branchId: String, limit: Float): [Sermon!]!
+  form(id: String!): Form!
+  formField(id: String!): FormField!
+  formFields(formId: String!): [FormField!]!
+  formSubmission(id: String!): FormSubmission!
+  formSubmissions(filter: SubmissionFilterInput!): [FormSubmission!]!
+  forms(filter: FormFilterInput): [Form!]!
+  fund(id: String!): Fund!
+  funds(organisationId: String): [Fund!]!
+  generateFundsImportTemplate: String!
+  generateLicenseKey: String!
+  generateMemberImportTemplate: String!
+  generateReport(input: ReportRequestInput!): ReportOutput!
+  getActiveSeries(branchId: String): [Series!]!
+  groupMember(id: ID!): GroupMember!
+  groupMembers(filters: GroupMemberFilterInput): [GroupMember!]!
+  guardian(id: ID!): Guardian!
+  guardians(branchId: String): [Guardian!]!
+  hello: String!
+  license(id: ID!): License!
+  licenseByKey(key: String!): License!
+  licenses(filter: LicenseFilterInput): [License!]!
+  me: UserProfile!
+  member(id: String!): Member!
+  memberAttendanceHistory(memberId: ID!): [AttendanceRecord!]!
+  memberByRfidCard(rfidCardId: String!): Member
+  memberDashboard(memberId: String!): MemberDashboard!
+  memberDemographicsReport(branchId: ID, dateRange: DateRangeInput, organisationId: ID): MemberDemographicsData!
+  memberStatistics(branchId: String, organisationId: String): MemberStatistics!
+  members(branchId: String, hasRfidCard: Boolean, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
+  membersCount(branchId: String, organisationId: String): Int!
+  messagePerformanceMetrics(filter: CommunicationStatsFilterInput): MessagePerformanceEntity!
+  ministries(filters: MinistryFilterInput): [Ministry!]!
+  ministry(id: ID!): Ministry!
+  notifications(branchId: ID, organisationId: ID): [NotificationDto!]!
+  onboardingProgress(branchId: ID!): OnboardingProgress!
+  organisation(id: ID!): Organisation
+  organisations: [Organisation!]!
+  pastChildrenEvents(branchId: String!): [ChildrenEvent!]!
+  paymentMethods(organisationId: String!): [PaymentMethod!]!
+  permissionsGroupedBySubject: [[Permission!]!]!
+  pledge(id: String!): Pledge!
+  pledges(organisationId: String): [Pledge!]!
+  prayerRequest(id: ID!): PrayerRequest!
+  prayerRequests(branchId: String, organisationId: String, status: PrayerRequestStatusEnum): [PrayerRequest!]!
+  publicForm(slug: String!): Form!
+  recipientGroupStats(filter: CommunicationStatsFilterInput): [RecipientGroupStats!]!
+  sacramentStats(branchId: ID, period: String): [SacramentStatsOutput!]!
+  sacramentalRecord(id: ID!): SacramentalRecord!
+  sacramentalRecords(filter: SacramentalRecordFilterInput): [SacramentalRecord!]!
+  sacramentsByMember(memberId: ID!): [SacramentalRecord!]!
+  search(branchId: String, query: String!, type: String): [MediaItem!]!
+  settings(branchId: String): [Setting!]!
+  smallGroup(id: ID!): SmallGroup!
+  smallGroups(filters: SmallGroupFilterInput): [SmallGroup!]!
+  sms(branchId: ID, organisationId: ID): [SmsMessageDto!]!
+  smsById(id: ID!): SmsMessageDto!
+  spiritualMilestone(id: String!): SpiritualMilestone!
+  spiritualMilestones(skip: Int = 0, take: Int = 10): [SpiritualMilestone!]!
+  spiritualMilestonesByMember(memberId: String!): [SpiritualMilestone!]!
+  spiritualMilestonesCount: Int!
+  systemHealth: SystemHealth!
+  template(id: ID!): EmailTemplateDto!
+  templates(branchId: ID, organisationId: ID): [EmailTemplateDto!]!
+  upcomingChildrenEvents(branchId: String!): [ChildrenEvent!]!
+  upcomingSacramentAnniversaries(branchId: ID, limit: Int): [SacramentAnniversaryOutput!]!
+  userDashboardPreference(branchId: ID!, dashboardType: DashboardType!, organisationId: ID): UserDashboardPreference
+  userNotifications(includeRead: Boolean = false, userId: ID!): [NotificationDto!]!
+  validateCurrentLicense: JSON!
+  validateQRToken(token: String!): AttendanceSession!
+  vendor(id: String!): Vendor!
+  vendors(organisationId: String): [Vendor!]!
+  volunteerSchedule(endDate: DateTime, id: ID!, startDate: DateTime): [VolunteerScheduleItem!]!
+}
+
+type QuickLinkItem {
+  icon: String
+  title: String!
+  url: String!
+}
+
+type QuickLinksWidget {
+  links: [QuickLinkItem!]!
+  title: String!
+  widgetType: WidgetType!
+}
+
+type RecipientGroupStats {
+  groupName: String!
+  messagesSent: Int!
+  recipientCount: Int!
+}
+
+input RecordAttendanceInput {
+  branchId: ID
+  checkInMethod: String = "MANUAL"
+  checkInTime: DateTime
+  memberId: ID
+  notes: String
+  recordedById: ID
+  sessionId: ID!
+  visitorEmail: String
+  visitorName: String
+  visitorPhone: String
+}
+
+input RecordBulkAttendanceInput {
+  attendanceRecords: [RecordAttendanceInput!]
+  branchId: ID
+  headcount: Float
+  recordedById: ID
+  sessionId: ID!
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
+}
+
+input ReportFilterInput {
+  branchId: String
+  dateRange: DateRangeInput
+  eventTypeId: String
+  fundId: String
+  groupId: String
+  organisationId: String
+  searchTerm: String
+}
+
+type ReportOutput {
+  data: JSON
+  downloadUrl: String
+  format: OutputFormat!
+  generatedAt: DateTime!
+  message: String
+  reportType: String!
+}
+
+input ReportRequestInput {
+  filter: ReportFilterInput!
+  outputFormat: String
+  reportType: String!
+}
+
+input RestoreBackupInput {
+  backupId: ID!
+  description: String
+  metadata: JSON
+  userId: ID
+}
+
+type RetentionRateStat {
+  period: String!
+  retention_rate: Float!
+}
+
+type Role {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  name: String!
+  permissions: [Permission]
+  updatedAt: DateTime!
+  userBranches: [UserBranch]
+  users: [AuthUser]
+}
+
+type RoleProfile {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  name: String!
+  updatedAt: DateTime!
+}
+
+type SacramentAnniversaryOutput {
+  anniversaryType: String!
+  date: DateTime!
+  isSpecial: Boolean
+  name: String!
+  sacramentType: String!
+  timeUntil: String
+}
+
+type SacramentStatsOutput {
+  count: Float!
+  percentage: Float
+  period: String
+  sacramentType: String!
+  trend: String
+}
+
+"""Types of sacraments administered in the church"""
+enum SacramentType {
+  ANOINTING_OF_THE_SICK
+  BAPTISM
+  CONFIRMATION
+  EUCHARIST_FIRST_COMMUNION
+  HOLY_ORDERS_DIACONATE
+  HOLY_ORDERS_PRIESTHOOD
+  MATRIMONY
+  OTHER
+  RCIA_INITIATION
+  RECONCILIATION_FIRST
+}
+
+type SacramentalRecord {
+  branchId: String!
+  certificateNumber: String
+  certificateUrl: String
+  createdAt: DateTime!
+  dateOfSacrament: DateTime!
+  godparent1Name: String
+  godparent2Name: String
+  id: ID!
+  locationOfSacrament: String!
+  memberId: String!
+  notes: String
+  officiantId: String
+  officiantName: String!
+  organisationId: String
+  sacramentType: SacramentType!
+  sponsorName: String
+  updatedAt: DateTime!
+  witness1Name: String
+  witness2Name: String
+}
+
+input SacramentalRecordFilterInput {
+  branchId: String
+  certificateNumber: String
+  dateFrom: DateTime
+  dateTo: DateTime
+  locationOfSacrament: String
+  officiantName: String
+  organisationId: String
+  sacramentType: SacramentType
+}
+
+input SendEmailInput {
+  bodyHtml: String
+  bodyText: String
+  branchId: String
+  organisationId: String
+  recipients: [String!]!
+  subject: String!
+  templateData: JSON
+  templateId: String
+}
+
+input SendSmsInput {
+  branchId: String
+  message: String!
+  organisationId: String
+  recipients: [String!]!
+}
+
+type Series {
+  branchId: String!
+  createdAt: DateTime!
+  description: String
+  endDate: DateTime
+  id: ID!
+  imageUrl: String
+  isActive: Boolean!
+  startDate: DateTime!
+  title: String!
+  updatedAt: DateTime!
+}
+
+type Sermon {
+  audioUrl: String
+  branchId: String!
+  createdAt: String!
+  datePreached: String!
+  description: String
+  duration: Float
+  id: ID!
+  mainScripture: String
+  seriesId: String
+  speakerId: String!
+  status: ContentStatus!
+  title: String!
+  transcriptText: String
+  transcriptUrl: String
+  updatedAt: String!
+  videoUrl: String
+}
+
+type Setting {
+  branch: Branch
+  branchId: ID
+  createdAt: DateTime!
+  id: ID!
+  key: String!
+  updatedAt: DateTime!
+  value: String!
+}
+
+input SignInDto {
+  email: Email!
+  password: String!
+}
+
+input SignUpDto {
+  email: Email!
+  firstName: String
+  lastName: String
+  password: String!
+  phoneNumber: PhoneNumber
+}
+
+type SmallGroup {
+  branchId: String
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  location: String
+  maximumCapacity: Int
+  meetingSchedule: String
+  members: [GroupMember!]
+  ministry: Ministry
+  ministryId: String
+  name: String!
+  organisationId: String
+  status: String!
+  type: String!
+  updatedAt: DateTime!
+}
+
+input SmallGroupFilterInput {
+  branchId: String
+  id: ID
+  ministryId: String
+  name: String
+  organisationId: String
+  search: String
+  status: String
+  type: String
+}
+
+type SmsMessageDto {
+  body: String!
+  branchId: String
+  createdAt: DateTime!
+  id: ID!
+  recipients: [String!]!
+  senderNumber: String!
+  sentAt: DateTime
+  status: String!
+  updatedAt: DateTime!
+}
+
+type Speaker {
+  bio: String
+  branchId: String!
+  createdAt: DateTime!
+  email: String
+  id: ID!
+  memberId: String
+  name: String!
+  phone: String
+  photoUrl: String
+  title: String
+  updatedAt: DateTime!
+  website: String
+}
+
+type SpiritualMilestone {
+  additionalDetails: JSON
+  createdAt: DateTime!
+  date: DateTime!
+  description: String
+  id: ID!
+  location: String
+  member: Member!
+  memberId: ID!
+  performedBy: String
+  type: MilestoneType!
+  updatedAt: DateTime!
+}
+
+input SubmissionFilterInput {
+  branchId: String
+  endDate: DateTime
+  formId: String!
+  startDate: DateTime
+  status: String
+}
+
+"""Status of a form submission"""
+enum SubmissionStatus {
+  COMPLETED
+  PENDING
+  REJECTED
+}
+
+type SuccessMessage {
+  message: String!
+}
+
+type SystemHealth {
+  database: DatabaseHealth!
+  system: SystemInfo!
+  timestamp: DateTime!
+}
+
+type SystemInfo {
+  cpuUsage: CpuUsage!
+  freeMemory: Float!
+  memoryUsage: MemoryUsage!
+  nodeVersion: String!
+  platform: String!
+  processUptime: Float!
+  systemUptime: Float!
+  totalMemory: Float!
+}
+
+type TaskItem {
+  dueDate: DateTime
+  id: String!
+  priority: String
+  status: String
+  title: String!
+}
+
+type TasksWidget {
+  tasks: [TaskItem!]!
+  title: String!
+  widgetType: WidgetType!
+}
+
+type TokenPayloadDto {
+  accessToken: String!
+  refreshToken: String!
+}
+
+type TotalAttendanceStat {
+  period: String!
+  total: Float!
+}
+
+type UniqueMembersStat {
+  period: String!
+  unique_members: Float!
+}
+
+type UpcomingEventsWidget {
+  events: [EventItem!]!
+  title: String!
+  widgetType: WidgetType!
+}
+
+input UpdateAnnouncementInput {
+  content: String
+  endDate: String
+  isActive: Boolean
+  startDate: String
+  targetBranchIds: [ID!]
+  targetRoleIds: [ID!]
+  title: String
+}
+
+input UpdateAttendanceSessionInput {
+  branchId: String
+  date: DateTime
+  description: String
+  endTime: DateTime
+  id: ID!
+  latitude: Float
+  location: String
+  longitude: Float
+  name: String
+  organisationId: String
+  startTime: DateTime
+  status: String = "PLANNED"
+  type: String
+}
+
+input UpdateBranchInput {
+  address: String
+  city: String
+  country: String
+  email: String
+  establishedAt: DateTime
+  isActive: Boolean = true
+  name: String
+  organisationId: String
+  phoneNumber: String
+  postalCode: String
+  state: String
+  website: String
+}
+
+input UpdateBranchSettingInput {
+  """
+  The key of the setting to update. e.g., "defaultCurrency", "timezone"
+  """
+  key: String!
+
+  """The new value for the setting."""
+  value: String!
+}
+
+input UpdateBudgetInput {
+  branchId: String
+  description: String
+  endDate: DateTime
+  fiscalYear: Int
+  fundId: String
+  id: String!
+  ministryId: String
+  name: String
+  notes: String
+  organisationId: String
+  startDate: DateTime
+  status: String
+  totalAmount: Float
+}
+
+input UpdateChildInput {
+  allergies: String
+  branchId: String
+  dateOfBirth: DateTime
+  emergencyContactName: String
+  emergencyContactPhone: String
+  firstName: String
+  gender: String
+  id: ID!
+  lastName: String
+  notes: String
+  photoConsent: Boolean = false
+  specialNeeds: String
+}
+
+input UpdateChildrenEventInput {
+  ageRange: String
+  branchId: String
+  capacity: Int
+  description: String
+  endDateTime: DateTime
+  id: ID!
+  location: String
+  name: String
+  startDateTime: DateTime
+  volunteersNeeded: Int
+}
+
+input UpdateContributionInput {
+  amount: Float
+  anonymous: Boolean
+  branchId: String
+  contributionTypeId: String
+  date: DateTime
+  fundId: String
+  id: String!
+  memberId: String
+  notes: String
+  organisationId: String
+  paymentMethodId: String
+  pledgeId: String
+}
+
+input UpdateEmailTemplateInput {
+  bodyHtml: String
+  bodyText: String
+  branchId: String
+  description: String
+  id: ID!
+  isActive: Boolean
+  name: String
+  organisationId: String
+  subject: String
+}
+
+input UpdateEventInput {
+  branchId: String
+  category: String
+  description: String
+  endDate: DateTime
+  id: ID!
+  location: String
+  organisationId: String
+  startDate: DateTime
+  title: String
+}
+
+input UpdateExpenseCategoryInput {
+  branchId: String
+  description: String
+  id: String!
+  name: String
+  organisationId: String
+}
+
+input UpdateExpenseInput {
+  amount: Float
+  branchId: String
+  budgetId: String
+  date: DateTime
+  description: String
+  expenseCategoryId: String
+  fundId: String
+  id: String!
+  invoiceNumber: String
+  organisationId: String
+  paymentMethodId: String
+  receiptNumber: String
+  vendorContact: String
+  vendorId: String
+  vendorName: String
+}
+
+input UpdateFamilyInput {
+  address: String
+  city: String
+  country: String
+  customFields: JSON
+  id: ID!
+  memberIds: [ID!]
+  name: String
+  phoneNumber: String
+  postalCode: String
+  state: String
+}
+
+input UpdateFamilyRelationshipInput {
+  familyId: ID
+  id: ID!
+  memberId: ID
+  relatedMemberId: ID
+  relationshipType: FamilyRelationshipType
+}
+
+input UpdateFormFieldInput {
+  conditionalLogic: JSON
+  defaultValue: String
+  formId: String
+  helpText: String
+  id: String!
+  isRequired: Boolean = false
+  isUnique: Boolean = false
+  label: String
+  options: JSON
+  order: Float
+  placeholder: String
+  type: FormFieldType
+  validations: JSON
+  width: Float = 100
+}
+
+input UpdateFormInput {
+  branchId: String
+  description: String
+  enableCaptcha: Boolean = false
+  expiresAt: DateTime
+  id: String!
+  isPublic: Boolean = false
+  notifyEmails: [String!] = []
+  redirectUrl: String
+  slug: String
+  status: FormStatus = DRAFT
+  successMessage: String
+  title: String
+}
+
+input UpdateFundInput {
+  branchId: String
+  description: String
+  endDate: DateTime
+  goal: Float
+  id: String!
+  name: String
+  organisationId: String
+  startDate: DateTime
+  status: String
+}
+
+input UpdateGroupMemberInput {
+  role: String
+  status: String
+}
+
+input UpdateGuardianInput {
+  address: String
+  branchId: String
+  canPickup: Boolean = true
+  email: String
+  firstName: String
+  id: ID!
+  isPrimaryGuardian: Boolean = false
+  lastName: String
+  memberId: String
+  notes: String
+  phone: String
+  relationship: String
+}
+
+input UpdateLicenseInput {
+  contactEmail: String
+  contactPhone: String
+  expiryDate: DateTime
+  features: JSON
+  maxBranches: Float
+  maxUsers: Float
+  notes: String
+  organizationName: String
+  status: LicenseStatus
+}
+
+input UpdateMediaItemInput {
+  branchId: String
+  description: String
+  fileSize: Float
+  fileUrl: String
+  id: String!
+  mimeType: String
+  title: String
+  type: String
+}
+
+input UpdateMemberInput {
+  address: String
+  baptismDate: DateTime
+  branchId: ID
+  city: String
+  confirmationDate: DateTime
+  country: String
+  customFields: JSON
+  dateOfBirth: DateTime
+  email: String
+  employerName: String
+  firstName: String
+  gender: Gender
+  id: ID!
+  lastName: String
+  maritalStatus: MaritalStatus
+  membershipDate: DateTime
+  middleName: String
+  notes: String
+  occupation: String
+  organisationId: ID
+  parentId: ID
+  phoneNumber: String
+  postalCode: String
+  privacySettings: JSON
+  spouseId: ID
+  state: String
+  status: MemberStatus = ACTIVE
+  userId: ID
+}
+
+input UpdateMinistryInput {
+  branchId: String
+  description: String
+  name: String
+  organisationId: ID
+  parentId: String
+  status: String
+  type: String
+}
+
+input UpdateOrganisationInput {
+  accentColor: String
+  address: String
+  brandFont: String
+  city: String
+  country: String
+  currency: String
+  denomination: String
+  description: String
+  email: String
+  faviconUrl: String
+  fontFamily: String
+  foundingYear: Float
+  id: ID!
+  logoUrl: String
+  missionStatement: String
+  name: String
+  phoneNumber: String
+  primaryColor: String
+  secondaryColor: String
+  size: String
+  slogan: String
+  socialHandle: String
+  state: String
+  timezone: String
+  vision: String
+  website: String
+  zipCode: String
+}
+
+input UpdatePermissionInput {
+  action: String
+  description: String
+  subject: String
+}
+
+input UpdatePledgeInput {
+  amount: Float
+  branchId: String
+  endDate: DateTime
+  frequency: String
+  fundId: String
+  id: String!
+  memberId: String
+  notes: String
+  organisationId: String
+  startDate: DateTime
+  status: String
+}
+
+input UpdatePrayerRequestInput {
+  assignedPastorId: String
+  branchId: ID
+  memberId: ID
+  organisationId: String
+  requestText: String
+  status: PrayerRequestStatusEnum
+}
+
+input UpdateRoleInput {
+  description: String
+  name: String
+}
+
+input UpdateSacramentalRecordInput {
+  branchId: String
+  certificateNumber: String
+  certificateUrl: String
+  dateOfSacrament: DateTime
+  godparent1Name: String
+  godparent2Name: String
+  id: String!
+  locationOfSacrament: String
+  memberId: String
+  notes: String
+  officiantId: String
+  officiantName: String
+  organisationId: String
+  sacramentType: SacramentType
+  sponsorName: String
+  witness1Name: String
+  witness2Name: String
+}
+
+input UpdateSettingInput {
+  branchId: String
+  id: ID
+  key: String
+  value: String
+}
+
+input UpdateSmallGroupInput {
+  branchId: String
+  description: String
+  location: String
+  maximumCapacity: Int
+  meetingSchedule: String
+  ministryId: String
+  name: String
+  status: String
+  type: String
+}
+
+input UpdateSpiritualMilestoneInput {
+  additionalDetails: JSON
+  date: DateTime
+  description: String
+  id: ID!
+  location: String
+  memberId: ID
+  performedBy: String
+  type: MilestoneType
+}
+
+input UpdateVendorInput {
+  address: String
+  branchId: String
+  contactEmail: String
+  contactPerson: String
+  id: String!
+  name: String
+  organisationId: String
+  phone: String
+}
+
+input UpdateVolunteerInput {
+  backgroundCheckDate: DateTime
+  backgroundCheckStatus: String
+  branchId: String
+  id: ID!
+  isActive: Boolean = true
+  memberId: String
+  notes: String
+  role: String
+  trainingCompletionDate: DateTime
+}
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
+
+type User {
+  createdAt: DateTime!
+  email: String!
+  firstName: String
+  id: ID!
+  isActive: Boolean!
+  lastName: String
+  name: String!
+  phoneNumber: String
+  updatedAt: DateTime!
+}
+
+type UserBranch {
+  assignedAt: DateTime!
+  assignedBy: ID
+  branch: Branch
+  branchId: String
+  role: Role!
+  roleId: ID!
+  user: AuthUser!
+  userId: ID!
+}
+
+type UserBranchProfile {
+  assignedAt: DateTime!
+  assignedBy: String
+  branch: BranchProfile
+  branchId: String
+  role: RoleProfile!
+  roleId: String!
+  userId: String!
+}
+
+type UserDashboardPreference {
+  branchId: ID!
+  createdAt: DateTime!
+  dashboardType: DashboardType!
+  id: ID!
+  layoutConfig: JSON!
+  updatedAt: DateTime!
+  userId: ID!
+}
+
+input UserFilterInput {
+  emailContains: String
+  isActive: Boolean
+  nameContains: String
+  roleId: ID
+}
+
+input UserInput {
+  branchId: ID
+  email: String!
+  firstName: String!
+  lastName: String!
+  password: String!
+  roleName: String!
+}
+
+type UserProfile {
+  createdAt: DateTime!
+  email: Email!
+  firstName: String
+  id: ID!
+  isActive: Boolean!
+  isEmailVerified: Boolean!
+  lastLoginAt: DateTime
+  lastName: String
+  member: MemberProfile
+  organisationId: String
+  phoneNumber: String
+  roles: [RoleProfile!]
+  updatedAt: DateTime!
+  userBranches: [UserBranchProfile!]
+}
+
+type Vendor {
+  address: String
+  branchId: String
+  contactEmail: String
+  contactPerson: String
+  contactPhone: String
+  id: String!
+  name: String!
+  organisationId: String
+}
+
+type VisitorsStat {
+  period: String!
+  visitors: Float!
+}
+
+type VolunteerEventAssignment {
+  createdAt: DateTime!
+  eventId: String!
+  id: ID!
+  role: String
+  updatedAt: DateTime!
+  volunteerId: String!
+}
+
+type VolunteerScheduleItem {
+  assignment: VolunteerEventAssignment!
+  event: ChildrenEvent!
+}
+
+"""Types of widgets available for dashboards"""
+enum WidgetType {
+  ANNOUNCEMENTS
+  ATTENDANCE_SNAPSHOT
+  BIRTHDAYS
+  CHART
+  GIVING_SUMMARY
+  KPI_CARD
+  MY_GROUPS
+  NEW_MEMBERS
+  NOTIFICATIONS
+  PRAYER_REQUESTS
+  QUICK_LINKS
+  TASKS
+  UPCOMING_EVENTS
+}
