@@ -12,9 +12,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { promisify } from 'util';
-import bcrypt from 'bcrypt';
-
-const pipeline = promisify(require('stream').pipeline);
 
 @Injectable()
 export class SetupWizardService {
@@ -155,7 +152,10 @@ export class SetupWizardService {
       const filePath = path.join(this.uploadDir, uniqueFilename);
 
       // Save the file
-      await pipeline(createReadStream(), fs.createWriteStream(filePath));
+      await promisify((await import('stream')).pipeline)(
+        createReadStream(),
+        fs.createWriteStream(filePath),
+      );
 
       // Return the relative path to the file
       return `/uploads/${uniqueFilename}`;
@@ -205,19 +205,22 @@ export class SetupWizardService {
 
       // Assign super admin role to branch if branchId is provided
       // if (branchId) {
-        await this.prisma.userBranch.create({
-          data: {
-            userId: user.id,
-            branchId,
-            roleId: await this.getSuperAdminRoleId(),
-            // Optionally, store organisationId if needed in userBranch
-          },
-        });
+      await this.prisma.userBranch.create({
+        data: {
+          userId: user.id,
+          branchId,
+          roleId: await this.getSuperAdminRoleId(),
+          // Optionally, store organisationId if needed in userBranch
+        },
+      });
       // }
 
       return user;
     } catch (error) {
-      this.logger.error(`Error creating super admin user: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error creating super admin user: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

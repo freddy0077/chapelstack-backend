@@ -2,6 +2,7 @@ import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
 import { GraphQLISODateTime } from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-type-json';
 import { Family, FamilyRelationship } from './family.entity';
+import { Branch } from '../../branches/entities/branch.entity';
 
 export enum MemberStatus {
   ACTIVE = 'ACTIVE',
@@ -172,4 +173,13 @@ export class Member {
 
   @Field(() => String, { nullable: true })
   organisationId: string | null;
+
+  @Field(() => Branch, { nullable: true })
+  branch?: Branch | null;
+
+  @Field(() => Member, { nullable: true })
+  spouse?: Member | null;
+
+  @Field(() => Member, { nullable: true })
+  parent?: Member | null;
 }

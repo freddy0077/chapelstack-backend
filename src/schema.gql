@@ -1717,6 +1717,7 @@ type Member {
   address: String
   attendanceRecords: [JSON!]
   baptismDate: DateTime
+  branch: Branch
   branchId: String
   children: [Member!]
   city: String
@@ -1743,6 +1744,7 @@ type Member {
   notifications: [JSON!]
   occupation: String
   organisationId: String
+  parent: Member
   parentId: String
   phoneNumber: String
   postalCode: String
@@ -1751,6 +1753,7 @@ type Member {
   profileImageUrl: String
   rfidCardId: String
   sacramentalRecords: [JSON!]
+  spouse: Member
   spouseId: String
   state: String
   status: MemberStatus!
@@ -1973,7 +1976,7 @@ type Mutation {
   deleteOrganisation(id: ID!): Boolean!
   deletePermission(id: ID!): Permission!
   deleteRole(id: ID!): Role!
-  deleteSacramentalRecord(id: ID!): Boolean!
+  deleteSacramentalRecord(id: ID!): SacramentalRecord!
   deleteSmallGroup(id: ID!): Boolean!
   deleteTemplate(id: ID!): Boolean!
   generateAbsenceAlerts(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
@@ -2005,7 +2008,7 @@ type Mutation {
   removeEvent(id: ID!): Event!
   removeExpense(id: String!): Expense!
   removeExpenseCategory(id: String!): ExpenseCategory!
-  removeFamily(id: String!): Boolean!
+  removeFamily(id: String!, relationship: String!): Boolean!
   removeFamilyRelationship(id: String!): Boolean!
   removeForm(id: String!): Form!
   removeFormField(id: String!): FormField!

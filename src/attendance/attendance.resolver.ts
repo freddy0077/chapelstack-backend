@@ -39,7 +39,8 @@ export class AttendanceResolver {
 
   @Query(() => [AttendanceSession], { name: 'attendanceSessions' })
   async findAllAttendanceSessions(
-    @Args('organisationId', { type: () => ID, nullable: true }) organisationId?: string,
+    @Args('organisationId', { type: () => ID, nullable: true })
+    organisationId?: string,
     @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
   ) {
     return this.attendanceService.findAllAttendanceSessions({

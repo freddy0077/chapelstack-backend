@@ -30,8 +30,7 @@ export class DashboardResolver {
     return await this.dashboardService.getDashboardData(
       user.id,
       branchId,
-      dashboardType,
-      organisationId,
+      dashboardType
     );
   }
 
@@ -48,8 +47,7 @@ export class DashboardResolver {
     return await this.dashboardService.getUserDashboardPreference(
       user.id,
       branchId,
-      dashboardType,
-      organisationId,
+      dashboardType
     );
   }
 

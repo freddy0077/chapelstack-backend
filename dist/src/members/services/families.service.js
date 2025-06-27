@@ -596,7 +596,7 @@ let FamiliesService = FamiliesService_1 = class FamiliesService {
             throw error;
         }
     }
-    async addMemberToFamilyByRfidCard(rfidCardId, familyId, relatedMemberId, relationship, userId, ipAddress, userAgent) {
+    async addMemberToFamilyByRfidCard(rfidCardId, familyId, relatedMemberId, relationship) {
         const member = await this.prisma.member.findUnique({
             where: { rfidCardId },
         });

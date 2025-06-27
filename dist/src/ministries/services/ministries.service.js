@@ -32,7 +32,9 @@ let MinistriesService = class MinistriesService {
                 ...(filters.status && { status: filters.status }),
                 ...(filters.branchId && { branchId: filters.branchId }),
                 ...(filters.parentId && { parentId: filters.parentId }),
-                ...(filters.organisationId && { organisationId: filters.organisationId }),
+                ...(filters.organisationId && {
+                    organisationId: filters.organisationId,
+                }),
             }
             : {};
         return this.prisma.ministry.findMany({

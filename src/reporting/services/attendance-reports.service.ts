@@ -8,7 +8,7 @@ export class AttendanceReportsService {
   constructor(private prisma: PrismaService) {}
 
   async getAttendanceSummaryReport(filter: ReportFilterInput): Promise<any> {
-    const { branchId, organisationId, dateRange, eventTypeId } = filter;
+    const { branchId, organisationId, dateRange } = filter;
 
     // Build the where clause based on filters
     const where: any = {};

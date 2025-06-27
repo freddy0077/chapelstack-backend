@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ReportFilterInput } from '../dto/report-filter.input';
 import { Prisma } from '@prisma/client';
-import {Contribution} from "../../contributions/entities/contribution.entity";
+import { Contribution } from '../../contributions/entities/contribution.entity';
 
 // --- Interface Definitions for Report Data ---
 
@@ -92,23 +92,16 @@ export interface PledgeFulfillmentReportData {
 @Injectable()
 export class FinancialReportsService {
   private readonly logger = new Logger(FinancialReportsService.name);
-  
+
   constructor(private prisma: PrismaService) {}
 
-  async getContributionsReport(
-      filters: ReportFilterInput,
-  ): Promise<{
+  async getContributionsReport(filters: ReportFilterInput): Promise<{
     contributions: Contribution[];
     total: number;
     count: number;
   }> {
     try {
-      const {
-        branchId,
-        organisationId,
-        dateRange,
-        fundId,
-      } = filters;
+      const { branchId, organisationId, dateRange, fundId } = filters;
 
       const where: Prisma.ContributionWhereInput = {};
 
@@ -146,7 +139,7 @@ export class FinancialReportsService {
       const total = contributions.reduce((sum, c) => sum + c.amount, 0);
 
       // Convert the Prisma model to our entity type
-      const contributionEntities: Contribution[] = contributions.map(c => ({
+      const contributionEntities: Contribution[] = contributions.map((c) => ({
         id: c.id,
         amount: c.amount,
         date: c.date,
@@ -177,18 +170,18 @@ export class FinancialReportsService {
   ): Promise<BudgetVsActualReportData> {
     try {
       const { branchId, organisationId, dateRange } = filter;
-      
+
       // Build the where clause for budgets
       const budgetWhere: Prisma.BudgetWhereInput = {};
-      
+
       if (branchId) {
         budgetWhere.branchId = branchId;
       }
-      
+
       if (organisationId) {
         budgetWhere.organisationId = organisationId;
       }
-      
+
       // If date range is provided, find budgets that overlap with the date range
       if (dateRange?.startDate && dateRange?.endDate) {
         budgetWhere.OR = [
@@ -206,10 +199,10 @@ export class FinancialReportsService {
         const currentYear = new Date().getFullYear();
         budgetWhere.fiscalYear = currentYear;
       }
-      
+
       // Get active budgets
       budgetWhere.status = 'ACTIVE';
-      
+
       // Fetch budgets with their budget items
       const budgets = await this.prisma.budget.findMany({
         where: budgetWhere,
@@ -221,7 +214,7 @@ export class FinancialReportsService {
           },
         },
       });
-      
+
       if (budgets.length === 0) {
         return {
           branchId,
@@ -237,31 +230,38 @@ export class FinancialReportsService {
           },
         };
       }
-      
+
       // Group budget items by expense category
-      const categoryMap = new Map<string, { name: string; budgeted: number; actual: number }>();
-      
+      const categoryMap = new Map<
+        string,
+        { name: string; budgeted: number; actual: number }
+      >();
+
       // Process budget items
       for (const budget of budgets) {
         for (const item of budget.budgetItems) {
           const categoryName = item.expenseCategory?.name || 'Uncategorized';
-          const existing = categoryMap.get(categoryName) || { name: categoryName, budgeted: 0, actual: 0 };
+          const existing = categoryMap.get(categoryName) || {
+            name: categoryName,
+            budgeted: 0,
+            actual: 0,
+          };
           existing.budgeted += item.amount;
           categoryMap.set(categoryName, existing);
         }
       }
-      
+
       // Build expense where clause to match the same filters
       const expenseWhere: Prisma.ExpenseWhereInput = {};
-      
+
       if (branchId) {
         expenseWhere.branchId = branchId;
       }
-      
+
       if (organisationId) {
         expenseWhere.organisationId = organisationId;
       }
-      
+
       // Match expenses to the same date range as budgets
       if (dateRange?.startDate && dateRange?.endDate) {
         expenseWhere.date = {
@@ -277,7 +277,7 @@ export class FinancialReportsService {
           };
         }
       }
-      
+
       // Get expenses grouped by category
       const expenses = await this.prisma.expense.findMany({
         where: expenseWhere,
@@ -285,20 +285,26 @@ export class FinancialReportsService {
           expenseCategory: true,
         },
       });
-      
+
       // Add expense amounts to the category map
       for (const expense of expenses) {
         const categoryName = expense.expenseCategory?.name || 'Uncategorized';
-        const existing = categoryMap.get(categoryName) || { name: categoryName, budgeted: 0, actual: 0 };
+        const existing = categoryMap.get(categoryName) || {
+          name: categoryName,
+          budgeted: 0,
+          actual: 0,
+        };
         existing.actual += expense.amount;
         categoryMap.set(categoryName, existing);
       }
-      
+
       // Calculate variances and create the final categories array
-      const categories: BudgetCategoryItem[] = Array.from(categoryMap.values()).map(({ name, budgeted, actual }) => {
+      const categories: BudgetCategoryItem[] = Array.from(
+        categoryMap.values(),
+      ).map(({ name, budgeted, actual }) => {
         const variance = budgeted - actual;
         const percentVariance = budgeted > 0 ? (variance / budgeted) * 100 : 0;
-        
+
         return {
           name,
           budgeted,
@@ -307,7 +313,7 @@ export class FinancialReportsService {
           percentVariance: Number(percentVariance.toFixed(2)),
         };
       });
-      
+
       // Calculate totals
       const totals = categories.reduce(
         (acc, category) => {
@@ -316,19 +322,24 @@ export class FinancialReportsService {
           acc.variance += category.variance;
           return acc;
         },
-        { budgeted: 0, actual: 0, variance: 0, percentVariance: 0 }
+        { budgeted: 0, actual: 0, variance: 0, percentVariance: 0 },
       );
-      
+
       // Calculate overall percent variance
-      totals.percentVariance = totals.budgeted > 0 
-        ? Number(((totals.variance / totals.budgeted) * 100).toFixed(2)) 
-        : 0;
-      
+      totals.percentVariance =
+        totals.budgeted > 0
+          ? Number(((totals.variance / totals.budgeted) * 100).toFixed(2))
+          : 0;
+
       return {
         branchId,
         organisationId,
-        startDate: dateRange?.startDate || (budgets.length > 0 ? budgets[0].startDate : undefined),
-        endDate: dateRange?.endDate || (budgets.length > 0 ? budgets[0].endDate : undefined),
+        startDate:
+          dateRange?.startDate ||
+          (budgets.length > 0 ? budgets[0].startDate : undefined),
+        endDate:
+          dateRange?.endDate ||
+          (budgets.length > 0 ? budgets[0].endDate : undefined),
         categories,
         totals,
       };
@@ -344,22 +355,22 @@ export class FinancialReportsService {
   ): Promise<PledgeFulfillmentReportData> {
     try {
       const { branchId, organisationId, dateRange } = filter;
-      
+
       // Build the where clause for pledges
       const pledgeWhere: Prisma.PledgeWhereInput = {};
-      
+
       if (branchId) {
         pledgeWhere.branchId = branchId;
       }
-      
+
       if (organisationId) {
         pledgeWhere.organisationId = organisationId;
       }
-      
+
       if (fundId) {
         pledgeWhere.fundId = fundId;
       }
-      
+
       // Filter by date range if provided
       if (dateRange?.startDate && dateRange?.endDate) {
         pledgeWhere.OR = [
@@ -379,7 +390,7 @@ export class FinancialReportsService {
           },
         ];
       }
-      
+
       // Get active pledges with their contributions
       const pledges = await this.prisma.pledge.findMany({
         where: pledgeWhere,
@@ -389,20 +400,21 @@ export class FinancialReportsService {
           contributions: true,
         },
       });
-      
+
       // Calculate pledge metrics
       let totalPledged = 0;
       let totalFulfilled = 0;
       let fullyFulfilledCount = 0;
       let partiallyFulfilledCount = 0;
       let unfulfilledCount = 0;
-      
-      const pledgeItems: PledgeItem[] = pledges.map(pledge => {
+
+      const pledgeItems: PledgeItem[] = pledges.map((pledge) => {
         // Calculate fulfillment percentage for this pledge
-        const fulfillmentPercentage = pledge.amount > 0 
-          ? (pledge.amountFulfilled / pledge.amount) * 100 
-          : 0;
-        
+        const fulfillmentPercentage =
+          pledge.amount > 0
+            ? (pledge.amountFulfilled / pledge.amount) * 100
+            : 0;
+
         // Update counts based on fulfillment status
         if (fulfillmentPercentage >= 100) {
           fullyFulfilledCount++;
@@ -411,11 +423,11 @@ export class FinancialReportsService {
         } else {
           unfulfilledCount++;
         }
-        
+
         // Update totals
         totalPledged += pledge.amount;
         totalFulfilled += pledge.amountFulfilled;
-        
+
         // Return pledge item with additional calculated fields
         return {
           id: pledge.id,
@@ -430,12 +442,13 @@ export class FinancialReportsService {
           fundName: pledge.fund?.name,
         };
       });
-      
+
       // Calculate overall fulfillment rate
-      const fulfillmentRate = totalPledged > 0 
-        ? Number(((totalFulfilled / totalPledged) * 100).toFixed(2)) 
-        : 0;
-      
+      const fulfillmentRate =
+        totalPledged > 0
+          ? Number(((totalFulfilled / totalPledged) * 100).toFixed(2))
+          : 0;
+
       return {
         branchId,
         organisationId,

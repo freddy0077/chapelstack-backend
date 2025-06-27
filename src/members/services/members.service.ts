@@ -11,7 +11,10 @@ import { UpdateMemberInput } from '../dto/update-member.input';
 import { Member, MemberStatus } from '../entities/member.entity';
 import { Prisma } from '@prisma/client';
 import { AssignRfidCardInput } from '../dto/assign-rfid-card.input';
-import { MemberStatistics, MemberStatisticsPeriod } from '../dto/member-statistics.output';
+import {
+  MemberStatistics,
+  MemberStatisticsPeriod,
+} from '../dto/member-statistics.output';
 import { MemberDashboard } from '../dto/member-dashboard.dto';
 
 @Injectable()
@@ -20,7 +23,7 @@ export class MembersService {
    * Returns the number of members with assigned RFID cards.
    * TODO: Implement actual count logic.
    */
-  async countAssignedRfidCards(): Promise<number> {
+  countAssignedRfidCards(): number {
     // TODO: Implement actual count logic
     return 0;
   }
@@ -29,7 +32,7 @@ export class MembersService {
    * Returns the number of unassigned RFID cards.
    * TODO: Implement actual count logic.
    */
-  async countUnassignedRfidCards(): Promise<number> {
+  countUnassignedRfidCards(): number {
     // TODO: Implement actual count logic
     return 0;
   }
@@ -1019,7 +1022,11 @@ export class MembersService {
     };
 
     const now = new Date();
-    const currentMonthStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthStartDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+    );
     const currentMonthEndDate = new Date(
       now.getFullYear(),
       now.getMonth() + 1,
@@ -1096,7 +1103,8 @@ export class MembersService {
     const attendanceRecords = await this.prisma.attendanceRecord.count({
       where: { memberId: memberId },
     });
-    const attendanceRate = totalSessions > 0 ? (attendanceRecords / totalSessions) * 100 : 0;
+    const attendanceRate =
+      totalSessions > 0 ? (attendanceRecords / totalSessions) * 100 : 0;
 
     const startOfYear = new Date(new Date().getFullYear(), 0, 1);
     const totalGiving = await this.prisma.contribution.aggregate({
@@ -1133,8 +1141,13 @@ export class MembersService {
         attendance: attendanceRate,
         giving: `GHS${totalGiving._sum.amount?.toFixed(2) || '0.00'}`,
       },
-      upcomingEvents: upcomingEvents.map(e => ({ id: e.id, name: e.title, date: e.startDate, location: e.location || 'TBD' })),
-      groups: member.groupMemberships.map(gm => ({
+      upcomingEvents: upcomingEvents.map((e) => ({
+        id: e.id,
+        name: e.title,
+        date: e.startDate,
+        location: e.location || 'TBD',
+      })),
+      groups: member.groupMemberships.map((gm) => ({
         id: gm.id,
         name: gm.ministry?.name || gm.smallGroup?.name || 'Unknown Group',
         role: gm.role,

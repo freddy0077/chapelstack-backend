@@ -7,7 +7,7 @@ import { ParseUUIDPipe } from '@nestjs/common';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { IpAddress, UserAgent } from '../../common/decorators';
 import { MemberStatus } from '../entities/member.entity';
-import { Prisma } from '../../../generated/prisma';
+import { Prisma } from '@prisma/client';
 import { AssignRfidCardInput } from '../dto/assign-rfid-card.input';
 import { MemberStatistics } from '../dto/member-statistics.output';
 import { MemberDashboard } from '../dto/member-dashboard.dto';
@@ -33,11 +33,15 @@ export class MembersResolver {
 
   @Query(() => [Member], { name: 'members' })
   async findAll(
-    @Args('organisationId', { type: () => String, nullable: true }) organisationId?: string,
-    @Args('skip', { type: () => Int, nullable: true, defaultValue: 0 }) skip?: number,
-    @Args('take', { type: () => Int, nullable: true, defaultValue: 10 }) take?: number,
+    @Args('organisationId', { type: () => String, nullable: true })
+    organisationId?: string,
+    @Args('skip', { type: () => Int, nullable: true, defaultValue: 0 })
+    skip?: number,
+    @Args('take', { type: () => Int, nullable: true, defaultValue: 10 })
+    take?: number,
     @Args('branchId', { type: () => String, nullable: true }) branchId?: string,
-    @Args('hasRfidCard', { type: () => Boolean, nullable: true }) hasRfidCard?: boolean,
+    @Args('hasRfidCard', { type: () => Boolean, nullable: true })
+    hasRfidCard?: boolean,
     @Args('search', { type: () => String, nullable: true }) search?: string,
   ): Promise<Member[]> {
     const where: Prisma.MemberWhereInput = {};
@@ -51,7 +55,13 @@ export class MembersResolver {
     } else if (hasRfidCard === false) {
       where.rfidCardId = { equals: null };
     }
-    return this.membersService.findAll(skip ?? 0, take ?? 10, where, undefined, search);
+    return this.membersService.findAll(
+      skip ?? 0,
+      take ?? 10,
+      where,
+      undefined,
+      search,
+    );
   }
 
   @Query(() => Member, { name: 'member' })
@@ -167,7 +177,8 @@ export class MembersResolver {
   @Query(() => Int, { name: 'membersCount' })
   async count(
     @Args('branchId', { type: () => String, nullable: true }) branchId?: string,
-    @Args('organisationId', { type: () => String, nullable: true }) organisationId?: string,
+    @Args('organisationId', { type: () => String, nullable: true })
+    organisationId?: string,
   ): Promise<number> {
     const where: Prisma.MemberWhereInput = {};
     if (branchId) {

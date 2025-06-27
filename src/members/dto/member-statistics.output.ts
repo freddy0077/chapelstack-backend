@@ -18,7 +18,6 @@ export class MemberStatisticsPeriod {
   visitorsInPeriod: number;
 }
 
-
 @ObjectType()
 export class MemberStatistics {
   @Field(() => Int)

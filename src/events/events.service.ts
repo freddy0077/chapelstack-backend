@@ -43,9 +43,9 @@ export class EventsService {
     }
   }
 
-  async findAll({ 
-    branchId, 
-    organisationId 
+  async findAll({
+    branchId,
+    organisationId,
   }: {
     branchId?: string;
     organisationId?: string;

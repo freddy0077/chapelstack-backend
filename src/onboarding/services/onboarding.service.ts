@@ -13,7 +13,6 @@ import {
 } from '../entities/onboarding-progress.entity';
 import { SettingsService } from 'src/settings/settings.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { ChurchProfileData } from '../../settings/settings.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -125,14 +124,20 @@ export class OnboardingService {
   }
 
   async completeOnboardingStep(
-    input: any // Should match CompleteOnboardingStepInput
+    input: any, // Should match CompleteOnboardingStepInput
   ): Promise<OnboardingProgress> {
     const { branchId, stepKey } = input;
-    this.logger.log('completeOnboardingStep called', { stepKey, branchId, input });
+    this.logger.log('completeOnboardingStep called', {
+      stepKey,
+      branchId,
+      input,
+    });
 
     let progress = await this.getOnboardingProgress(branchId);
     if (!progress) {
-      throw new NotFoundException(`No onboarding progress found for branch ${branchId}.`);
+      throw new NotFoundException(
+        `No onboarding progress found for branch ${branchId}.`,
+      );
     }
 
     let newBranchId = branchId;
@@ -145,7 +150,9 @@ export class OnboardingService {
           this.logger.log('Received input for ORGANIZATION_DETAILS:', input);
           if (!input.name || !input.email) {
             this.logger.error('Missing or invalid organization details', input);
-            throw new Error('Missing or invalid organization details: required fields (name, email, etc.) are missing.');
+            throw new Error(
+              'Missing or invalid organization details: required fields (name, email, etc.) are missing.',
+            );
           }
           // Always create a new branch for onboarding
           const createdBranch = await this.prisma.branch.create({
@@ -161,7 +168,9 @@ export class OnboardingService {
               postalCode: input.postalCode,
             },
           });
-          this.logger.log(`Created branch ${createdBranch.id} with organization details.`);
+          this.logger.log(
+            `Created branch ${createdBranch.id} with organization details.`,
+          );
           newBranchId = createdBranch.id;
           progress = await this.getOnboardingProgress(newBranchId);
           break;

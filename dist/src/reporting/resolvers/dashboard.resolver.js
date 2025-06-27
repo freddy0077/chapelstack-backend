@@ -32,10 +32,10 @@ let DashboardResolver = class DashboardResolver {
         this.dashboardService = dashboardService;
     }
     async dashboardData(branchId, dashboardType, user, organisationId) {
-        return await this.dashboardService.getDashboardData(user.id, branchId, dashboardType, organisationId);
+        return await this.dashboardService.getDashboardData(user.id, branchId, dashboardType);
     }
     async userDashboardPreference(branchId, dashboardType, user, organisationId) {
-        return await this.dashboardService.getUserDashboardPreference(user.id, branchId, dashboardType, organisationId);
+        return await this.dashboardService.getUserDashboardPreference(user.id, branchId, dashboardType);
     }
     async saveUserDashboardPreference(branchId, dashboardType, layoutConfig, user, organisationId) {
         return await this.dashboardService.saveUserDashboardPreference(user.id, branchId, dashboardType, layoutConfig, organisationId);

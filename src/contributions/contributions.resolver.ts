@@ -1,4 +1,11 @@
-import { Resolver, Query, Mutation, Args, ResolveField, Parent } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
 import { ContributionsService } from './contributions.service';
 import { Contribution } from './entities/contribution.entity';
 import { CreateContributionInput } from './dto/create-contribution.input';
@@ -55,12 +62,16 @@ export class ContributionsResolver {
 
   @ResolveField('contributionType', () => ContributionType)
   getContributionType(@Parent() contribution: Contribution) {
-    return this.prisma.contributionType.findUnique({ where: { id: contribution.contributionTypeId } });
+    return this.prisma.contributionType.findUnique({
+      where: { id: contribution.contributionTypeId },
+    });
   }
 
   @ResolveField('paymentMethod', () => PaymentMethod)
   getPaymentMethod(@Parent() contribution: Contribution) {
-    return this.prisma.paymentMethod.findUnique({ where: { id: contribution.paymentMethodId } });
+    return this.prisma.paymentMethod.findUnique({
+      where: { id: contribution.paymentMethodId },
+    });
   }
 
   @ResolveField('fund', () => Fund)
@@ -73,6 +84,8 @@ export class ContributionsResolver {
     if (!contribution.memberId) {
       return null;
     }
-    return this.prisma.member.findUnique({ where: { id: contribution.memberId } });
+    return this.prisma.member.findUnique({
+      where: { id: contribution.memberId },
+    });
   }
 }

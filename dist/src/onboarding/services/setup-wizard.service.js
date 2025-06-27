@@ -55,7 +55,6 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const uuid_1 = require("uuid");
 const util_1 = require("util");
-const pipeline = (0, util_1.promisify)(require('stream').pipeline);
 let SetupWizardService = SetupWizardService_1 = class SetupWizardService {
     prisma;
     branchesService;
@@ -164,7 +163,7 @@ let SetupWizardService = SetupWizardService_1 = class SetupWizardService {
             const { createReadStream, filename } = file;
             const uniqueFilename = `${branchId}_${(0, uuid_1.v4)()}${path.extname(filename)}`;
             const filePath = path.join(this.uploadDir, uniqueFilename);
-            await pipeline(createReadStream(), fs.createWriteStream(filePath));
+            await (0, util_1.promisify)((await import('stream')).pipeline)(createReadStream(), fs.createWriteStream(filePath));
             return `/uploads/${uniqueFilename}`;
         }
         catch (error) {

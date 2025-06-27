@@ -3,7 +3,9 @@ import { InputType, Field, PartialType } from '@nestjs/graphql';
 import { IsNotEmpty, IsUUID } from 'class-validator';
 
 @InputType()
-export class UpdateContributionInput extends PartialType(CreateContributionInput) {
+export class UpdateContributionInput extends PartialType(
+  CreateContributionInput,
+) {
   @Field(() => String)
   @IsNotEmpty()
   @IsUUID()

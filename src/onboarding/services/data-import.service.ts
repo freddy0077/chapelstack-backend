@@ -43,10 +43,7 @@ export class DataImportService {
     }
   }
 
-  async importMembers(
-    file: UploadedFile,
-    branchId: string,
-  ): Promise<any> {
+  async importMembers(file: UploadedFile, branchId: string): Promise<any> {
     const filePath = path.join(this.uploadDir, `${uuidv4()}.csv`);
     const readStream = file.createReadStream
       ? file.createReadStream()
@@ -161,7 +158,7 @@ export class DataImportService {
           );
           break;
         default:
-          throw new Error(`Unsupported financial data type: ${type}`);
+          throw new Error(`Unsupported financial data type: ${String(type)}`);
       }
 
       // Update onboarding progress
@@ -290,7 +287,7 @@ export class DataImportService {
         }
         break;
       default:
-        throw new Error(`Unknown financial data type: ${type}`);
+        throw new Error(`Unknown financial data type: ${String(type)}`);
     }
   }
 
@@ -355,21 +352,19 @@ export class DataImportService {
     for (const record of records) {
       try {
         // Extract and validate fields
-        const firstName = record.firstName
-          ? String(record.firstName).trim()
-          : null;
-        const lastName = record.lastName
-          ? String(record.lastName).trim()
-          : null;
-        const email = record.email ? String(record.email).trim() : null;
-        const phoneNumber = record.phoneNumber
-          ? String(record.phoneNumber).trim()
-          : null;
-        const address = record.address ? String(record.address).trim() : null;
+        const firstName =
+          record.firstName != null ? String(record.firstName).trim() : null;
+        const lastName =
+          record.lastName != null ? String(record.lastName).trim() : null;
+        const email = record.email != null ? String(record.email).trim() : null;
+        const phoneNumber =
+          record.phoneNumber != null ? String(record.phoneNumber).trim() : null;
+        const address =
+          record.address != null ? String(record.address).trim() : null;
 
         // Parse date of birth if present
         let dateOfBirth: Date | null = null;
-        if (record.dateOfBirth) {
+        if (record.dateOfBirth != null) {
           try {
             dateOfBirth = new Date(String(record.dateOfBirth));
             if (isNaN(dateOfBirth.getTime())) {
@@ -382,7 +377,7 @@ export class DataImportService {
 
         // Parse gender if present
         let gender: string | null = null;
-        if (record.gender) {
+        if (record.gender != null) {
           const genderString = String(record.gender).toUpperCase();
           if (['MALE', 'FEMALE', 'OTHER'].includes(genderString)) {
             gender = genderString;
@@ -391,7 +386,7 @@ export class DataImportService {
 
         // Parse membership status if present
         let membershipStatus: string | null = null;
-        if (record.membershipStatus) {
+        if (record.membershipStatus != null) {
           const statusString = String(record.membershipStatus).toUpperCase();
           // Validate membership status
           if (['ACTIVE', 'INACTIVE', 'VISITOR'].includes(statusString)) {
@@ -434,7 +429,7 @@ export class DataImportService {
   private async processFundsImport(
     branchId: string,
     records: Record<string, unknown>[],
-    mapping: Record<string, string>,
+    _mapping: Record<string, string>,
   ): Promise<any> {
     // Placeholder implementation
     await Promise.resolve();
@@ -449,7 +444,7 @@ export class DataImportService {
   private async processAccountsImport(
     branchId: string,
     records: Record<string, unknown>[],
-    mapping: Record<string, string>,
+    _mapping: Record<string, string>,
   ): Promise<any> {
     // Placeholder implementation
     await Promise.resolve();
@@ -464,7 +459,7 @@ export class DataImportService {
   private async processContributionsImport(
     branchId: string,
     records: Record<string, unknown>[],
-    mapping: Record<string, string>,
+    _mapping: Record<string, string>,
   ): Promise<any> {
     // Placeholder implementation
     await Promise.resolve();

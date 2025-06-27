@@ -1,5 +1,11 @@
 import { Field, InputType, ID, PartialType } from '@nestjs/graphql';
-import { IsBoolean, IsOptional, IsString, IsUUID, IsNotEmpty } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsNotEmpty,
+} from 'class-validator';
 import { CreateEmailTemplateInput } from './create-email-template.input';
 
 @InputType()

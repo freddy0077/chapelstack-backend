@@ -1,6 +1,5 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
 import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
-import { PrayerRequestStatusEnum } from '../prayer-request-status.enum';
 
 @InputType()
 export class CreatePrayerRequestInput {

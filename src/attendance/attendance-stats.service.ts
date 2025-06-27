@@ -32,7 +32,8 @@ export class AttendanceStatsService {
    * Generates attendance statistics based on the provided input parameters
    */
   async generateAttendanceStats(input: AttendanceStatsInput) {
-    const { branchId, organisationId, startDate, endDate, period, statsTypes } = input;
+    const { branchId, organisationId, startDate, endDate, period, statsTypes } =
+      input;
 
     // Default to weekly period if not specified
     const groupByPeriod = period || AttendanceStatsPeriod.WEEKLY;

@@ -75,7 +75,10 @@ export class EventsResolver {
     @Args('branchId', { nullable: true }) branchId?: string,
     @Args('organisationId', { nullable: true }) organisationId?: string,
   ): Promise<Event[]> {
-    const events = await this.eventsService.findAll({ branchId, organisationId });
+    const events = await this.eventsService.findAll({
+      branchId,
+      organisationId,
+    });
     return events.map((event) => this.toGraphQLEvent(event));
   }
 

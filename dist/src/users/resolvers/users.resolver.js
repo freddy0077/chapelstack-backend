@@ -147,13 +147,24 @@ let UsersResolver = class UsersResolver {
                 });
             }
             catch (e) {
-                results.push({
-                    email: userInput.email,
-                    firstName: userInput.firstName,
-                    lastName: userInput.lastName,
-                    roleName: userInput.roleName,
-                    error: e.message,
-                });
+                if (e instanceof Error) {
+                    results.push({
+                        email: userInput.email,
+                        firstName: userInput.firstName,
+                        lastName: userInput.lastName,
+                        roleName: userInput.roleName,
+                        error: e.message,
+                    });
+                }
+                else {
+                    results.push({
+                        email: userInput.email,
+                        firstName: userInput.firstName,
+                        lastName: userInput.lastName,
+                        roleName: userInput.roleName,
+                        error: String(e),
+                    });
+                }
             }
         }
         return results;

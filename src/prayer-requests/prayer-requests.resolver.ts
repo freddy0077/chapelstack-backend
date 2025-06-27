@@ -17,8 +17,10 @@ export class PrayerRequestsResolver {
   @Query(() => [PrayerRequest])
   prayerRequests(
     @Args('branchId', { type: () => String, nullable: true }) branchId?: string,
-    @Args('status', { type: () => PrayerRequestStatusEnum, nullable: true }) status?: PrayerRequestStatusEnum,
-    @Args('organisationId', { type: () => String, nullable: true }) organisationId?: string,
+    @Args('status', { type: () => PrayerRequestStatusEnum, nullable: true })
+    status?: PrayerRequestStatusEnum,
+    @Args('organisationId', { type: () => String, nullable: true })
+    organisationId?: string,
   ) {
     return this.service.findAll({ branchId, status, organisationId });
   }

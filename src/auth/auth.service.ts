@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { User } from '../../generated/prisma';
+import { User } from '@prisma/client';
 
 import { UserType, AuthPayload } from './dto/auth.types';
 import { SignUpDto } from './dto/signup.dto';

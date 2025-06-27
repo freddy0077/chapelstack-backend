@@ -8,12 +8,13 @@ services:
     env_file:
       - .env.prod
     volumes:
-      - .:/app
+      - ./prisma:/app/prisma
+      - ./src:/app/src
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
-    command: sh -c "npx prisma migrate deploy && npm run start:prod"
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
 
   db:
     image: postgres:14
@@ -45,7 +46,7 @@ services:
     env_file:
       - .env.prod
     volumes:
-      - .:/app
+      - ./prisma:/app/prisma
     depends_on:
       db:
         condition: service_healthy

@@ -37,7 +37,7 @@ let VendorsService = class VendorsService {
         return this.prisma.vendor.findUnique({ where: { id } });
     }
     update(id, updateVendorInput) {
-        const { id: _, branchId, organisationId, ...rest } = updateVendorInput;
+        const { branchId, organisationId, ...rest } = updateVendorInput;
         const data = { ...rest };
         if (branchId) {
             data.branch = { connect: { id: branchId } };

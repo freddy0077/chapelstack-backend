@@ -17,7 +17,9 @@ export class S3Service {
   constructor(private configService: ConfigService) {
     const region = this.configService.get<string>('AWS_S3_REGION');
     const accessKeyId = this.configService.get<string>('AWS_S3_ACCESS_KEY_ID');
-    const secretAccessKey = this.configService.get<string>('AWS_S3_SECRET_ACCESS_KEY');
+    const secretAccessKey = this.configService.get<string>(
+      'AWS_S3_SECRET_ACCESS_KEY',
+    );
     if (region && accessKeyId && secretAccessKey) {
       this.s3 = new S3Client({
         region,
@@ -43,7 +45,7 @@ export class S3Service {
         Key: fileKey,
         Body: file.buffer,
         ContentType: file.mimetype,
-      })
+      }),
     );
     return `https://${this.bucket}.s3.${this.configService.get<string>('AWS_S3_REGION')}.amazonaws.com/${fileKey}`;
   }

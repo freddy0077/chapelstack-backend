@@ -1,5 +1,11 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsUUID } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  IsUUID,
+} from 'class-validator';
 
 @InputType()
 export class CreateBranchAdminInput {

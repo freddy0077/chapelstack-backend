@@ -28,7 +28,7 @@ let DashboardService = class DashboardService {
         this.financialReportsService = financialReportsService;
     }
     async getDashboardData(userId, branchId, dashboardType, organisationId) {
-        const preference = await this.getUserDashboardPreference(userId, branchId, dashboardType, organisationId);
+        const preference = await this.getUserDashboardPreference(userId, branchId, dashboardType);
         const dashboardData = {
             branchId,
             organisationId,
@@ -44,13 +44,13 @@ let DashboardService = class DashboardService {
             dashboardData.widgets?.push(await this.getMemberDemographicsWidget(branchId, organisationId), await this.getAttendanceTrendWidget(branchId, organisationId), await this.getBudgetVsActualWidget(branchId, organisationId));
         }
         else if (dashboardType === dashboard_data_entity_1.DashboardType.FINANCE) {
-            dashboardData.widgets?.push(await this.getFinancialSummaryWidget(branchId, organisationId), await this.getBudgetVsActualWidget(branchId, organisationId));
+            dashboardData.widgets?.push(this.getFinancialSummaryWidget(), await this.getBudgetVsActualWidget(branchId, organisationId));
         }
         else if (dashboardType === dashboard_data_entity_1.DashboardType.MINISTRY) {
-            dashboardData.widgets?.push(await this.getGroupAttendanceWidget(branchId, organisationId));
+            dashboardData.widgets?.push(this.getGroupAttendanceWidget());
         }
         else if (dashboardType === dashboard_data_entity_1.DashboardType.MEMBER) {
-            dashboardData.widgets?.push(await this.getMyGivingWidget(userId), this.getAnnouncementsWidget(), this.getQuickLinksWidget(), this.getUpcomingEventsWidget(), this.getNotificationsWidget());
+            dashboardData.widgets?.push(await this.getMyGivingWidget(), this.getAnnouncementsWidget(), this.getQuickLinksWidget(), this.getUpcomingEventsWidget(), this.getNotificationsWidget());
         }
         return dashboardData;
     }
@@ -201,7 +201,7 @@ let DashboardService = class DashboardService {
             icon: 'wallet-outline',
         };
     }
-    async getFinancialSummaryWidget(branchId, organisationId) {
+    getFinancialSummaryWidget() {
         return {
             widgetType: dashboard_data_entity_1.WidgetType.CHART,
             chartType: 'bar',
@@ -209,7 +209,7 @@ let DashboardService = class DashboardService {
             data: { labels: [], datasets: [] },
         };
     }
-    async getGroupAttendanceWidget(branchId, organisationId) {
+    getGroupAttendanceWidget() {
         return {
             widgetType: dashboard_data_entity_1.WidgetType.CHART,
             chartType: 'pie',
@@ -217,7 +217,7 @@ let DashboardService = class DashboardService {
             data: { labels: [], datasets: [] },
         };
     }
-    async getMyGivingWidget(userId) {
+    async getMyGivingWidget() {
         const fiscalYearStartDate = new Date(new Date().getFullYear(), 0, 1);
         const fiscalYearEndDate = new Date(new Date().getFullYear(), 11, 31);
         const givingReport = await this.financialReportsService.getContributionsReport({
@@ -233,7 +233,7 @@ let DashboardService = class DashboardService {
             icon: 'heart-outline',
         };
     }
-    async getUserDashboardPreference(userId, branchId, dashboardType, organisationId) {
+    async getUserDashboardPreference(userId, branchId, dashboardType) {
         const preference = await this.prisma.userDashboardPreference.findUnique({
             where: {
                 userId_branchId_dashboardType: {

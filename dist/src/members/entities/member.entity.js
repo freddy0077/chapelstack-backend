@@ -14,6 +14,7 @@ const graphql_1 = require("@nestjs/graphql");
 const graphql_2 = require("@nestjs/graphql");
 const graphql_type_json_1 = require("graphql-type-json");
 const family_entity_1 = require("./family.entity");
+const branch_entity_1 = require("../../branches/entities/branch.entity");
 var MemberStatus;
 (function (MemberStatus) {
     MemberStatus["ACTIVE"] = "ACTIVE";
@@ -94,6 +95,9 @@ let Member = class Member {
     familyRelationships;
     families;
     organisationId;
+    branch;
+    spouse;
+    parent;
 };
 exports.Member = Member;
 __decorate([
@@ -268,6 +272,18 @@ __decorate([
     (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", Object)
 ], Member.prototype, "organisationId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => branch_entity_1.Branch, { nullable: true }),
+    __metadata("design:type", Object)
+], Member.prototype, "branch", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Member, { nullable: true }),
+    __metadata("design:type", Object)
+], Member.prototype, "spouse", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Member, { nullable: true }),
+    __metadata("design:type", Object)
+], Member.prototype, "parent", void 0);
 exports.Member = Member = __decorate([
     (0, graphql_1.ObjectType)()
 ], Member);

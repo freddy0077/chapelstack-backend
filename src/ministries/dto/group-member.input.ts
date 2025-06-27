@@ -1,11 +1,5 @@
 import { Field, ID, InputType } from '@nestjs/graphql';
-import {
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
 
 export enum GroupMemberRole {
   LEADER = 'LEADER',

@@ -34,7 +34,12 @@ export class ExpenseCategoriesService {
   }
 
   update(id: string, updateExpenseCategoryInput: UpdateExpenseCategoryInput) {
-    const { id: _, branchId, organisationId, ...rest } = updateExpenseCategoryInput;
+    const {
+      id: _,
+      branchId,
+      organisationId,
+      ...rest
+    } = updateExpenseCategoryInput;
     const data: Prisma.ExpenseCategoryUpdateInput = { ...rest };
 
     if (branchId) {

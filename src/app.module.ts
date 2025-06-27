@@ -5,10 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BaseModule } from './base/base.module';
 import { ConfigModule } from '@nestjs/config';
-import {
-  GraphQLModule,
-  GraphQLISODateTime,
-} from '@nestjs/graphql';
+import { GraphQLModule, GraphQLISODateTime } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
 import { AppResolver } from './app.resolver';

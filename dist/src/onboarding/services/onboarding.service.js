@@ -99,7 +99,11 @@ let OnboardingService = OnboardingService_1 = class OnboardingService {
     }
     async completeOnboardingStep(input) {
         const { branchId, stepKey } = input;
-        this.logger.log('completeOnboardingStep called', { stepKey, branchId, input });
+        this.logger.log('completeOnboardingStep called', {
+            stepKey,
+            branchId,
+            input,
+        });
         let progress = await this.getOnboardingProgress(branchId);
         if (!progress) {
             throw new common_1.NotFoundException(`No onboarding progress found for branch ${branchId}.`);

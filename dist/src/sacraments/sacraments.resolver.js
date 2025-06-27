@@ -39,22 +39,76 @@ let SacramentsResolver = class SacramentsResolver {
         return await this.sacramentsService.getUpcomingAnniversaries(limit, branchId);
     }
     async createSacramentalRecord(createSacramentalRecordInput) {
-        return this.sacramentsService.create(createSacramentalRecordInput);
+        try {
+            const result = await this.sacramentsService.create(createSacramentalRecordInput);
+            if (!result)
+                throw new Error('Failed to create sacramental record');
+            return result;
+        }
+        catch (err) {
+            throw new Error('Failed to create sacramental record: ' +
+                (err instanceof Error ? err.message : String(err)));
+        }
     }
     async findAll(filter) {
-        return this.sacramentsService.findAll(filter);
+        try {
+            const result = await this.sacramentsService.findAll(filter);
+            if (!result)
+                throw new Error('Failed to find sacramental records');
+            return result;
+        }
+        catch (err) {
+            throw new Error('Failed to find sacramental records: ' +
+                (err instanceof Error ? err.message : String(err)));
+        }
     }
     async findOne(id) {
-        return this.sacramentsService.findOne(id);
+        try {
+            const result = await this.sacramentsService.findOne(id);
+            if (!result)
+                throw new Error('Failed to find sacramental record');
+            return result;
+        }
+        catch (err) {
+            throw new Error('Failed to find sacramental record: ' +
+                (err instanceof Error ? err.message : String(err)));
+        }
     }
     async findByMember(memberId) {
-        return this.sacramentsService.findByMember(memberId);
+        try {
+            const result = await this.sacramentsService.findByMember(memberId);
+            if (!result)
+                throw new Error('Failed to find sacraments by member');
+            return result;
+        }
+        catch (err) {
+            throw new Error('Failed to find sacraments by member: ' +
+                (err instanceof Error ? err.message : String(err)));
+        }
     }
     async updateSacramentalRecord(updateSacramentalRecordInput) {
-        return this.sacramentsService.update(updateSacramentalRecordInput.id, updateSacramentalRecordInput);
+        try {
+            const result = await this.sacramentsService.update(updateSacramentalRecordInput.id, updateSacramentalRecordInput);
+            if (!result)
+                throw new Error('Failed to update sacramental record');
+            return result;
+        }
+        catch (err) {
+            throw new Error('Failed to update sacramental record: ' +
+                (err instanceof Error ? err.message : String(err)));
+        }
     }
     async deleteSacramentalRecord(id) {
-        return this.sacramentsService.remove(id);
+        try {
+            const result = await this.sacramentsService.remove(id);
+            if (!result || typeof result !== 'object')
+                throw new Error('Failed to delete sacramental record');
+            return result;
+        }
+        catch (err) {
+            throw new Error('Failed to delete sacramental record: ' +
+                (err instanceof Error ? err.message : String(err)));
+        }
     }
     async uploadSacramentalCertificate(recordId, file) {
         const { createReadStream, filename, mimetype } = await file;
@@ -72,7 +126,16 @@ let SacramentsResolver = class SacramentsResolver {
             writeStream.on('error', reject);
         });
         const certificateUrl = `/uploads/certificates/${uniqueFilename}`;
-        return this.sacramentsService.uploadCertificate(recordId, certificateUrl);
+        try {
+            const result = await this.sacramentsService.uploadCertificate(recordId, certificateUrl);
+            if (!result)
+                throw new Error('Failed to update certificate URL');
+            return result;
+        }
+        catch (err) {
+            throw new Error('Failed to upload certificate: ' +
+                (err instanceof Error ? err.message : String(err)));
+        }
     }
 };
 exports.SacramentsResolver = SacramentsResolver;
@@ -130,7 +193,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], SacramentsResolver.prototype, "updateSacramentalRecord", null);
 __decorate([
-    (0, graphql_1.Mutation)(() => Boolean),
+    (0, graphql_1.Mutation)(() => sacramental_record_entity_1.SacramentalRecord),
     __param(0, (0, graphql_1.Args)('id', { type: () => graphql_1.ID }, common_1.ParseUUIDPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

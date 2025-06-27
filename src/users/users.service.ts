@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import bcrypt from "bcrypt";
+import bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -23,17 +23,24 @@ export class UsersService {
     organisationId?: string;
   }) {
     try {
+      const passwordHash: string = await bcrypt.hash(data.password, 10);
       return await this.prisma.user.create({
         data: {
           email: data.email,
-          passwordHash: await bcrypt.hash(data.password, 10),
+          passwordHash,
           firstName: data.firstName,
           lastName: data.lastName,
-          ...(data.organisationId ? { organisationId: data.organisationId } : {}),
+          ...(data.organisationId
+            ? { organisationId: data.organisationId }
+            : {}),
         },
       });
-    } catch (error: any) {
-      this.logger.error(`Error creating user: ${error.message}`, error.stack);
+    } catch (error) {
+      if (error instanceof Error) {
+        this.logger.error(`Error creating user: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`Error creating user: ${String(error)}`);
+      }
       throw error;
     }
   }

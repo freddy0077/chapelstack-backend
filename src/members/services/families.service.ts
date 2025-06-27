@@ -834,9 +834,6 @@ export class FamiliesService {
     familyId: string,
     relatedMemberId: string,
     relationship: string,
-    userId?: string,
-    ipAddress?: string,
-    userAgent?: string,
   ): Promise<Family> {
     // Find the member by RFID card ID
     const member = await this.prisma.member.findUnique({

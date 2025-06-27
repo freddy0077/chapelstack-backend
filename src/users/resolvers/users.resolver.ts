@@ -1,9 +1,9 @@
-import { Resolver, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Mutation, Args } from '@nestjs/graphql';
 import { UsersService } from '../users.service';
 import { User } from '../entities/user.entity';
 import { Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { InputType, Field, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType } from '@nestjs/graphql';
 import * as bcrypt from 'bcrypt';
 import { CreateUsersWithRoleInput } from '../dto/create-users-with-role.input';
 
@@ -46,7 +46,10 @@ export class UsersResolver {
         }
 
         const saltRounds = 10;
-        const passwordHash = await bcrypt.hash(userInput.password, saltRounds);
+        const passwordHash: string = await bcrypt.hash(
+          userInput.password,
+          saltRounds,
+        );
 
         const user = await this.prisma.user.create({
           data: {
@@ -87,13 +90,23 @@ export class UsersResolver {
           roleName: userInput.roleName,
         });
       } catch (e) {
-        results.push({
-          email: userInput.email,
-          firstName: userInput.firstName,
-          lastName: userInput.lastName,
-          roleName: userInput.roleName,
-          error: e.message,
-        });
+        if (e instanceof Error) {
+          results.push({
+            email: userInput.email,
+            firstName: userInput.firstName,
+            lastName: userInput.lastName,
+            roleName: userInput.roleName,
+            error: e.message,
+          });
+        } else {
+          results.push({
+            email: userInput.email,
+            firstName: userInput.firstName,
+            lastName: userInput.lastName,
+            roleName: userInput.roleName,
+            error: String(e),
+          });
+        }
       }
     }
     return results;

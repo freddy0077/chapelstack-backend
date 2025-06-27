@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   AnnouncementItem,
@@ -6,16 +6,12 @@ import {
   DashboardData,
   DashboardType,
   EventItem,
-  GroupItem,
   KpiCard,
   ChartData,
-  MyGroupsWidget,
   NotificationItem,
   NotificationsWidget,
   QuickLinkItem,
   QuickLinksWidget,
-  TaskItem,
-  TasksWidget,
   UpcomingEventsWidget,
   WidgetType,
 } from '../entities/dashboard-data.entity';
@@ -43,7 +39,6 @@ export class DashboardService {
       userId,
       branchId,
       dashboardType,
-      organisationId,
     );
 
     const dashboardData: DashboardData = {
@@ -67,16 +62,14 @@ export class DashboardService {
       );
     } else if (dashboardType === DashboardType.FINANCE) {
       dashboardData.widgets?.push(
-        await this.getFinancialSummaryWidget(branchId, organisationId),
+        this.getFinancialSummaryWidget(),
         await this.getBudgetVsActualWidget(branchId, organisationId),
       );
     } else if (dashboardType === DashboardType.MINISTRY) {
-      dashboardData.widgets?.push(
-        await this.getGroupAttendanceWidget(branchId, organisationId),
-      );
+      dashboardData.widgets?.push(this.getGroupAttendanceWidget());
     } else if (dashboardType === DashboardType.MEMBER) {
       dashboardData.widgets?.push(
-        await this.getMyGivingWidget(userId),
+        await this.getMyGivingWidget(),
         this.getAnnouncementsWidget(),
         this.getQuickLinksWidget(),
         this.getUpcomingEventsWidget(),
@@ -109,7 +102,8 @@ export class DashboardService {
         title: 'Community Outreach',
         date: new Date('2023-10-21T09:00:00Z'),
         author: 'Pastor John',
-        content: 'We are looking for volunteers for our community outreach program.',
+        content:
+          'We are looking for volunteers for our community outreach program.',
       },
     ];
     return allAnnouncements.slice(0, count);
@@ -265,10 +259,7 @@ export class DashboardService {
     };
   }
 
-  private async getFinancialSummaryWidget(
-    branchId?: string,
-    organisationId?: string,
-  ): Promise<ChartData> {
+  getFinancialSummaryWidget(): ChartData {
     // Placeholder for financial summary logic
     return {
       widgetType: WidgetType.CHART,
@@ -278,10 +269,7 @@ export class DashboardService {
     };
   }
 
-  private async getGroupAttendanceWidget(
-    branchId?: string,
-    organisationId?: string,
-  ): Promise<ChartData> {
+  getGroupAttendanceWidget(): ChartData {
     // Placeholder for group attendance logic
     return {
       widgetType: WidgetType.CHART,
@@ -291,18 +279,17 @@ export class DashboardService {
     };
   }
 
-  private async getMyGivingWidget(userId: string): Promise<KpiCard> {
+  private async getMyGivingWidget(): Promise<KpiCard> {
     const fiscalYearStartDate = new Date(new Date().getFullYear(), 0, 1);
     const fiscalYearEndDate = new Date(new Date().getFullYear(), 11, 31);
 
-    const givingReport = await this.financialReportsService.getContributionsReport(
-      {
+    const givingReport =
+      await this.financialReportsService.getContributionsReport({
         dateRange: {
           startDate: fiscalYearStartDate,
           endDate: fiscalYearEndDate,
         },
-      }
-    );
+      });
 
     return {
       widgetType: WidgetType.KPI_CARD,
@@ -316,7 +303,6 @@ export class DashboardService {
     userId: string,
     branchId: string,
     dashboardType: DashboardType,
-    organisationId?: string,
   ): Promise<UserDashboardPreference | null> {
     const preference = await this.prisma.userDashboardPreference.findUnique({
       where: {

@@ -35,12 +35,13 @@ let SacramentsService = class SacramentsService {
         const records = await this.prisma.sacramentalRecord.findMany({ where });
         const statsMap = {};
         for (const record of records) {
-            statsMap[record.sacramentType] = statsMap[record.sacramentType] || { count: 0 };
+            statsMap[record.sacramentType] = statsMap[record.sacramentType] || {
+                count: 0,
+            };
             statsMap[record.sacramentType].count++;
         }
         const allTypes = ['BAPTISM', 'COMMUNION', 'CONFIRMATION', 'MARRIAGE'];
-        const totalPrevYear = 1;
-        const result = allTypes.map(type => {
+        const result = allTypes.map((type) => {
             const count = statsMap[type]?.count || 0;
             return {
                 sacramentType: type,
@@ -63,10 +64,10 @@ let SacramentsService = class SacramentsService {
             include: { member: true },
         });
         const anniversaries = records
-            .map(record => {
+            .map((record) => {
             const sacramentDate = new Date(record.dateOfSacrament);
             const thisYear = today.getFullYear();
-            let nextAnniversary = new Date(sacramentDate);
+            const nextAnniversary = new Date(sacramentDate);
             nextAnniversary.setFullYear(thisYear);
             if (nextAnniversary < today) {
                 nextAnniversary.setFullYear(thisYear + 1);
@@ -77,7 +78,8 @@ let SacramentsService = class SacramentsService {
             const years = nextAnniversary.getFullYear() - sacramentDate.getFullYear();
             const anniversaryType = `${years}${years === 1 ? 'st' : years === 2 ? 'nd' : years === 3 ? 'rd' : 'th'} ${record.sacramentType.charAt(0) + record.sacramentType.slice(1).toLowerCase()}`;
             return {
-                name: `${record.member.firstName}${record.member.middleName ? ' ' + record.member.middleName : ''}${record.member.lastName ? ' ' + record.member.lastName : ''}`.trim() || 'N/A',
+                name: `${record.member?.firstName ?? ''}${record.member?.middleName ? ' ' + record.member.middleName : ''}${record.member?.lastName ? ' ' + record.member.lastName : ''}`.trim() ||
+                    'N/A',
                 sacramentType: record.sacramentType,
                 anniversaryType,
                 date: nextAnniversary,
@@ -188,7 +190,7 @@ let SacramentsService = class SacramentsService {
         const prismaResult = await this.prisma.sacramentalRecord.findUnique({
             where: { id },
         });
-        const record = prismaResult;
+        const record = prismaResult ?? null;
         if (!record) {
             throw new common_1.NotFoundException(`Sacramental record with ID ${id} not found`);
         }
@@ -238,10 +240,10 @@ let SacramentsService = class SacramentsService {
         if (!existingRecord) {
             throw new common_1.NotFoundException(`Sacramental record with ID ${id} not found`);
         }
-        await this.prisma.sacramentalRecord.delete({
+        const deleted = await this.prisma.sacramentalRecord.delete({
             where: { id },
         });
-        return true;
+        return this.mapPrismaRecordToEntity(deleted);
     }
     async uploadCertificate(recordId, certificateUrl) {
         const existingRecord = await this.findOne(recordId);

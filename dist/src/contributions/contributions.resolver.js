@@ -46,10 +46,14 @@ let ContributionsResolver = class ContributionsResolver {
         return this.contributionsService.remove(id);
     }
     getContributionType(contribution) {
-        return this.prisma.contributionType.findUnique({ where: { id: contribution.contributionTypeId } });
+        return this.prisma.contributionType.findUnique({
+            where: { id: contribution.contributionTypeId },
+        });
     }
     getPaymentMethod(contribution) {
-        return this.prisma.paymentMethod.findUnique({ where: { id: contribution.paymentMethodId } });
+        return this.prisma.paymentMethod.findUnique({
+            where: { id: contribution.paymentMethodId },
+        });
     }
     getFund(contribution) {
         return this.prisma.fund.findUnique({ where: { id: contribution.fundId } });
@@ -58,7 +62,9 @@ let ContributionsResolver = class ContributionsResolver {
         if (!contribution.memberId) {
             return null;
         }
-        return this.prisma.member.findUnique({ where: { id: contribution.memberId } });
+        return this.prisma.member.findUnique({
+            where: { id: contribution.memberId },
+        });
     }
 };
 exports.ContributionsResolver = ContributionsResolver;

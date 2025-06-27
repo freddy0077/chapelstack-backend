@@ -21,7 +21,7 @@ let FinancialReportsService = FinancialReportsService_1 = class FinancialReports
     }
     async getContributionsReport(filters) {
         try {
-            const { branchId, organisationId, dateRange, fundId, } = filters;
+            const { branchId, organisationId, dateRange, fundId } = filters;
             const where = {};
             if (branchId) {
                 where.branchId = branchId;
@@ -48,7 +48,7 @@ let FinancialReportsService = FinancialReportsService_1 = class FinancialReports
                 },
             });
             const total = contributions.reduce((sum, c) => sum + c.amount, 0);
-            const contributionEntities = contributions.map(c => ({
+            const contributionEntities = contributions.map((c) => ({
                 id: c.id,
                 amount: c.amount,
                 date: c.date,
@@ -129,7 +129,11 @@ let FinancialReportsService = FinancialReportsService_1 = class FinancialReports
             for (const budget of budgets) {
                 for (const item of budget.budgetItems) {
                     const categoryName = item.expenseCategory?.name || 'Uncategorized';
-                    const existing = categoryMap.get(categoryName) || { name: categoryName, budgeted: 0, actual: 0 };
+                    const existing = categoryMap.get(categoryName) || {
+                        name: categoryName,
+                        budgeted: 0,
+                        actual: 0,
+                    };
                     existing.budgeted += item.amount;
                     categoryMap.set(categoryName, existing);
                 }
@@ -163,7 +167,11 @@ let FinancialReportsService = FinancialReportsService_1 = class FinancialReports
             });
             for (const expense of expenses) {
                 const categoryName = expense.expenseCategory?.name || 'Uncategorized';
-                const existing = categoryMap.get(categoryName) || { name: categoryName, budgeted: 0, actual: 0 };
+                const existing = categoryMap.get(categoryName) || {
+                    name: categoryName,
+                    budgeted: 0,
+                    actual: 0,
+                };
                 existing.actual += expense.amount;
                 categoryMap.set(categoryName, existing);
             }
@@ -184,14 +192,17 @@ let FinancialReportsService = FinancialReportsService_1 = class FinancialReports
                 acc.variance += category.variance;
                 return acc;
             }, { budgeted: 0, actual: 0, variance: 0, percentVariance: 0 });
-            totals.percentVariance = totals.budgeted > 0
-                ? Number(((totals.variance / totals.budgeted) * 100).toFixed(2))
-                : 0;
+            totals.percentVariance =
+                totals.budgeted > 0
+                    ? Number(((totals.variance / totals.budgeted) * 100).toFixed(2))
+                    : 0;
             return {
                 branchId,
                 organisationId,
-                startDate: dateRange?.startDate || (budgets.length > 0 ? budgets[0].startDate : undefined),
-                endDate: dateRange?.endDate || (budgets.length > 0 ? budgets[0].endDate : undefined),
+                startDate: dateRange?.startDate ||
+                    (budgets.length > 0 ? budgets[0].startDate : undefined),
+                endDate: dateRange?.endDate ||
+                    (budgets.length > 0 ? budgets[0].endDate : undefined),
                 categories,
                 totals,
             };
@@ -245,7 +256,7 @@ let FinancialReportsService = FinancialReportsService_1 = class FinancialReports
             let fullyFulfilledCount = 0;
             let partiallyFulfilledCount = 0;
             let unfulfilledCount = 0;
-            const pledgeItems = pledges.map(pledge => {
+            const pledgeItems = pledges.map((pledge) => {
                 const fulfillmentPercentage = pledge.amount > 0
                     ? (pledge.amountFulfilled / pledge.amount) * 100
                     : 0;

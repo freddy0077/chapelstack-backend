@@ -18,7 +18,7 @@ let AttendanceReportsService = class AttendanceReportsService {
         this.prisma = prisma;
     }
     async getAttendanceSummaryReport(filter) {
-        const { branchId, organisationId, dateRange, eventTypeId } = filter;
+        const { branchId, organisationId, dateRange } = filter;
         const where = {};
         if (branchId) {
             where.branchId = branchId;

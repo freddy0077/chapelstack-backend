@@ -19,7 +19,12 @@ exports.OrganisationModule = OrganisationModule;
 exports.OrganisationModule = OrganisationModule = __decorate([
     (0, common_1.Module)({
         imports: [config_1.ConfigModule],
-        providers: [organisation_resolver_1.OrganisationResolver, organisation_service_1.OrganisationService, s3_service_1.S3Service, prisma_service_1.PrismaService],
+        providers: [
+            organisation_resolver_1.OrganisationResolver,
+            organisation_service_1.OrganisationService,
+            s3_service_1.S3Service,
+            prisma_service_1.PrismaService,
+        ],
         exports: [organisation_service_1.OrganisationService],
     })
 ], OrganisationModule);

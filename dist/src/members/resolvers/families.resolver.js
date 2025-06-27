@@ -40,8 +40,8 @@ let FamiliesResolver = class FamiliesResolver {
     async updateFamily(id, updateFamilyInput, userId, ipAddress, userAgent) {
         return this.familiesService.updateFamily(id, updateFamilyInput, userId, ipAddress, userAgent);
     }
-    async removeFamily(id, userId, ipAddress, userAgent) {
-        return this.familiesService.removeFamily(id, userId, ipAddress, userAgent);
+    async removeFamily(id, relationship) {
+        return this.familiesService.removeFamily(id, relationship);
     }
     async addMemberToFamily(familyId, memberId, userId, ipAddress, userAgent) {
         return this.familiesService.addMemberToFamily(familyId, memberId, userId, ipAddress, userAgent);
@@ -74,7 +74,7 @@ let FamiliesResolver = class FamiliesResolver {
         return this.familiesService.countFamilyRelationships();
     }
     async addMemberToFamilyByRfidCard(rfidCardId, familyId, relatedMemberId, relationship, userId, ipAddress, userAgent) {
-        return this.familiesService.addMemberToFamilyByRfidCard(rfidCardId, familyId, relatedMemberId, relationship, userId, ipAddress, userAgent);
+        return this.familiesService.addMemberToFamilyByRfidCard(rfidCardId, familyId, relatedMemberId, relationship);
     }
 };
 exports.FamiliesResolver = FamiliesResolver;
@@ -117,11 +117,9 @@ __decorate([
 __decorate([
     (0, graphql_1.Mutation)(() => Boolean),
     __param(0, (0, graphql_1.Args)('id', { type: () => String }, common_1.ParseUUIDPipe)),
-    __param(1, (0, current_user_decorator_1.CurrentUser)()),
-    __param(2, (0, decorators_1.IpAddress)()),
-    __param(3, (0, decorators_1.UserAgent)()),
+    __param(1, (0, graphql_1.Args)('relationship', { type: () => String })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], FamiliesResolver.prototype, "removeFamily", null);
 __decorate([

@@ -34,7 +34,7 @@ export class VendorsService {
   }
 
   update(id: string, updateVendorInput: UpdateVendorInput) {
-    const { id: _, branchId, organisationId, ...rest } = updateVendorInput;
+    const { branchId, organisationId, ...rest } = updateVendorInput;
     const data: Prisma.VendorUpdateInput = { ...rest };
 
     if (branchId) {

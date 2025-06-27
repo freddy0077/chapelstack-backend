@@ -13,10 +13,7 @@ export class NotificationResolver {
     @Args('organisationId', { type: () => ID, nullable: true })
     organisationId?: string,
   ): Promise<NotificationDto[]> {
-    return this.notificationService.getNotifications(
-      branchId,
-      organisationId,
-    );
+    return this.notificationService.getNotifications(branchId, organisationId);
   }
 
   @Query(() => [NotificationDto])

@@ -65,11 +65,9 @@ export class FamiliesResolver {
   @Mutation(() => Boolean)
   async removeFamily(
     @Args('id', { type: () => String }, ParseUUIDPipe) id: string,
-    @CurrentUser() userId?: string,
-    @IpAddress() ipAddress?: string,
-    @UserAgent() userAgent?: string,
+    @Args('relationship', { type: () => String }) relationship: string,
   ): Promise<boolean> {
-    return this.familiesService.removeFamily(id, userId, ipAddress, userAgent);
+    return this.familiesService.removeFamily(id, relationship);
   }
 
   @Mutation(() => Family)
@@ -204,9 +202,6 @@ export class FamiliesResolver {
       familyId,
       relatedMemberId,
       relationship,
-      userId,
-      ipAddress,
-      userAgent,
     );
   }
 }

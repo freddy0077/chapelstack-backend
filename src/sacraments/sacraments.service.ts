@@ -4,16 +4,12 @@ import { UpdateSacramentalRecordInput } from './dto/update-sacramental-record.in
 import { PrismaService } from '../prisma/prisma.service';
 import { SacramentalRecord } from './entities/sacramental-record.entity';
 import { SacramentalRecordFilterInput } from './dto/sacramental-record-filter.input';
-import {
-  Prisma,
-  SacramentType,
-  SacramentalRecord as PrismaSacramentalRecord,
-} from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 // Type guard to ensure Prisma record is properly typed
 function isPrismaSacramentalRecord(
   record: unknown,
-): record is PrismaSacramentalRecord {
+): record is SacramentalRecord {
   return Boolean(record && typeof record === 'object' && 'id' in record);
 }
 
@@ -43,14 +39,15 @@ export class SacramentsService {
     // Group by sacramentType
     const statsMap: Record<string, { count: number }> = {};
     for (const record of records) {
-      statsMap[record.sacramentType] = statsMap[record.sacramentType] || { count: 0 };
+      statsMap[record.sacramentType] = statsMap[record.sacramentType] || {
+        count: 0,
+      };
       statsMap[record.sacramentType].count++;
     }
 
     // Build output for each sacrament type
     const allTypes = ['BAPTISM', 'COMMUNION', 'CONFIRMATION', 'MARRIAGE'];
-    const totalPrevYear = 1; // Placeholder to avoid division by zero
-    const result = allTypes.map(type => {
+    const result = allTypes.map((type) => {
       const count = statsMap[type]?.count || 0;
       // Trend/percentage logic placeholder (real logic would compare with previous period)
       return {
@@ -84,21 +81,26 @@ export class SacramentsService {
 
     // Calculate upcoming anniversaries (within next 60 days)
     const anniversaries = records
-      .map(record => {
+      .map((record) => {
         // Calculate years since sacrament
         const sacramentDate = new Date(record.dateOfSacrament);
         const thisYear = today.getFullYear();
-        let nextAnniversary = new Date(sacramentDate);
+        const nextAnniversary = new Date(sacramentDate);
         nextAnniversary.setFullYear(thisYear);
         if (nextAnniversary < today) {
           nextAnniversary.setFullYear(thisYear + 1);
         }
-        const diffDays = Math.ceil((nextAnniversary.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.ceil(
+          (nextAnniversary.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+        );
         if (diffDays > 60 || diffDays < 0) return undefined;
-        const years = nextAnniversary.getFullYear() - sacramentDate.getFullYear();
+        const years =
+          nextAnniversary.getFullYear() - sacramentDate.getFullYear();
         const anniversaryType = `${years}${years === 1 ? 'st' : years === 2 ? 'nd' : years === 3 ? 'rd' : 'th'} ${record.sacramentType.charAt(0) + record.sacramentType.slice(1).toLowerCase()}`;
         return {
-          name: `${record.member.firstName}${record.member.middleName ? ' ' + record.member.middleName : ''}${record.member.lastName ? ' ' + record.member.lastName : ''}`.trim() || 'N/A',
+          name:
+            `${record.member?.firstName ?? ''}${record.member?.middleName ? ' ' + record.member.middleName : ''}${record.member?.lastName ? ' ' + record.member.lastName : ''}`.trim() ||
+            'N/A',
           sacramentType: record.sacramentType,
           anniversaryType,
           date: nextAnniversary,
@@ -107,7 +109,7 @@ export class SacramentsService {
         };
       })
       .filter((a): a is NonNullable<typeof a> => !!a)
-      .sort((a, b) => (a.date as Date).getTime() - (b.date as Date).getTime());
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
 
     return limit ? anniversaries.slice(0, limit) : anniversaries;
   }
@@ -116,7 +118,7 @@ export class SacramentsService {
 
   // Helper method to convert Prisma SacramentalRecord to GraphQL SacramentalRecord entity
   private mapPrismaRecordToEntity(
-    record: PrismaSacramentalRecord,
+    record: SacramentalRecord,
   ): SacramentalRecord {
     // Ensure record is properly typed using type guard
     if (!isPrismaSacramentalRecord(record)) {
@@ -176,14 +178,14 @@ export class SacramentsService {
     const prismaResult = await this.prisma.sacramentalRecord.create({
       data: createSacramentalRecordInput,
     });
-    const record = prismaResult as unknown as PrismaSacramentalRecord;
+    const record = prismaResult as unknown as SacramentalRecord;
     return this.mapPrismaRecordToEntity(record);
   }
 
   async findAll(
     filter?: SacramentalRecordFilterInput,
   ): Promise<SacramentalRecord[]> {
-    const where: Prisma.SacramentalRecordWhereInput = {};
+    const where: Prisma.SacramentalRecordFindManyArgs['where'] = {};
 
     if (filter) {
       if (filter.sacramentType) {
@@ -237,7 +239,7 @@ export class SacramentsService {
       where,
       orderBy: { dateOfSacrament: 'desc' },
     });
-    const records = prismaResults as unknown as PrismaSacramentalRecord[];
+    const records = prismaResults as unknown as SacramentalRecord[];
     return records.map((record) => this.mapPrismaRecordToEntity(record));
   }
 
@@ -246,7 +248,7 @@ export class SacramentsService {
     const prismaResult = await this.prisma.sacramentalRecord.findUnique({
       where: { id },
     });
-    const record = prismaResult as unknown as PrismaSacramentalRecord | null;
+    const record = (prismaResult as unknown as SacramentalRecord) ?? null;
 
     if (!record) {
       throw new NotFoundException(`Sacramental record with ID ${id} not found`);
@@ -270,7 +272,7 @@ export class SacramentsService {
       where: { memberId },
       orderBy: { dateOfSacrament: 'desc' },
     });
-    const records = prismaResults as unknown as PrismaSacramentalRecord[];
+    const records = prismaResults as unknown as SacramentalRecord[];
     return records.map((record) => this.mapPrismaRecordToEntity(record));
   }
 
@@ -312,11 +314,11 @@ export class SacramentsService {
       where: { id },
       data: updateSacramentalRecordInput,
     });
-    const record = prismaResult as unknown as PrismaSacramentalRecord;
+    const record = prismaResult as unknown as SacramentalRecord;
     return this.mapPrismaRecordToEntity(record);
   }
 
-  async remove(id: string): Promise<boolean> {
+  async remove(id: string): Promise<SacramentalRecord> {
     // Check if record exists
     const existingRecord = await this.findOne(id);
 
@@ -324,12 +326,11 @@ export class SacramentsService {
       throw new NotFoundException(`Sacramental record with ID ${id} not found`);
     }
 
-    // Delete the record
-    await this.prisma.sacramentalRecord.delete({
+    // Delete the record and return the deleted entity
+    const deleted = await this.prisma.sacramentalRecord.delete({
       where: { id },
     });
-
-    return true;
+    return this.mapPrismaRecordToEntity(deleted as unknown as SacramentalRecord);
   }
 
   async uploadCertificate(
@@ -351,7 +352,7 @@ export class SacramentsService {
       data: { certificateUrl },
     });
 
-    const result = updatedRecord as unknown as PrismaSacramentalRecord;
+    const result = updatedRecord as unknown as SacramentalRecord;
 
     return this.mapPrismaRecordToEntity(result);
   }
@@ -368,7 +369,7 @@ export class SacramentsService {
       where: { id },
       data: { certificateUrl },
     });
-    const record = prismaResult as unknown as PrismaSacramentalRecord;
+    const record = prismaResult as unknown as SacramentalRecord;
     return this.mapPrismaRecordToEntity(record);
   }
 }

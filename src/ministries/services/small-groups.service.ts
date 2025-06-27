@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 import {
   CreateSmallGroupInput,
   SmallGroupFilterInput,
@@ -13,7 +12,7 @@ export class SmallGroupsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(filters?: SmallGroupFilterInput): Promise<SmallGroup[]> {
-    let where: any = {};
+    const where: any = {};
     if (filters) {
       if (filters.id) where.id = filters.id;
       if (filters.name)

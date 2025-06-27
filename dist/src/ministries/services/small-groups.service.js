@@ -18,7 +18,7 @@ let SmallGroupsService = class SmallGroupsService {
         this.prisma = prisma;
     }
     async findAll(filters) {
-        let where = {};
+        const where = {};
         if (filters) {
             if (filters.id)
                 where.id = filters.id;

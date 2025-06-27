@@ -9,12 +9,17 @@ export class BudgetsResolver {
   constructor(private readonly budgetsService: BudgetsService) {}
 
   @Mutation(() => Budget)
-  createBudget(@Args('createBudgetInput') createBudgetInput: CreateBudgetInput) {
+  createBudget(
+    @Args('createBudgetInput') createBudgetInput: CreateBudgetInput,
+  ) {
     return this.budgetsService.create(createBudgetInput);
   }
 
   @Query(() => [Budget], { name: 'budgets' })
-  findAll(@Args('organisationId', { type: () => String, nullable: true }) organisationId?: string) {
+  findAll(
+    @Args('organisationId', { type: () => String, nullable: true })
+    organisationId?: string,
+  ) {
     return this.budgetsService.findAll(organisationId);
   }
 
@@ -24,7 +29,9 @@ export class BudgetsResolver {
   }
 
   @Mutation(() => Budget)
-  updateBudget(@Args('updateBudgetInput') updateBudgetInput: UpdateBudgetInput) {
+  updateBudget(
+    @Args('updateBudgetInput') updateBudgetInput: UpdateBudgetInput,
+  ) {
     return this.budgetsService.update(updateBudgetInput.id, updateBudgetInput);
   }
 

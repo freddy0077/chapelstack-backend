@@ -9,12 +9,17 @@ export class PledgesResolver {
   constructor(private readonly pledgesService: PledgesService) {}
 
   @Mutation(() => Pledge)
-  createPledge(@Args('createPledgeInput') createPledgeInput: CreatePledgeInput) {
+  createPledge(
+    @Args('createPledgeInput') createPledgeInput: CreatePledgeInput,
+  ) {
     return this.pledgesService.create(createPledgeInput);
   }
 
   @Query(() => [Pledge], { name: 'pledges' })
-  findAll(@Args('organisationId', { type: () => String, nullable: true }) organisationId?: string) {
+  findAll(
+    @Args('organisationId', { type: () => String, nullable: true })
+    organisationId?: string,
+  ) {
     return this.pledgesService.findAll(organisationId);
   }
 
@@ -24,7 +29,9 @@ export class PledgesResolver {
   }
 
   @Mutation(() => Pledge)
-  updatePledge(@Args('updatePledgeInput') updatePledgeInput: UpdatePledgeInput) {
+  updatePledge(
+    @Args('updatePledgeInput') updatePledgeInput: UpdatePledgeInput,
+  ) {
     return this.pledgesService.update(updatePledgeInput.id, updatePledgeInput);
   }
 

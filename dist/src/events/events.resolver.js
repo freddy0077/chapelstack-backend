@@ -61,7 +61,10 @@ let EventsResolver = class EventsResolver {
         return this.toGraphQLEvent(createdEvent);
     }
     async findAll(branchId, organisationId) {
-        const events = await this.eventsService.findAll({ branchId, organisationId });
+        const events = await this.eventsService.findAll({
+            branchId,
+            organisationId,
+        });
         return events.map((event) => this.toGraphQLEvent(event));
     }
     async findOne(id) {

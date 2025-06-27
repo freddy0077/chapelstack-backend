@@ -9,7 +9,7 @@ import { UpdateBranchInput } from './dto/update-branch.input';
 import { BranchFilterInput } from './dto/branch-filter.input';
 import { PaginationInput } from '../common/dto/pagination.input';
 import { UpdateBranchSettingInput } from './dto/update-branch-setting.input';
-import { Prisma, Branch as PrismaBranch } from '../../generated/prisma'; // Corrected path to project root/generated/prisma
+import { Prisma, Branch as PrismaBranch } from '@prisma/client'; // Using standard @prisma/client
 import { Branch } from './entities/branch.entity'; // For GQL type
 
 // Helper function to map Prisma Branch to GraphQL Branch

@@ -30,18 +30,26 @@ let UsersService = UsersService_1 = class UsersService {
     }
     async create(data) {
         try {
+            const passwordHash = await bcrypt_1.default.hash(data.password, 10);
             return await this.prisma.user.create({
                 data: {
                     email: data.email,
-                    passwordHash: await bcrypt_1.default.hash(data.password, 10),
+                    passwordHash,
                     firstName: data.firstName,
                     lastName: data.lastName,
-                    ...(data.organisationId ? { organisationId: data.organisationId } : {}),
+                    ...(data.organisationId
+                        ? { organisationId: data.organisationId }
+                        : {}),
                 },
             });
         }
         catch (error) {
-            this.logger.error(`Error creating user: ${error.message}`, error.stack);
+            if (error instanceof Error) {
+                this.logger.error(`Error creating user: ${error.message}`, error.stack);
+            }
+            else {
+                this.logger.error(`Error creating user: ${String(error)}`);
+            }
             throw error;
         }
     }

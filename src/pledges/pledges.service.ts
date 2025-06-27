@@ -37,8 +37,14 @@ export class PledgesService {
   }
 
   update(id: string, updatePledgeInput: UpdatePledgeInput) {
-    const { id: _, fundId, memberId, branchId, organisationId, ...rest } =
-      updatePledgeInput;
+    const {
+      id: _,
+      fundId,
+      memberId,
+      branchId,
+      organisationId,
+      ...rest
+    } = updatePledgeInput;
     const data: Prisma.PledgeUpdateInput = { ...rest };
 
     if (fundId) {

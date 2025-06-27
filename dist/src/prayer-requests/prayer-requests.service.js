@@ -25,7 +25,7 @@ let PrayerRequestsService = class PrayerRequestsService {
             },
         });
     }
-    async findAll({ branchId, status, organisationId }) {
+    async findAll({ branchId, status, organisationId, }) {
         const where = { status };
         if (branchId) {
             where.branchId = branchId;

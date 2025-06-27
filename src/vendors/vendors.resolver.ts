@@ -9,12 +9,17 @@ export class VendorsResolver {
   constructor(private readonly vendorsService: VendorsService) {}
 
   @Mutation(() => Vendor)
-  createVendor(@Args('createVendorInput') createVendorInput: CreateVendorInput) {
+  createVendor(
+    @Args('createVendorInput') createVendorInput: CreateVendorInput,
+  ) {
     return this.vendorsService.create(createVendorInput);
   }
 
   @Query(() => [Vendor], { name: 'vendors' })
-  findAll(@Args('organisationId', { type: () => String, nullable: true }) organisationId?: string) {
+  findAll(
+    @Args('organisationId', { type: () => String, nullable: true })
+    organisationId?: string,
+  ) {
     return this.vendorsService.findAll(organisationId);
   }
 
@@ -24,7 +29,9 @@ export class VendorsResolver {
   }
 
   @Mutation(() => Vendor)
-  updateVendor(@Args('updateVendorInput') updateVendorInput: UpdateVendorInput) {
+  updateVendor(
+    @Args('updateVendorInput') updateVendorInput: UpdateVendorInput,
+  ) {
     return this.vendorsService.update(updateVendorInput.id, updateVendorInput);
   }
 

@@ -9,7 +9,16 @@ export class ContributionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(createContributionInput: CreateContributionInput) {
-    const { contributionTypeId, fundId, paymentMethodId, pledgeId, branchId, organisationId, memberId, ...rest } = createContributionInput;
+    const {
+      contributionTypeId,
+      fundId,
+      paymentMethodId,
+      pledgeId,
+      branchId,
+      organisationId,
+      memberId,
+      ...rest
+    } = createContributionInput;
     const data: Prisma.ContributionCreateInput = {
       ...rest,
       contributionType: { connect: { id: contributionTypeId } },
@@ -44,7 +53,17 @@ export class ContributionsService {
   }
 
   update(id: string, updateContributionInput: UpdateContributionInput) {
-    const { id: _, contributionTypeId, fundId, paymentMethodId, pledgeId, branchId, organisationId, memberId, ...rest } = updateContributionInput;
+    const {
+      id: _,
+      contributionTypeId,
+      fundId,
+      paymentMethodId,
+      pledgeId,
+      branchId,
+      organisationId,
+      memberId,
+      ...rest
+    } = updateContributionInput;
     const data: Prisma.ContributionUpdateInput = { ...rest };
 
     if (contributionTypeId) {

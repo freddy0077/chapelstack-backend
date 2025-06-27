@@ -7,7 +7,12 @@ import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [ConfigModule],
-  providers: [OrganisationResolver, OrganisationService, S3Service, PrismaService],
+  providers: [
+    OrganisationResolver,
+    OrganisationService,
+    S3Service,
+    PrismaService,
+  ],
   exports: [OrganisationService],
 })
 export class OrganisationModule {}

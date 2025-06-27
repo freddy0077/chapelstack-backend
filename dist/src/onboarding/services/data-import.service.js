@@ -138,7 +138,7 @@ let DataImportService = DataImportService_1 = class DataImportService {
                     result = await this.processContributionsImport(branchId, csvData, mapping);
                     break;
                 default:
-                    throw new Error(`Unsupported financial data type: ${type}`);
+                    throw new Error(`Unsupported financial data type: ${String(type)}`);
             }
             await this.onboardingService.updateImportStatus(branchId, 'finances', true);
             const reportContent = this.generateImportReport(result, type, branchId);
@@ -238,7 +238,7 @@ let DataImportService = DataImportService_1 = class DataImportService {
                 }
                 break;
             default:
-                throw new Error(`Unknown financial data type: ${type}`);
+                throw new Error(`Unknown financial data type: ${String(type)}`);
         }
     }
     validateMemberRecords(records) {
@@ -287,19 +287,13 @@ let DataImportService = DataImportService_1 = class DataImportService {
         let importedCount = 0;
         for (const record of records) {
             try {
-                const firstName = record.firstName
-                    ? String(record.firstName).trim()
-                    : null;
-                const lastName = record.lastName
-                    ? String(record.lastName).trim()
-                    : null;
-                const email = record.email ? String(record.email).trim() : null;
-                const phoneNumber = record.phoneNumber
-                    ? String(record.phoneNumber).trim()
-                    : null;
-                const address = record.address ? String(record.address).trim() : null;
+                const firstName = record.firstName != null ? String(record.firstName).trim() : null;
+                const lastName = record.lastName != null ? String(record.lastName).trim() : null;
+                const email = record.email != null ? String(record.email).trim() : null;
+                const phoneNumber = record.phoneNumber != null ? String(record.phoneNumber).trim() : null;
+                const address = record.address != null ? String(record.address).trim() : null;
                 let dateOfBirth = null;
-                if (record.dateOfBirth) {
+                if (record.dateOfBirth != null) {
                     try {
                         dateOfBirth = new Date(String(record.dateOfBirth));
                         if (isNaN(dateOfBirth.getTime())) {
@@ -311,14 +305,14 @@ let DataImportService = DataImportService_1 = class DataImportService {
                     }
                 }
                 let gender = null;
-                if (record.gender) {
+                if (record.gender != null) {
                     const genderString = String(record.gender).toUpperCase();
                     if (['MALE', 'FEMALE', 'OTHER'].includes(genderString)) {
                         gender = genderString;
                     }
                 }
                 let membershipStatus = null;
-                if (record.membershipStatus) {
+                if (record.membershipStatus != null) {
                     const statusString = String(record.membershipStatus).toUpperCase();
                     if (['ACTIVE', 'INACTIVE', 'VISITOR'].includes(statusString)) {
                         membershipStatus = statusString;
@@ -347,7 +341,7 @@ let DataImportService = DataImportService_1 = class DataImportService {
         }
         return importedCount;
     }
-    async processFundsImport(branchId, records, mapping) {
+    async processFundsImport(branchId, records, _mapping) {
         await Promise.resolve();
         return {
             success: true,
@@ -356,7 +350,7 @@ let DataImportService = DataImportService_1 = class DataImportService {
             errors: [],
         };
     }
-    async processAccountsImport(branchId, records, mapping) {
+    async processAccountsImport(branchId, records, _mapping) {
         await Promise.resolve();
         return {
             success: true,
@@ -365,7 +359,7 @@ let DataImportService = DataImportService_1 = class DataImportService {
             errors: [],
         };
     }
-    async processContributionsImport(branchId, records, mapping) {
+    async processContributionsImport(branchId, records, _mapping) {
         await Promise.resolve();
         return {
             success: true,

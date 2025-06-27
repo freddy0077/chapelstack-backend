@@ -35,7 +35,13 @@ export class BudgetsService {
   }
 
   update(id: string, updateBudgetInput: UpdateBudgetInput) {
-    const { id: _, fundId, branchId, organisationId, ...rest } = updateBudgetInput;
+    const {
+      id: _,
+      fundId,
+      branchId,
+      organisationId,
+      ...rest
+    } = updateBudgetInput;
     const data: Prisma.BudgetUpdateInput = { ...rest };
 
     if (fundId) {

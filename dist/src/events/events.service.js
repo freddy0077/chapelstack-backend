@@ -43,7 +43,7 @@ let EventsService = class EventsService {
             throw error;
         }
     }
-    async findAll({ branchId, organisationId }) {
+    async findAll({ branchId, organisationId, }) {
         const where = {};
         if (branchId) {
             where.branchId = branchId;

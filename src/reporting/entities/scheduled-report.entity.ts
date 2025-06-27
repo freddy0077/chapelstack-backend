@@ -1,4 +1,4 @@
-import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { GraphQLISODateTime } from '@nestjs/graphql';
 import { ReportFrequency } from '../enums/report-frequency.enum';
 import { OutputFormat } from '../dto/report-filter.input';

@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePrayerRequestInput } from './dto/create-prayer-request.input';
 import { UpdatePrayerRequestInput } from './dto/update-prayer-request.input';
-import { PrayerRequestStatus } from '@prisma/client';
 
 @Injectable()
 export class PrayerRequestsService {
@@ -17,7 +16,15 @@ export class PrayerRequestsService {
     });
   }
 
-  async findAll({ branchId, status, organisationId }: { branchId?: string; status?: any; organisationId?: string }) {
+  async findAll({
+    branchId,
+    status,
+    organisationId,
+  }: {
+    branchId?: string;
+    status?: any;
+    organisationId?: string;
+  }) {
     // Prefer branchId if both are present
     const where: any = { status };
     if (branchId) {

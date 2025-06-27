@@ -18,10 +18,10 @@ const member_entity_1 = require("../entities/member.entity");
 let MembersService = MembersService_1 = class MembersService {
     prisma;
     auditLogService;
-    async countAssignedRfidCards() {
+    countAssignedRfidCards() {
         return 0;
     }
-    async countUnassignedRfidCards() {
+    countUnassignedRfidCards() {
         return 0;
     }
     logger = new common_1.Logger(MembersService_1.name);
@@ -839,8 +839,13 @@ let MembersService = MembersService_1 = class MembersService {
                 attendance: attendanceRate,
                 giving: `GHS${totalGiving._sum.amount?.toFixed(2) || '0.00'}`,
             },
-            upcomingEvents: upcomingEvents.map(e => ({ id: e.id, name: e.title, date: e.startDate, location: e.location || 'TBD' })),
-            groups: member.groupMemberships.map(gm => ({
+            upcomingEvents: upcomingEvents.map((e) => ({
+                id: e.id,
+                name: e.title,
+                date: e.startDate,
+                location: e.location || 'TBD',
+            })),
+            groups: member.groupMemberships.map((gm) => ({
                 id: gm.id,
                 name: gm.ministry?.name || gm.smallGroup?.name || 'Unknown Group',
                 role: gm.role,

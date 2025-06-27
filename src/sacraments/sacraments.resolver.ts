@@ -41,45 +41,101 @@ export class SacramentsResolver {
   async createSacramentalRecord(
     @Args('input') createSacramentalRecordInput: CreateSacramentalRecordInput,
   ): Promise<SacramentalRecord> {
-    return this.sacramentsService.create(createSacramentalRecordInput);
+    try {
+      const result = await this.sacramentsService.create(
+        createSacramentalRecordInput,
+      );
+      if (!result) throw new Error('Failed to create sacramental record');
+      return result;
+    } catch (err) {
+      throw new Error(
+        'Failed to create sacramental record: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
   }
 
   @Query(() => [SacramentalRecord], { name: 'sacramentalRecords' })
   async findAll(
     @Args('filter', { nullable: true }) filter?: SacramentalRecordFilterInput,
   ): Promise<SacramentalRecord[]> {
-    return this.sacramentsService.findAll(filter);
+    try {
+      const result = await this.sacramentsService.findAll(filter);
+      if (!result) throw new Error('Failed to find sacramental records');
+      return result;
+    } catch (err) {
+      throw new Error(
+        'Failed to find sacramental records: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
   }
 
   @Query(() => SacramentalRecord, { name: 'sacramentalRecord' })
   async findOne(
     @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
   ): Promise<SacramentalRecord> {
-    return this.sacramentsService.findOne(id);
+    try {
+      const result = await this.sacramentsService.findOne(id);
+      if (!result) throw new Error('Failed to find sacramental record');
+      return result;
+    } catch (err) {
+      throw new Error(
+        'Failed to find sacramental record: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
   }
 
   @Query(() => [SacramentalRecord], { name: 'sacramentsByMember' })
   async findByMember(
     @Args('memberId', { type: () => ID }, ParseUUIDPipe) memberId: string,
   ): Promise<SacramentalRecord[]> {
-    return this.sacramentsService.findByMember(memberId);
+    try {
+      const result = await this.sacramentsService.findByMember(memberId);
+      if (!result) throw new Error('Failed to find sacraments by member');
+      return result;
+    } catch (err) {
+      throw new Error(
+        'Failed to find sacraments by member: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
   }
 
   @Mutation(() => SacramentalRecord)
   async updateSacramentalRecord(
     @Args('input') updateSacramentalRecordInput: UpdateSacramentalRecordInput,
   ): Promise<SacramentalRecord> {
-    return this.sacramentsService.update(
-      updateSacramentalRecordInput.id,
-      updateSacramentalRecordInput,
-    );
+    try {
+      const result = await this.sacramentsService.update(
+        updateSacramentalRecordInput.id,
+        updateSacramentalRecordInput,
+      );
+      if (!result) throw new Error('Failed to update sacramental record');
+      return result;
+    } catch (err) {
+      throw new Error(
+        'Failed to update sacramental record: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
   }
 
-  @Mutation(() => Boolean)
+  @Mutation(() => SacramentalRecord)
   async deleteSacramentalRecord(
     @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
-  ): Promise<boolean> {
-    return this.sacramentsService.remove(id);
+  ): Promise<SacramentalRecord> {
+    try {
+      const result = await this.sacramentsService.remove(id);
+      if (!result || typeof result !== 'object') throw new Error('Failed to delete sacramental record');
+      return result;
+    } catch (err) {
+      throw new Error(
+        'Failed to delete sacramental record: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
   }
 
   @Mutation(() => SacramentalRecord)
@@ -116,6 +172,18 @@ export class SacramentsResolver {
     const certificateUrl = `/uploads/certificates/${uniqueFilename}`;
 
     // Update the record with the certificate URL
-    return this.sacramentsService.uploadCertificate(recordId, certificateUrl);
+    try {
+      const result = await this.sacramentsService.uploadCertificate(
+        recordId,
+        certificateUrl,
+      );
+      if (!result) throw new Error('Failed to update certificate URL');
+      return result;
+    } catch (err) {
+      throw new Error(
+        'Failed to upload certificate: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
   }
 }
