@@ -166,6 +166,11 @@ export class AttendanceService {
         `Attendance session with ID ${data.sessionId} not found`,
       );
     }
+    if (!session.organisationId) {
+      throw new BadRequestException(
+        `Attendance session with ID ${data.sessionId} does not have an associated organisationId`,
+      );
+    }
 
     // If memberId is provided, validate member exists
     if (data.memberId) {
@@ -212,6 +217,7 @@ export class AttendanceService {
         recordedBy: data.recordedById
           ? { connect: { id: data.recordedById } }
           : undefined,
+        organisation: { connect: { id: session.organisationId! } },
       },
       include: {
         member: true,
@@ -231,6 +237,11 @@ export class AttendanceService {
     if (!session) {
       throw new NotFoundException(
         `Attendance session with ID ${data.sessionId} not found`,
+      );
+    }
+    if (!session.organisationId) {
+      throw new BadRequestException(
+        `Attendance session with ID ${data.sessionId} does not have an associated organisationId`,
       );
     }
 
@@ -275,6 +286,7 @@ export class AttendanceService {
           recordedBy: headcountRecordedById
             ? { connect: { id: headcountRecordedById } }
             : undefined,
+          organisation: { connect: { id: session.organisationId! } },
         },
         include: {
           session: true,
@@ -479,6 +491,11 @@ export class AttendanceService {
         `Attendance session with ID ${data.sessionId} not found`,
       );
     }
+    if (!session.organisationId) {
+      throw new BadRequestException(
+        `Attendance session with ID ${data.sessionId} does not have an associated organisationId`,
+      );
+    }
 
     // Find member by RFID/NFC card ID
     const member = await this.prisma.member.findFirst({
@@ -546,6 +563,7 @@ export class AttendanceService {
         recordedBy: data.recordedById
           ? { connect: { id: data.recordedById } }
           : undefined,
+        organisation: { connect: { id: session.organisationId! } },
       },
       include: {
         member: true,

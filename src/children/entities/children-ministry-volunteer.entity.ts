@@ -13,23 +13,14 @@ export class ChildrenMinistryVolunteer {
   @Field(() => String)
   role: string;
 
-  @Field(() => GraphQLISODateTime, { nullable: true })
-  backgroundCheckDate: Date | null;
-
   @Field(() => String, { nullable: true })
   backgroundCheckStatus: string | null;
 
-  @Field(() => GraphQLISODateTime, { nullable: true })
-  trainingCompletionDate: Date | null;
-
   @Field(() => Boolean)
-  isActive: boolean;
+  trainingCompleted: boolean;
 
   @Field(() => String, { nullable: true })
-  notes: string | null;
-
-  @Field(() => String)
-  branchId: string;
+  branchId: string | null;
 
   @Field(() => GraphQLISODateTime)
   createdAt: Date;

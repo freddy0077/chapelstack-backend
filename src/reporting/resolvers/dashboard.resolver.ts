@@ -20,54 +20,48 @@ export class DashboardResolver {
   @Query(() => DashboardData)
   @RequirePermissions({ action: 'view', subject: 'dashboard' })
   async dashboardData(
-    @Args('branchId', { type: () => ID }) branchId: string,
-    @Args('dashboardType', { type: () => DashboardType })
-    dashboardType: DashboardType,
     @CurrentUser() user: { id: string },
-    @Args('organisationId', { type: () => ID, nullable: true })
-    organisationId?: string,
+    @Args('dashboardType', { type: () => DashboardType }) dashboardType: DashboardType,
+    @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
+    @Args('organisationId', { type: () => ID, nullable: true }) organisationId?: string,
   ): Promise<DashboardData> {
     return await this.dashboardService.getDashboardData(
       user.id,
+      dashboardType,
       branchId,
-      dashboardType
+      organisationId,
     );
   }
 
   @Query(() => UserDashboardPreference, { nullable: true })
   @RequirePermissions({ action: 'view', subject: 'dashboard' })
   async userDashboardPreference(
-    @Args('branchId', { type: () => ID }) branchId: string,
-    @Args('dashboardType', { type: () => DashboardType })
-    dashboardType: DashboardType,
     @CurrentUser() user: { id: string },
-    @Args('organisationId', { type: () => ID, nullable: true })
-    organisationId?: string,
+    @Args('dashboardType', { type: () => DashboardType }) dashboardType: DashboardType,
+    @Args('branchId', { type: () => ID }) branchId: string,
+    @Args('organisationId', { type: () => ID, nullable: true }) organisationId?: string,
   ): Promise<UserDashboardPreference | null> {
     return await this.dashboardService.getUserDashboardPreference(
       user.id,
+      dashboardType,
       branchId,
-      dashboardType
     );
   }
 
   @Mutation(() => UserDashboardPreference)
   @RequirePermissions({ action: 'update', subject: 'dashboard' })
   async saveUserDashboardPreference(
-    @Args('branchId', { type: () => ID }) branchId: string,
-    @Args('dashboardType', { type: () => DashboardType })
-    dashboardType: DashboardType,
-    @Args('layoutConfig', { type: () => GraphQLJSON })
-    layoutConfig: Record<string, any>,
     @CurrentUser() user: { id: string },
-    @Args('organisationId', { type: () => ID, nullable: true })
-    organisationId?: string,
+    @Args('dashboardType', { type: () => DashboardType }) dashboardType: DashboardType,
+    @Args('layoutConfig', { type: () => GraphQLJSON }) layoutConfig: Record<string, any>,
+    @Args('branchId', { type: () => ID }) branchId: string,
+    @Args('organisationId', { type: () => ID, nullable: true }) organisationId?: string,
   ): Promise<UserDashboardPreference> {
     return await this.dashboardService.saveUserDashboardPreference(
       user.id,
-      branchId,
       dashboardType,
       layoutConfig,
+      branchId,
       organisationId,
     );
   }

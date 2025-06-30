@@ -1,98 +1,42 @@
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { seedCoreData } from './seeders/core.seeder';
+import { seedFinanceData } from './seeders/finance.seeder';
+import { seedEventData } from './seeders/event.seeder';
+import { seedCommunicationData } from './seeders/communication.seeder';
+import { seedContentData } from './seeders/content.seeder';
+import { seedChildrenMinistryData } from './seeders/children.seeder';
+import { seedMinistries } from './seeders/ministry.seeder';
+import { seedSacraments } from './seeders/sacrament.seeder';
+import { seedPrayerRequests } from './seeders/prayer.seeder';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Start seeding ...');
+  console.log('🚀 Starting comprehensive database seeding...');
 
-  const saltRounds = 10;
+  // Seeding core data is foundational as other modules depend on it.
+  const coreData = await seedCoreData(prisma);
+  console.log('✅ Core data seeded successfully (Organisation, Branch, Roles, Users, Members).');
 
-  // Create Organisation
-  const organisation = await prisma.organisation.upsert({
-    where: { email: 'hello@chapelstack.com' },
-    update: {},
-    create: {
-      name: 'Chapel Stack',
-      description: 'Default organization for Chapel Stack',
-      email: 'hello@chapelstack.com',
-      primaryColor: '#000000',
-      secondaryColor: '#FFFFFF',
-    },
-  });
+  // Seed other modules using IDs from the core data.
+  // These can be run in parallel if they don't have inter-dependencies.
+  await Promise.all([
+    seedFinanceData(prisma, coreData).then(() => console.log('✅ Finance data seeded.')),
+    seedEventData(prisma, coreData).then(() => console.log('✅ Event data seeded.')),
+    seedCommunicationData(prisma, coreData).then(() => console.log('✅ Communication data seeded.')),
+    seedContentData(prisma, coreData).then(() => console.log('✅ Content data seeded.')),
+    seedChildrenMinistryData(prisma, coreData).then(() => console.log('✅ Children ministry data seeded.')),
+    seedMinistries(prisma, coreData.members, coreData.organisation.id, coreData.branch.id).then(() => console.log('✅ Ministry data seeded.')),
+    seedSacraments(prisma, coreData.members, coreData.organisation.id, coreData.branch.id).then(() => console.log('✅ Sacrament data seeded.')),
+    seedPrayerRequests(prisma, coreData.members, coreData.organisation.id, coreData.branch.id).then(() => console.log('✅ Prayer request data seeded.')),
+  ]);
 
-  // Create Branch
-  const branch = await prisma.branch.upsert({
-    where: { email: 'main@chapelstack.com' },
-    update: {},
-    create: {
-      name: 'Main Branch',
-      organisationId: organisation.id,
-      email: 'main@chapelstack.com',
-      city: 'Accra',
-      country: 'Ghana',
-    },
-  });
-
-  // Define Roles
-  const roles = [
-    { name: 'SUPER_ADMIN', description: 'Super Admin Role' },
-    { name: 'BRANCH_ADMIN', description: 'Branch Admin Role' },
-    { name: 'MEMBER', description: 'Member Role' },
-    { name: 'GUEST', description: 'Guest Role' },
-  ];
-
-  for (const roleData of roles) {
-    const role = await prisma.role.upsert({
-      where: { name: roleData.name },
-      update: {},
-      create: roleData,
-    });
-
-    const email = `${role.name.toLowerCase().replace('_', '')}@chapelstack.com`;
-    const password = 'password';
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create User
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        email,
-        passwordHash: hashedPassword,
-        firstName: role.name.split('_')[0],
-        lastName: 'User',
-        organisationId: organisation.id,
-        roles: {
-          connect: { id: role.id },
-        },
-      },
-    });
-
-    // Create Member
-    await prisma.member.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: {
-        firstName: user.firstName || role.name.split('_')[0],
-        lastName: user.lastName || 'User',
-        email: user.email,
-        userId: user.id,
-        branchId: branch.id,
-        organisationId: organisation.id,
-        status: 'ACTIVE',
-        gender: 'NOT_SPECIFIED',
-      },
-    });
-
-    console.log(`Created ${role.name} user with email: ${email}`);
-  }
-
-  console.log('Seeding finished.');
+  console.log('🎉 Seeding finished successfully!');
 }
 
 main()
   .catch((e) => {
+    console.error('🔥 An error occurred during seeding:');
     console.error(e);
     process.exit(1);
   })

@@ -45,9 +45,9 @@ export class VolunteersResolver {
   @RequirePermissions({ action: 'read', subject: 'ChildrenMinistryVolunteer' })
   findAll(
     @Args('branchId', { nullable: true }) branchId?: string,
-    @Args('isActive', { nullable: true }) isActive?: boolean,
+    @Args('trainingCompleted', { nullable: true }) trainingCompleted?: boolean,
   ): Promise<ChildrenMinistryVolunteer[]> {
-    return this.volunteersService.findAll(branchId, isActive);
+    return this.volunteersService.findAll(branchId, trainingCompleted);
   }
 
   @Query(() => ChildrenMinistryVolunteer, { name: 'childrenMinistryVolunteer' })
@@ -92,40 +92,6 @@ export class VolunteersResolver {
     @Args('id', { type: () => ID }) id: string,
   ): Promise<ChildrenMinistryVolunteer> {
     return this.volunteersService.remove(id);
-  }
-
-  @Mutation(() => ChildrenMinistryVolunteer)
-  @RequirePermissions({
-    action: 'update',
-    subject: 'ChildrenMinistryVolunteer',
-  })
-  updateBackgroundCheck(
-    @Args('id', { type: () => ID }) id: string,
-    @Args('backgroundCheckDate', { type: () => GraphQLISODateTime })
-    backgroundCheckDate: Date,
-    @Args('backgroundCheckStatus') backgroundCheckStatus: string,
-  ): Promise<ChildrenMinistryVolunteer> {
-    return this.volunteersService.updateBackgroundCheck(
-      id,
-      backgroundCheckDate,
-      backgroundCheckStatus,
-    );
-  }
-
-  @Mutation(() => ChildrenMinistryVolunteer)
-  @RequirePermissions({
-    action: 'update',
-    subject: 'ChildrenMinistryVolunteer',
-  })
-  updateTrainingCompletion(
-    @Args('id', { type: () => ID }) id: string,
-    @Args('trainingCompletionDate', { type: () => GraphQLISODateTime })
-    trainingCompletionDate: Date,
-  ): Promise<ChildrenMinistryVolunteer> {
-    return this.volunteersService.updateTrainingCompletion(
-      id,
-      trainingCompletionDate,
-    );
   }
 
   @Query(() => [VolunteerScheduleItem], { name: 'volunteerSchedule' })

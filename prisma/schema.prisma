@@ -60,6 +60,9 @@ model User {
   organisation              Organisation?             @relation(fields: [organisationId], references: [id])
   organisationId            String?
   member                    Member?                   @relation("UserToMember")
+  transactions              Transaction[]             @relation("UserTransactions")
+
+  @@index([organisationId])
 }
 
 model Role {
@@ -71,6 +74,8 @@ model Role {
   userBranches UserBranch[]
   permissions  Permission[] @relation("RolePermissions")
   users        User[]       @relation("UserRoles")
+
+  @@index([name])
 }
 
 model Permission {
@@ -115,6 +120,7 @@ model Branch {
   onboardingProgress    OnboardingProgress?
   organisation          Organisation?       @relation(fields: [organisationId], references: [id])
   organisationId        String?
+  transactions          Transaction[]       @relation("BranchTransactions")
 
   // Financial relations
   funds             Fund[]
@@ -241,6 +247,7 @@ model EmailTemplate {
   updatedAt   DateTime       @updatedAt
   emails      EmailMessage[]
 
+  @@unique([name, organisationId, branchId], name: "email_template_unique_constraint")
   @@index([branchId])
   @@index([organisationId])
 }
@@ -694,6 +701,8 @@ model AttendanceRecord {
   recordedBy   User?    @relation("UserAttendanceRecords", fields: [recordedById], references: [id], onDelete: SetNull)
   branchId     String?
   branch       Branch?  @relation("BranchAttendanceRecords", fields: [branchId], references: [id], onDelete: SetNull)
+  organisationId String
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -785,6 +794,7 @@ model Fund {
   organisation   Organisation? @relation(fields: [organisationId], references: [id])
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  transactions   Transaction[] @relation("FundTransactions")
 
   // Relations
   contributions Contribution[]
@@ -792,6 +802,7 @@ model Fund {
   budgets       Budget[]
   pledges       Pledge[]
 
+  @@unique([name, organisationId, branchId], name: "fund_unique_constraint")
   @@index([branchId])
   @@index([organisationId])
 }
@@ -812,6 +823,7 @@ model ContributionType {
   // Relations
   contributions Contribution[]
 
+  @@unique([name, organisationId, branchId], name: "contribution_type_unique_constraint")
   @@index([branchId])
   @@index([organisationId])
 }
@@ -833,6 +845,7 @@ model PaymentMethod {
   contributions Contribution[]
   expenses      Expense[]
 
+  @@unique([name, organisationId, branchId], name: "payment_method_unique_constraint")
   @@index([branchId])
   @@index([organisationId])
 }
@@ -988,6 +1001,7 @@ model ExpenseCategory {
   expenses    Expense[]
   budgetItems BudgetItem[]
 
+  @@unique([name, organisationId, branchId], name: "expense_category_unique_constraint")
   @@index([branchId])
   @@index([organisationId])
   @@index([parentId])
@@ -1064,6 +1078,7 @@ model Vendor {
   // Relations
   expenses Expense[]
 
+  @@unique([name, organisationId, branchId], name: "vendor_unique_constraint")
   @@index([branchId])
   @@index([organisationId])
 }
@@ -1159,6 +1174,7 @@ model Sermon {
   updatedAt      DateTime      @updatedAt
   attachments    MediaItem[]   @relation("SermonAttachments")
 
+  @@unique([title, organisationId, branchId], name: "sermon_unique_constraint")
   @@index([branchId])
   @@index([organisationId])
   @@index([speakerId])
@@ -1182,6 +1198,7 @@ model Speaker {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
+  @@unique([name, organisationId, branchId], name: "speaker_unique_constraint")
   @@index([branchId])
   @@index([organisationId])
   @@index([memberId])
@@ -1202,6 +1219,7 @@ model Series {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
+  @@unique([title, organisationId, branchId], name: "series_unique_constraint")
   @@index([branchId])
   @@index([organisationId])
 }
@@ -1337,25 +1355,21 @@ model ChildrenMinistryVolunteer {
   id                     String        @id @default(uuid())
   memberId               String        @unique
   role                   String
-  backgroundCheckDate    DateTime?
-  backgroundCheckStatus  String?
-  trainingCompletionDate DateTime?
-  isActive               Boolean       @default(true)
-  notes                  String?
-  branchId               String
-  organisationId         String?
-  organisation           Organisation? @relation(fields: [organisationId], references: [id])
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
+  backgroundCheckStatus   String                     @default("PENDING") // PENDING, PASSED, FAILED
+  trainingCompleted       Boolean                    @default(false)
+  organisationId          String?
+  branchId                String?
+  member                  Member                     @relation(fields: [memberId], references: [id])
+  organisation            Organisation?              @relation(fields: [organisationId], references: [id])
+  branch                  Branch?                    @relation(fields: [branchId], references: [id])
+  eventAssignments        VolunteerEventAssignment[]
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
 
-  // Relations
-  member           Member                     @relation(fields: [memberId], references: [id])
-  branch           Branch                     @relation(fields: [branchId], references: [id])
-  eventAssignments VolunteerEventAssignment[]
-
+  @@unique([memberId, organisationId, branchId], name: "children_ministry_volunteer_unique_constraint")
   @@index([memberId])
-  @@index([branchId])
   @@index([organisationId])
+  @@index([branchId])
 }
 
 model ChildrenEvent {
@@ -1684,6 +1698,8 @@ model Organisation {
   emailMessages              EmailMessage[]
   smsMessages                SmsMessage[]
   notifications              Notification[]
+  attendanceRecords          AttendanceRecord[]
+  transactions               Transaction[] @relation("OrganisationTransactions")
 
   @@index([email])
 }
@@ -1736,4 +1752,32 @@ model PrayerRequest {
 
 model VolunteerRole {
   id String @id @default(uuid())
+}
+
+enum TransactionType {
+  CONTRIBUTION
+  EXPENSE
+  TRANSFER
+  FUND_ALLOCATION
+}
+
+model Transaction {
+  id             String   @id @default(uuid())
+  organisationId String
+  branchId       String?
+  fundId         String?
+  userId         String?
+  type           TransactionType
+  amount         Decimal
+  date           DateTime @default(now())
+  description    String?
+  reference      String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation   Organisation @relation("OrganisationTransactions", fields: [organisationId], references: [id])
+  branch         Branch?      @relation("BranchTransactions", fields: [branchId], references: [id])
+  fund           Fund?        @relation("FundTransactions", fields: [fundId], references: [id])
+  user           User?        @relation("UserTransactions", fields: [userId], references: [id])
 }

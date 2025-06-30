@@ -24,6 +24,11 @@ type AbsentMember {
   phone: String
 }
 
+type ActivityEngagement {
+  recentEvents: [EventInfo!]!
+  upcomingEvents: [EventInfo!]!
+}
+
 type AgeDistribution {
   ageGroup: String!
   count: Float!
@@ -50,6 +55,12 @@ type Announcement {
   title: String!
 }
 
+type AnnouncementInfo {
+  id: String!
+  startDate: DateTime!
+  title: String!
+}
+
 type AnnouncementItem {
   author: String
   content: String!
@@ -57,6 +68,10 @@ type AnnouncementItem {
   id: String!
   priority: String
   title: String!
+}
+
+type Announcements {
+  announcements: [AnnouncementInfo!]!
 }
 
 type AnnouncementsWidget {
@@ -103,6 +118,10 @@ input AttendanceFilterInput {
 type AttendanceFrequencyStat {
   count: Float!
   label: String!
+}
+
+type AttendanceOverview {
+  totalAttendance: Float!
 }
 
 type AttendanceRecord {
@@ -335,6 +354,13 @@ input BranchFilterInput {
   stateContains: String
 }
 
+type BranchInfo {
+  id: String!
+  name: String!
+  organisation: String
+  status: String
+}
+
 type BranchProfile {
   address: String
   city: String
@@ -379,6 +405,11 @@ type BranchStatistics {
 
   """Total number of members in this branch."""
   totalMembers: Int!
+}
+
+type BranchesSummary {
+  branches: [BranchInfo!]!
+  total: Float!
 }
 
 type Budget {
@@ -515,16 +546,13 @@ type ChildrenEvent {
 }
 
 type ChildrenMinistryVolunteer {
-  backgroundCheckDate: DateTime
   backgroundCheckStatus: String
-  branchId: String!
+  branchId: String
   createdAt: DateTime!
   id: ID!
-  isActive: Boolean!
   memberId: String!
-  notes: String
   role: String!
-  trainingCompletionDate: DateTime
+  trainingCompleted: Boolean!
   upcomingEvents: [ChildrenEvent!]!
   updatedAt: DateTime!
 }
@@ -1103,14 +1131,11 @@ input CreateVolunteerAssignmentInput {
 }
 
 input CreateVolunteerInput {
-  backgroundCheckDate: DateTime
-  backgroundCheckStatus: String
+  backgroundCheckStatus: String = "PENDING"
   branchId: String!
-  isActive: Boolean! = true
   memberId: String!
-  notes: String
   role: String!
-  trainingCompletionDate: DateTime
+  trainingCompleted: Boolean = false
 }
 
 type CreatedUserResult {
@@ -1123,21 +1148,13 @@ type CreatedUserResult {
 }
 
 type DashboardData {
-  announcements: AnnouncementsWidget
   branchId: ID
   branchName: String
-  charts: [ChartData!]!
   dashboardType: DashboardType!
   generatedAt: DateTime!
-  kpiCards: [KpiCard!]!
   layout: JSON
-  myGroups: MyGroupsWidget
-  notifications: NotificationsWidget
   organisationId: ID
-  quickLinks: QuickLinksWidget
-  tasks: TasksWidget
-  upcomingEvents: UpcomingEventsWidget
-  widgets: [JSON!]!
+  widgets: [DashboardWidgetUnion!]!
 }
 
 type DashboardEvent {
@@ -1174,6 +1191,8 @@ enum DashboardType {
   PASTORAL
   SUPER_ADMIN
 }
+
+union DashboardWidgetUnion = AnnouncementsWidget | ChartData | KpiCard | MinistryInvolvementWidget | MyGroupsWidget | NotificationsWidget | PrayerRequestSummaryWidget | QuickLinksWidget | RecentSacramentsWidget | TasksWidget | UpcomingEventsWidget
 
 type DataOperation {
   completedAt: DateTime
@@ -1290,6 +1309,12 @@ type EventAttendanceStats {
   totalCheckedOut: Int!
 }
 
+type EventInfo {
+  id: String!
+  startDate: DateTime!
+  title: String!
+}
+
 type EventItem {
   description: String
   endDate: DateTime
@@ -1377,6 +1402,16 @@ type FileUploadResponse {
   fileUrl: String!
   mediaItemId: String
   uploadUrl: String!
+}
+
+type FinancialOverview {
+  donation: Float!
+  expenses: Float!
+  offering: Float!
+  pledge: Float!
+  specialContribution: Float!
+  tithes: Float!
+  totalContributions: Float!
 }
 
 type FirstTimeVisitorsStat {
@@ -1822,6 +1857,10 @@ enum MemberStatus {
   VISITOR
 }
 
+type MemberSummary {
+  total: Float!
+}
+
 type MembershipStatusDistribution {
   count: Float!
   percentage: Float!
@@ -1902,6 +1941,17 @@ input MinistryFilterInput {
   parentId: String
   status: String
   type: String
+}
+
+type MinistryInvolvementItem {
+  memberCount: Float!
+  ministryName: String!
+}
+
+type MinistryInvolvementWidget {
+  ministries: [MinistryInvolvementItem!]!
+  title: String!
+  widgetType: WidgetType!
 }
 
 type Mutation {
@@ -2039,7 +2089,6 @@ type Mutation {
   update(updateMediaItemInput: UpdateMediaItemInput!): MediaItem!
   updateAnnouncement(id: ID!, input: UpdateAnnouncementInput!): Announcement!
   updateAttendanceSession(input: UpdateAttendanceSessionInput!): AttendanceSession!
-  updateBackgroundCheck(backgroundCheckDate: DateTime!, backgroundCheckStatus: String!, id: ID!): ChildrenMinistryVolunteer!
   updateBranch(id: ID!, updateBranchInput: UpdateBranchInput!): Branch!
   updateBranchSetting(branchId: ID!, updateSettingInput: UpdateBranchSettingInput!): BranchSetting!
   updateBudget(updateBudgetInput: UpdateBudgetInput!): Budget!
@@ -2073,7 +2122,6 @@ type Mutation {
   updateSmallGroup(id: ID!, input: UpdateSmallGroupInput!): SmallGroup!
   updateSpiritualMilestone(id: String!, updateSpiritualMilestoneInput: UpdateSpiritualMilestoneInput!): SpiritualMilestone!
   updateTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
-  updateTrainingCompletion(id: ID!, trainingCompletionDate: DateTime!): ChildrenMinistryVolunteer!
   updateUserActiveStatus(id: ID!, isActive: Boolean!): AuthUser!
   updateVendor(updateVendorInput: UpdateVendorInput!): Vendor!
   uploadOrganisationBrandingFile(file: Upload!, organisationId: ID!): String!
@@ -2183,6 +2231,18 @@ type Organisation {
   zipCode: String
 }
 
+type OrganisationInfo {
+  adminCount: Float!
+  branchCount: Float!
+  id: String!
+  name: String!
+}
+
+type OrganisationOverview {
+  organisations: [OrganisationInfo!]!
+  total: Float!
+}
+
 """Available output formats for reports"""
 enum OutputFormat {
   CSV
@@ -2272,6 +2332,17 @@ enum PrayerRequestStatusEnum {
   NEW
 }
 
+type PrayerRequestSummaryData {
+  count: Float!
+  status: String!
+}
+
+type PrayerRequestSummaryWidget {
+  summary: [PrayerRequestSummaryData!]!
+  title: String!
+  widgetType: WidgetType!
+}
+
 type QRCodeToken {
   createdAt: DateTime!
   expiresAt: DateTime!
@@ -2312,14 +2383,14 @@ type Query {
   childrenEvents(branchId: String): [ChildrenEvent!]!
   childrenMinistryVolunteer(id: ID!): ChildrenMinistryVolunteer!
   childrenMinistryVolunteerByMember(memberId: ID!): ChildrenMinistryVolunteer
-  childrenMinistryVolunteers(branchId: String, isActive: Boolean): [ChildrenMinistryVolunteer!]!
+  childrenMinistryVolunteers(branchId: String, trainingCompleted: Boolean): [ChildrenMinistryVolunteer!]!
   communicationChannelStats(filter: CommunicationStatsFilterInput): [CommunicationChannelStats!]!
   communicationStats(filter: CommunicationStatsFilterInput): CommunicationStatsEntity!
   contribution(id: String!): Contribution!
   contributionTypes(organisationId: String!): [ContributionType!]!
   contributions(organisationId: String): [Contribution!]!
   currentChildrenEvents(branchId: String!): [ChildrenEvent!]!
-  dashboardData(branchId: ID!, dashboardType: DashboardType!, organisationId: ID): DashboardData!
+  dashboardData(branchId: ID, dashboardType: DashboardType!, organisationId: ID): DashboardData!
   dataOperation(id: ID!): DataOperation!
   dataOperations(filter: DataOperationFilterInput): [DataOperation!]!
   emails(branchId: ID, organisationId: ID): [EmailMessageDto!]!
@@ -2404,6 +2475,7 @@ type Query {
   spiritualMilestones(skip: Int = 0, take: Int = 10): [SpiritualMilestone!]!
   spiritualMilestonesByMember(memberId: String!): [SpiritualMilestone!]!
   spiritualMilestonesCount: Int!
+  superAdminDashboardData(organisationId: ID): SuperAdminDashboardData!
   systemHealth: SystemHealth!
   template(id: ID!): EmailTemplateDto!
   templates(branchId: ID, organisationId: ID): [EmailTemplateDto!]!
@@ -2426,6 +2498,12 @@ type QuickLinkItem {
 
 type QuickLinksWidget {
   links: [QuickLinkItem!]!
+  title: String!
+  widgetType: WidgetType!
+}
+
+type RecentSacramentsWidget {
+  sacraments: [SacramentItem!]!
   title: String!
   widgetType: WidgetType!
 }
@@ -2526,6 +2604,13 @@ type SacramentAnniversaryOutput {
   timeUntil: String
 }
 
+type SacramentItem {
+  date: DateTime!
+  id: String!
+  recipientName: String!
+  type: String!
+}
+
 type SacramentStatsOutput {
   count: Float!
   percentage: Float
@@ -2579,6 +2664,10 @@ input SacramentalRecordFilterInput {
   officiantName: String
   organisationId: String
   sacramentType: SacramentType
+}
+
+type SacramentsOverview {
+  totalSacraments: Float!
 }
 
 input SendEmailInput {
@@ -2741,6 +2830,18 @@ enum SubmissionStatus {
 
 type SuccessMessage {
   message: String!
+}
+
+type SuperAdminDashboardData {
+  activityEngagement: ActivityEngagement!
+  announcements: Announcements!
+  attendanceOverview: AttendanceOverview!
+  branchesSummary: BranchesSummary!
+  financialOverview: FinancialOverview!
+  memberSummary: MemberSummary!
+  organisationOverview: OrganisationOverview!
+  sacramentsOverview: SacramentsOverview!
+  systemHealth: SystemHealth!
 }
 
 type SystemHealth {
@@ -3230,15 +3331,12 @@ input UpdateVendorInput {
 }
 
 input UpdateVolunteerInput {
-  backgroundCheckDate: DateTime
-  backgroundCheckStatus: String
+  backgroundCheckStatus: String = "PENDING"
   branchId: String
   id: ID!
-  isActive: Boolean = true
   memberId: String
-  notes: String
   role: String
-  trainingCompletionDate: DateTime
+  trainingCompleted: Boolean = false
 }
 
 """The `Upload` scalar type represents a file upload."""
@@ -3358,11 +3456,14 @@ enum WidgetType {
   CHART
   GIVING_SUMMARY
   KPI_CARD
+  MINISTRY_INVOLVEMENT
   MY_GROUPS
   NEW_MEMBERS
   NOTIFICATIONS
   PRAYER_REQUESTS
+  PRAYER_REQUEST_SUMMARY
   QUICK_LINKS
+  RECENT_SACRAMENTS
   TASKS
   UPCOMING_EVENTS
 }

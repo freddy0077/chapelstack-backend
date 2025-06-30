@@ -21,9 +21,7 @@ export class MemberReportsService {
 
     if (branchId) {
       where.branchId = branchId;
-    }
-
-    if (organisationId) {
+    } else if (organisationId) {
       where.organisationId = organisationId;
     }
 
@@ -85,9 +83,7 @@ export class MemberReportsService {
 
     if (branchId) {
       where.branchId = branchId;
-    }
-
-    if (organisationId) {
+    } else if (organisationId) {
       where.organisationId = organisationId;
     }
 
@@ -170,8 +166,8 @@ export class MemberReportsService {
       }
 
       // Process gender
-      if (member.gender === 'MALE') genderCounts.male++;
-      else if (member.gender === 'FEMALE') genderCounts.female++;
+      if (member.gender?.toUpperCase() === 'MALE') genderCounts.male++;
+      else if (member.gender?.toUpperCase() === 'FEMALE') genderCounts.female++;
       else genderCounts.other++;
 
       // Process membership status

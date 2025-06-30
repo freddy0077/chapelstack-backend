@@ -14,9 +14,37 @@ const mockPrismaService = {
   contribution: {
     count: jest.fn(),
     aggregate: jest.fn(),
+    findMany: jest.fn(),
+  },
+  expense: {
+    findMany: jest.fn(),
   },
   branch: {
     findUnique: jest.fn().mockResolvedValue({ name: 'Test Branch' }),
+  },
+  ministry: {
+    findMany: jest.fn(),
+  },
+  sacramentalRecord: {
+    findMany: jest.fn(),
+  },
+  prayerRequest: {
+    groupBy: jest.fn(),
+  },
+  smallGroup: {
+    findMany: jest.fn(),
+  },
+  groupMember: {
+    findMany: jest.fn(),
+  },
+  attendanceRecord: {
+    count: jest.fn(),
+  },
+  userDashboardPreference: {
+    findUnique: jest.fn().mockResolvedValue({
+      dashboardType: DashboardType.ADMIN,
+      branchId: 'branch-1',
+    }),
   },
   $connect: jest.fn(),
 };
@@ -25,12 +53,16 @@ const mockPrismaService = {
 const mockFinancialReportsService = {
   getContributionsReport: jest.fn(),
   getBudgetVsActualReport: jest.fn().mockResolvedValue({
-    budgetItems: [
-      { category: 'Income', budgeted: 10000, actual: 9000 },
-      { category: 'Expenses', budgeted: 8000, actual: 7500 },
+    categories: [
+      { name: 'Income', budgeted: 10000, actual: 9000 },
+      { name: 'Expenses', budgeted: 8000, actual: 7500 },
     ],
-    totalBudgeted: 18000,
-    totalActual: 16500,
+    totals: {
+      budgeted: 18000,
+      actual: 16500,
+      variance: 1500,
+      percentVariance: 8.33,
+    },
   }),
 };
 
@@ -60,6 +92,7 @@ const mockMemberReportsService = {
 
 describe('DashboardService', () => {
   let service: DashboardService;
+  const userId = 'user-1';
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -107,6 +140,35 @@ describe('DashboardService', () => {
           amount: 25000,
         },
       });
+      mockPrismaService.contribution.findMany.mockResolvedValue([
+        { date: new Date(), amount: 1200 },
+        { date: new Date(), amount: 1300 },
+      ]);
+      mockPrismaService.expense.findMany.mockResolvedValue([
+        { date: new Date(), amount: 500 },
+        { date: new Date(), amount: 700 },
+      ]);
+      mockPrismaService.ministry.findMany.mockResolvedValue([
+        { id: 'min-1', name: 'Worship', _count: { members: 10 } },
+      ]);
+      mockPrismaService.sacramentalRecord.findMany.mockResolvedValue([
+        {
+          id: 'sac-1',
+          sacramentType: 'BAPTISM',
+          dateOfSacrament: new Date(),
+          member: { firstName: 'John', lastName: 'Doe' },
+        },
+      ]);
+      mockPrismaService.prayerRequest.groupBy.mockResolvedValue([
+        { status: 'NEW', _count: { id: 5 } },
+      ]);
+      mockPrismaService.smallGroup.findMany.mockResolvedValue([
+        { id: 'group-1', name: 'Youth Group' },
+      ]);
+      mockPrismaService.groupMember.findMany.mockResolvedValue([
+        { memberId: 'member-1' },
+      ]);
+      mockPrismaService.attendanceRecord.count.mockResolvedValue(10);
 
       mockFinancialReportsService.getContributionsReport.mockResolvedValue({
         trendData: [
@@ -123,31 +185,26 @@ describe('DashboardService', () => {
 
       // Call the service method
       const result = await service.getDashboardData(
-        branchId,
+        userId,
         DashboardType.ADMIN,
+        branchId,
       );
 
       // Verify the result structure
       expect(result).toBeDefined();
       expect(result.dashboardType).toBe('ADMIN');
       expect(result.branchId).toBe(branchId);
-      // The dateRange is not set in the implementation, so we shouldn't expect it
       expect(result.generatedAt).toBeDefined();
 
-      // Check KPI cards
-      expect(result.kpiCards).toBeInstanceOf(Array);
-      expect(result.kpiCards.length).toBeGreaterThan(0);
-
-      // Check charts
-      expect(result.charts).toBeInstanceOf(Array);
-      expect(result.charts.length).toBeGreaterThan(0);
+      // Check for new widgets
+      expect(result.widgets).toBeInstanceOf(Array);
+      const widgetTypes = result.widgets.map((w) => w.widgetType);
+      expect(widgetTypes).toContain('MINISTRY_INVOLVEMENT');
+      expect(widgetTypes).toContain('RECENT_SACRAMENTS');
+      expect(widgetTypes).toContain('PRAYER_REQUEST_SUMMARY');
 
       // Verify that the required methods were called
-      expect(mockPrismaService.member.count).toHaveBeenCalled();
-      // The implementation doesn't call contribution methods in the admin dashboard
-      expect(
-        mockMemberReportsService.getMemberDemographicsReport,
-      ).toHaveBeenCalled();
+      expect(mockMemberReportsService.getMemberDemographicsReport).toHaveBeenCalled();
     });
 
     it('should return finance dashboard', async () => {
@@ -158,6 +215,14 @@ describe('DashboardService', () => {
           amount: 25000,
         },
       });
+      mockPrismaService.contribution.findMany.mockResolvedValue([
+        { date: new Date(), amount: 1200 },
+        { date: new Date(), amount: 1300 },
+      ]);
+      mockPrismaService.expense.findMany.mockResolvedValue([
+        { date: new Date(), amount: 500 },
+        { date: new Date(), amount: 700 },
+      ]);
 
       mockFinancialReportsService.getContributionsReport.mockResolvedValue({
         trendData: [
@@ -187,8 +252,9 @@ describe('DashboardService', () => {
 
       // Call the service method
       const result = await service.getDashboardData(
-        branchId,
+        userId,
         DashboardType.FINANCE,
+        branchId,
       );
 
       // Verify the result structure
@@ -196,21 +262,9 @@ describe('DashboardService', () => {
       expect(result.dashboardType).toBe('FINANCE');
       expect(result.branchId).toBe(branchId);
 
-      // Check KPI cards
-      expect(result.kpiCards).toBeInstanceOf(Array);
-      expect(result.kpiCards.length).toBeGreaterThan(0);
-
-      // Check charts
-      expect(result.charts).toBeInstanceOf(Array);
-      expect(result.charts.length).toBeGreaterThan(0);
-
       // Verify that the financial methods were called
-      expect(
-        mockFinancialReportsService.getContributionsReport,
-      ).toHaveBeenCalled();
-      expect(
-        mockFinancialReportsService.getBudgetVsActualReport,
-      ).toHaveBeenCalled();
+      expect(mockFinancialReportsService.getContributionsReport).toHaveBeenCalled();
+      expect(mockFinancialReportsService.getBudgetVsActualReport).toHaveBeenCalled();
     });
 
     it('should return pastoral dashboard', async () => {
@@ -226,8 +280,9 @@ describe('DashboardService', () => {
 
       // Call the service method
       const result = await service.getDashboardData(
-        branchId,
+        userId,
         DashboardType.PASTORAL,
+        branchId,
       );
 
       // Verify the result structure
@@ -235,111 +290,125 @@ describe('DashboardService', () => {
       expect(result.dashboardType).toBe('PASTORAL');
       expect(result.branchId).toBe(branchId);
 
-      // Check KPI cards
-      expect(result.kpiCards).toBeInstanceOf(Array);
-      expect(result.kpiCards.length).toBeGreaterThan(0);
-
-      // Check charts
-      expect(result.charts).toBeInstanceOf(Array);
-      expect(result.charts.length).toBeGreaterThan(0);
-
       // Verify that the pastoral methods were called
       expect(mockPrismaService.member.count).toHaveBeenCalled();
-      expect(
-        mockAttendanceReportsService.getAttendanceTrendReport,
-      ).toHaveBeenCalled();
+      expect(mockAttendanceReportsService.getAttendanceTrendReport).toHaveBeenCalled();
     });
 
     it('should return ministry dashboard', async () => {
       // Call the service method
       const result = await service.getDashboardData(
-        branchId,
+        userId,
         DashboardType.MINISTRY,
+        branchId,
       );
 
       // Verify the result structure
       expect(result).toBeDefined();
       expect(result.dashboardType).toBe('MINISTRY');
       expect(result.branchId).toBe(branchId);
-
-      // Check KPI cards
-      expect(result.kpiCards).toBeInstanceOf(Array);
-      expect(result.kpiCards.length).toBeGreaterThan(0);
-
-      // Check charts
-    });
-
-    it('should return pastoral dashboard', async () => {
-      // ... (rest of the code remains the same)
-      const startDate = new Date('2023-01-01');
-      const endDate = new Date('2023-12-31');
-
-      // Call the private method using any type assertion to access it
-      const result = await (service as any).getFormSubmissionsByForm(
-        branchId,
-        startDate,
-        endDate,
-      );
-
-      // Verify the result structure
-      expect(result).toBeDefined();
-      expect(result).toBeInstanceOf(Array);
-      expect(result.length).toBeGreaterThan(0);
-
-      // Check that each item has the expected properties
-      result.forEach((item) => {
-        expect(item).toHaveProperty('name');
-        expect(item).toHaveProperty('count');
-      });
     });
   });
 
-  describe('getGroupAttendance', () => {
+  describe('getMinistryInvolvementWidget', () => {
+    it('should return ministry involvement data', async () => {
+      const branchId = 'branch-1';
+      const mockMinistries = [
+        { id: 'min-1', name: 'Worship', _count: { members: 10 } },
+        { id: 'min-2', name: 'Outreach', _count: { members: 15 } },
+      ];
+      mockPrismaService.ministry.findMany.mockResolvedValue(mockMinistries);
+
+      const result = await (service as any).getMinistryInvolvementWidget(
+        branchId,
+      );
+
+      expect(result.widgetType).toBe('MINISTRY_INVOLVEMENT');
+      expect(result.title).toBe('Ministry Involvement');
+      expect(result.ministries.length).toBe(2);
+      expect(result.ministries[0].ministryName).toBe('Worship');
+      expect(result.ministries[0].memberCount).toBe(10);
+      expect(mockPrismaService.ministry.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { branchId } }),
+      );
+    });
+  });
+
+  describe('getRecentSacramentsWidget', () => {
+    it('should return recent sacraments data', async () => {
+      const branchId = 'branch-1';
+      const mockSacraments = [
+        {
+          id: 'sac-1',
+          sacramentType: 'BAPTISM',
+          dateOfSacrament: new Date(),
+          member: { firstName: 'John', lastName: 'Doe' },
+        },
+      ];
+      mockPrismaService.sacramentalRecord.findMany.mockResolvedValue(
+        mockSacraments,
+      );
+
+      const result = await (service as any).getRecentSacramentsWidget(branchId);
+
+      expect(result.widgetType).toBe('RECENT_SACRAMENTS');
+      expect(result.title).toBe('Recent Sacraments');
+      expect(result.sacraments.length).toBe(1);
+      expect(result.sacraments[0].recipientName).toBe('John Doe');
+      expect(
+        mockPrismaService.sacramentalRecord.findMany,
+      ).toHaveBeenCalledWith(expect.objectContaining({ where: { branchId } }));
+    });
+  });
+
+  describe('getPrayerRequestSummaryWidget', () => {
+    it('should return prayer request summary data', async () => {
+      const branchId = 'branch-1';
+      const mockPrayerRequests = [
+        { status: 'NEW', _count: { id: 5 } },
+        { status: 'IN_PROGRESS', _count: { id: 3 } },
+      ];
+      mockPrismaService.prayerRequest.groupBy.mockResolvedValue(
+        mockPrayerRequests,
+      );
+
+      const result = await (service as any).getPrayerRequestSummaryWidget(
+        branchId,
+      );
+
+      expect(result.widgetType).toBe('PRAYER_REQUEST_SUMMARY');
+      expect(result.title).toBe('Prayer Requests');
+      expect(result.summary.length).toBe(2);
+      expect(result.summary[0].status).toBe('NEW');
+      expect(result.summary[0].count).toBe(5);
+      expect(mockPrismaService.prayerRequest.groupBy).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { branchId } }),
+      );
+    });
+  });
+
+  describe('getGroupAttendanceWidget', () => {
     it('should return group attendance data', async () => {
-      const branchId = 'branch-1';
-      const startDate = new Date('2023-01-01');
-      const endDate = new Date('2023-12-31');
-
-      // Call the private method using any type assertion to access it
-      const result = await (service as any).getGroupAttendance(
-        branchId,
-        startDate,
-        endDate,
+      const mockGroups = [{ id: 'group-1', name: 'Youth Group' }];
+      const mockGroupMembers = [{ memberId: 'member-1' }];
+      mockPrismaService.smallGroup.findMany.mockResolvedValue(mockGroups);
+      mockPrismaService.groupMember.findMany.mockResolvedValue(
+        mockGroupMembers,
       );
+      mockPrismaService.attendanceRecord.count.mockResolvedValue(10);
 
-      // Verify the result structure
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty('activeGroups');
-      expect(result).toHaveProperty('totalMembers');
-      expect(result).toHaveProperty('groups');
-      expect(result.groups).toBeInstanceOf(Array);
+      const result = await (service as any).getGroupAttendanceWidget();
 
-      // Check that each group has the expected properties
-      result.groups.forEach((group) => {
-        expect(group).toHaveProperty('name');
-        expect(group).toHaveProperty('attendance');
-        expect(group).toHaveProperty('capacity');
+      expect(result.widgetType).toBe('CHART');
+      expect(result.title).toBe('Group Attendance (Last 30 Days)');
+      expect(result.data.labels).toEqual(['Youth Group']);
+      expect(result.data.datasets[0].data).toEqual([10]);
+      expect(mockPrismaService.smallGroup.findMany).toHaveBeenCalled();
+      expect(mockPrismaService.groupMember.findMany).toHaveBeenCalledWith({
+        where: { smallGroupId: 'group-1', status: 'ACTIVE' },
+        select: { memberId: true },
       });
-    });
-  });
-
-  describe('getGroupTypeDistribution', () => {
-    it('should return group type distribution data', async () => {
-      const branchId = 'branch-1';
-
-      // Call the private method using any type assertion to access it
-      const result = await (service as any).getGroupTypeDistribution(branchId);
-
-      // Verify the result structure
-      expect(result).toBeDefined();
-      expect(result).toBeInstanceOf(Array);
-      expect(result.length).toBeGreaterThan(0);
-
-      // Check that each item has the expected properties
-      result.forEach((item) => {
-        expect(item).toHaveProperty('name');
-        expect(item).toHaveProperty('count');
-      });
+      expect(mockPrismaService.attendanceRecord.count).toHaveBeenCalled();
     });
   });
 });

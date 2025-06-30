@@ -36,6 +36,9 @@ export enum WidgetType {
   QUICK_LINKS = 'QUICK_LINKS',
   BIRTHDAYS = 'BIRTHDAYS',
   NOTIFICATIONS = 'NOTIFICATIONS',
+  MINISTRY_INVOLVEMENT = 'MINISTRY_INVOLVEMENT',
+  RECENT_SACRAMENTS = 'RECENT_SACRAMENTS',
+  PRAYER_REQUEST_SUMMARY = 'PRAYER_REQUEST_SUMMARY',
 }
 
 registerEnumType(WidgetType, {
@@ -262,6 +265,75 @@ export class NotificationsWidget {
   widgetType: WidgetType = WidgetType.NOTIFICATIONS;
 }
 
+@ObjectType()
+export class MinistryInvolvementItem {
+  @Field(() => String)
+  ministryName: string;
+
+  @Field(() => Number)
+  memberCount: number;
+}
+
+@ObjectType()
+export class MinistryInvolvementWidget {
+  @Field(() => String)
+  title: string = 'Ministry Involvement';
+
+  @Field(() => [MinistryInvolvementItem])
+  ministries: MinistryInvolvementItem[];
+
+  @Field(() => WidgetType)
+  widgetType: WidgetType = WidgetType.MINISTRY_INVOLVEMENT;
+}
+
+@ObjectType()
+export class SacramentItem {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  type: string;
+
+  @Field(() => String)
+  recipientName: string;
+
+  @Field(() => Date)
+  date: Date;
+}
+
+@ObjectType()
+export class RecentSacramentsWidget {
+  @Field(() => String)
+  title: string = 'Recent Sacraments';
+
+  @Field(() => [SacramentItem])
+  sacraments: SacramentItem[];
+
+  @Field(() => WidgetType)
+  widgetType: WidgetType = WidgetType.RECENT_SACRAMENTS;
+}
+
+@ObjectType()
+export class PrayerRequestSummaryData {
+  @Field(() => String)
+  status: string;
+
+  @Field(() => Number)
+  count: number;
+}
+
+@ObjectType()
+export class PrayerRequestSummaryWidget {
+  @Field(() => String)
+  title: string = 'Prayer Requests';
+
+  @Field(() => [PrayerRequestSummaryData])
+  summary: PrayerRequestSummaryData[];
+
+  @Field(() => WidgetType)
+  widgetType: WidgetType = WidgetType.PRAYER_REQUEST_SUMMARY;
+}
+
 export const DashboardWidgetUnion = createUnionType({
   name: 'DashboardWidgetUnion',
   types: () =>
@@ -274,18 +346,37 @@ export const DashboardWidgetUnion = createUnionType({
       AnnouncementsWidget,
       QuickLinksWidget,
       NotificationsWidget,
+      MinistryInvolvementWidget,
+      RecentSacramentsWidget,
+      PrayerRequestSummaryWidget,
     ] as const,
-  resolveType: (value) => {
-    if ('percentChange' in value) return KpiCard; // KpiCard has percentChange
-    if ('chartType' in value) return ChartData; // ChartData has chartType
-    if ('events' in value) return UpcomingEventsWidget;
-    if ('tasks' in value) return TasksWidget;
-    if ('groups' in value) return MyGroupsWidget;
-    if ('announcements' in value) return AnnouncementsWidget;
-    if ('links' in value) return QuickLinksWidget;
-    if ('notifications' in value && !('widgets' in value))
-      return NotificationsWidget; // Differentiate from DashboardData
-    return undefined;
+  resolveType(value) {
+    switch (value.widgetType) {
+      case WidgetType.KPI_CARD:
+        return KpiCard;
+      case WidgetType.CHART:
+        return ChartData;
+      case WidgetType.UPCOMING_EVENTS:
+        return UpcomingEventsWidget;
+      case WidgetType.TASKS:
+        return TasksWidget;
+      case WidgetType.MY_GROUPS:
+        return MyGroupsWidget;
+      case WidgetType.ANNOUNCEMENTS:
+        return AnnouncementsWidget;
+      case WidgetType.QUICK_LINKS:
+        return QuickLinksWidget;
+      case WidgetType.NOTIFICATIONS:
+        return NotificationsWidget;
+      case WidgetType.MINISTRY_INVOLVEMENT:
+        return MinistryInvolvementWidget;
+      case WidgetType.RECENT_SACRAMENTS:
+        return RecentSacramentsWidget;
+      case WidgetType.PRAYER_REQUEST_SUMMARY:
+        return PrayerRequestSummaryWidget;
+      default:
+        return undefined;
+    }
   },
 });
 
@@ -306,32 +397,8 @@ export class DashboardData {
   @Field(() => Date)
   generatedAt: Date;
 
-  @Field(() => [KpiCard])
-  kpiCards: KpiCard[];
-
-  @Field(() => [ChartData])
-  charts: ChartData[];
-
-  @Field(() => UpcomingEventsWidget, { nullable: true })
-  upcomingEvents?: UpcomingEventsWidget;
-
-  @Field(() => TasksWidget, { nullable: true })
-  tasks?: TasksWidget;
-
-  @Field(() => MyGroupsWidget, { nullable: true })
-  myGroups?: MyGroupsWidget;
-
-  @Field(() => AnnouncementsWidget, { nullable: true })
-  announcements?: AnnouncementsWidget;
-
-  @Field(() => QuickLinksWidget, { nullable: true })
-  quickLinks?: QuickLinksWidget;
-
-  @Field(() => NotificationsWidget, { nullable: true })
-  notifications?: NotificationsWidget;
-
-  @Field(() => [GraphQLJSON])
-  widgets: Record<string, any>[];
+  @Field(() => [DashboardWidgetUnion])
+  widgets: Array<typeof DashboardWidgetUnion>;
 
   @Field(() => GraphQLJSON, { nullable: true })
   layout?: Record<string, any>;

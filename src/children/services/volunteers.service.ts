@@ -32,7 +32,7 @@ export class VolunteersService {
 
   async findAll(
     branchId?: string,
-    isActive?: boolean,
+    trainingCompleted?: boolean,
   ): Promise<ChildrenMinistryVolunteer[]> {
     const where: any = {};
 
@@ -40,8 +40,8 @@ export class VolunteersService {
       where.branchId = branchId;
     }
 
-    if (isActive !== undefined) {
-      where.isActive = isActive;
+    if (trainingCompleted !== undefined) {
+      where.trainingCompleted = trainingCompleted;
     }
 
     return this.prisma.childrenMinistryVolunteer.findMany({
@@ -124,38 +124,6 @@ export class VolunteersService {
             eventId,
           },
         },
-      },
-    });
-  }
-
-  async updateBackgroundCheck(
-    id: string,
-    backgroundCheckDate: Date,
-    backgroundCheckStatus: string,
-  ): Promise<ChildrenMinistryVolunteer> {
-    // First check if the volunteer exists
-    await this.findOne(id);
-
-    return this.prisma.childrenMinistryVolunteer.update({
-      where: { id },
-      data: {
-        backgroundCheckDate,
-        backgroundCheckStatus,
-      },
-    });
-  }
-
-  async updateTrainingCompletion(
-    id: string,
-    trainingCompletionDate: Date,
-  ): Promise<ChildrenMinistryVolunteer> {
-    // First check if the volunteer exists
-    await this.findOne(id);
-
-    return this.prisma.childrenMinistryVolunteer.update({
-      where: { id },
-      data: {
-        trainingCompletionDate,
       },
     });
   }

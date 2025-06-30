@@ -7,6 +7,8 @@ import { FinancialReportsService } from './services/financial-reports.service';
 import { ReportingResolver } from './resolvers/reporting.resolver';
 import { DashboardService } from './services/dashboard.service';
 import { DashboardResolver } from './resolvers/dashboard.resolver';
+import { SuperAdminDashboardResolver } from './resolvers/super-admin-dashboard.resolver';
+import { SuperAdminDashboardService } from './services/super-admin-dashboard.service';
 
 import { ContentModule } from '../content/content.module';
 import { CommunicationsModule } from '../communications/communications.module';
@@ -32,6 +34,8 @@ import { MembersModule } from '../members/members.module';
     DashboardService,
     ReportingResolver,
     DashboardResolver,
+    SuperAdminDashboardResolver,
+    SuperAdminDashboardService,
   ],
   exports: [
     ReportingService,

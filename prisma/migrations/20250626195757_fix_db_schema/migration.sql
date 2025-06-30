@@ -103,6 +103,9 @@ ALTER TABLE "UserDashboardPreference" ADD COLUMN     "organisationId" TEXT;
 ALTER TABLE "Vendor" ADD COLUMN     "organisationId" TEXT,
 ALTER COLUMN "phone" SET NOT NULL;
 
+-- AddColumn
+ALTER TABLE "ChildrenMinistryVolunteer" ADD COLUMN "trainingCompleted" BOOLEAN NOT NULL DEFAULT false;
+
 -- CreateIndex
 CREATE INDEX "AttendanceSession_ministryId_idx" ON "AttendanceSession"("ministryId");
 
@@ -204,6 +207,9 @@ CREATE INDEX "UserDashboardPreference_organisationId_idx" ON "UserDashboardPrefe
 
 -- CreateIndex
 CREATE INDEX "Vendor_organisationId_idx" ON "Vendor"("organisationId");
+
+-- CreateUniqueIndex
+CREATE UNIQUE INDEX "email_template_unique_constraint" ON "EmailTemplate"("name", "organisationId", "branchId");
 
 -- AddForeignKey
 ALTER TABLE "EmailTemplate" ADD CONSTRAINT "EmailTemplate_organisationId_fkey" FOREIGN KEY ("organisationId") REFERENCES "Organisation"("id") ON DELETE SET NULL ON UPDATE CASCADE;

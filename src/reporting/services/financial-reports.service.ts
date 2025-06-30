@@ -89,6 +89,19 @@ export interface PledgeFulfillmentReportData {
   pledges: PledgeItem[];
 }
 
+interface TransactionSummary {
+  totalContributions: number;
+  totalExpenses: number;
+  countContributions: number;
+  countExpenses: number;
+}
+
+interface TopGivingBranch {
+  branchId: string;
+  branchName: string;
+  totalGiven: number;
+}
+
 @Injectable()
 export class FinancialReportsService {
   private readonly logger = new Logger(FinancialReportsService.name);
@@ -107,13 +120,9 @@ export class FinancialReportsService {
 
       if (branchId) {
         where.branchId = branchId;
-      }
-
-      if (organisationId) {
+      } else if (organisationId) {
         where.organisationId = organisationId;
       }
-
-      // We'll handle member lookup differently since userId isn't in the filter
 
       if (fundId) {
         where.fundId = fundId;
@@ -176,9 +185,7 @@ export class FinancialReportsService {
 
       if (branchId) {
         budgetWhere.branchId = branchId;
-      }
-
-      if (organisationId) {
+      } else if (organisationId) {
         budgetWhere.organisationId = organisationId;
       }
 
@@ -256,9 +263,7 @@ export class FinancialReportsService {
 
       if (branchId) {
         expenseWhere.branchId = branchId;
-      }
-
-      if (organisationId) {
+      } else if (organisationId) {
         expenseWhere.organisationId = organisationId;
       }
 
@@ -361,9 +366,7 @@ export class FinancialReportsService {
 
       if (branchId) {
         pledgeWhere.branchId = branchId;
-      }
-
-      if (organisationId) {
+      } else if (organisationId) {
         pledgeWhere.organisationId = organisationId;
       }
 
@@ -466,5 +469,84 @@ export class FinancialReportsService {
       this.logger.error('Failed to get pledge fulfillment report', error.stack);
       throw new Error('Could not retrieve pledge fulfillment report.');
     }
+  }
+
+  /**
+   * Aggregates financial data from the unified Transaction model.
+   * Returns total contributions (income), total expenses, and their counts.
+   */
+  async getTransactionSummary(filters: ReportFilterInput): Promise<TransactionSummary> {
+    const { branchId, organisationId, dateRange } = filters;
+    const whereBase: any = {};
+    if (branchId) whereBase.branchId = branchId;
+    else if (organisationId) whereBase.organisationId = organisationId;
+    if (dateRange?.startDate && dateRange?.endDate) {
+      whereBase.date = {
+        gte: new Date(dateRange.startDate),
+        lte: new Date(dateRange.endDate),
+      };
+    }
+
+    // Contributions (income)
+    const [contributionsAgg, expensesAgg] = await Promise.all([
+      this.prisma.transaction.aggregate({
+        where: { ...whereBase, type: 'CONTRIBUTION' },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+      this.prisma.transaction.aggregate({
+        where: { ...whereBase, type: 'EXPENSE' },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+    ]);
+    function toNumber(val: any): number {
+      return typeof val === 'number' ? val : val ? Number(val.toString()) : 0;
+    }
+    return {
+      totalContributions: toNumber(contributionsAgg._sum.amount),
+      totalExpenses: toNumber(expensesAgg._sum.amount),
+      countContributions: contributionsAgg._count.id || 0,
+      countExpenses: expensesAgg._count.id || 0,
+    };
+  }
+
+  /**
+   * Returns the top N branches by total giving (sum of contributions in Transaction).
+   */
+  async getTopGivingBranches({ organisationId, dateRange }: ReportFilterInput, topN = 5): Promise<TopGivingBranch[]> {
+    // Only filter by organisation, not branch (for super admin scope)
+    const where: any = { type: 'CONTRIBUTION' };
+    if (organisationId) where.organisationId = organisationId;
+    if (dateRange?.startDate && dateRange?.endDate) {
+      where.date = {
+        gte: new Date(dateRange.startDate),
+        lte: new Date(dateRange.endDate),
+      };
+    }
+    // Group by branchId, sum amount
+    const grouped = await this.prisma.transaction.groupBy({
+      by: ['branchId'],
+      where,
+      _sum: { amount: true },
+      orderBy: { _sum: { amount: 'desc' } },
+      take: topN,
+    });
+    // Fetch branch names
+    const branchIds: string[] = grouped.map(g => g.branchId).filter((id): id is string => !!id);
+    const branches = await this.prisma.branch.findMany({
+      where: { id: { in: branchIds } },
+      select: { id: true, name: true },
+    });
+    function toNumber(val: any): number {
+      return typeof val === 'number' ? val : val ? Number(val.toString()) : 0;
+    }
+    return grouped
+      .filter(g => g.branchId)
+      .map(g => ({
+        branchId: g.branchId as string,
+        branchName: branches.find(b => b.id === g.branchId)?.name || 'Unknown',
+        totalGiven: toNumber(g._sum.amount),
+      }));
   }
 }

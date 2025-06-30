@@ -37,11 +37,11 @@ export class VolunteersController {
   @RequirePermissions({ action: 'read', subject: 'ChildrenMinistryVolunteer' })
   findAll(
     @Query('branchId') branchId?: string,
-    @Query('isActive') isActive?: boolean,
+    @Query('trainingCompleted') trainingCompleted?: boolean,
   ): Promise<ChildrenMinistryVolunteer[]> {
     return this.volunteersService.findAll(
       branchId,
-      isActive !== undefined ? isActive === true : undefined,
+      trainingCompleted !== undefined ? trainingCompleted === true : undefined,
     );
   }
 
@@ -86,38 +86,6 @@ export class VolunteersController {
   })
   remove(@Param('id') id: string): Promise<ChildrenMinistryVolunteer> {
     return this.volunteersService.remove(id);
-  }
-
-  @Patch(':id/background-check')
-  @RequirePermissions({
-    action: 'update',
-    subject: 'ChildrenMinistryVolunteer',
-  })
-  updateBackgroundCheck(
-    @Param('id') id: string,
-    @Body('backgroundCheckDate') backgroundCheckDate: string,
-    @Body('backgroundCheckStatus') backgroundCheckStatus: string,
-  ): Promise<ChildrenMinistryVolunteer> {
-    return this.volunteersService.updateBackgroundCheck(
-      id,
-      new Date(backgroundCheckDate),
-      backgroundCheckStatus,
-    );
-  }
-
-  @Patch(':id/training-completion')
-  @RequirePermissions({
-    action: 'update',
-    subject: 'ChildrenMinistryVolunteer',
-  })
-  updateTrainingCompletion(
-    @Param('id') id: string,
-    @Body('trainingCompletionDate') trainingCompletionDate: string,
-  ): Promise<ChildrenMinistryVolunteer> {
-    return this.volunteersService.updateTrainingCompletion(
-      id,
-      new Date(trainingCompletionDate),
-    );
   }
 
   @Get(':id/schedule')

@@ -15,9 +15,7 @@ export class AttendanceReportsService {
 
     if (branchId) {
       where.branchId = branchId;
-    }
-
-    if (organisationId) {
+    } else if (organisationId) {
       where.organisationId = organisationId;
     }
 
@@ -125,9 +123,7 @@ export class AttendanceReportsService {
 
     if (branchId) {
       where.branchId = branchId;
-    }
-
-    if (organisationId) {
+    } else if (organisationId) {
       where.organisationId = organisationId;
     }
 
