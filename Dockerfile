@@ -12,7 +12,7 @@ RUN npm install --legacy-peer-deps
 
 # Copy Prisma schema first and generate client
 COPY prisma ./prisma/
-RUN npx prisma generate
+RUN #npx prisma generate
 
 # Copy the rest of the application code
 COPY . .
