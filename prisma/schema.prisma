@@ -232,20 +232,20 @@ enum PrayerRequestStatus {
 
 // Communications Module Models
 model EmailTemplate {
-  id          String         @id @default(uuid())
-  name        String
-  description String?
-  subject     String
-  bodyHtml    String
-  bodyText    String?
-  isActive    Boolean        @default(true)
-  branchId    String?
+  id             String         @id @default(uuid())
+  name           String
+  description    String?
+  subject        String
+  bodyHtml       String
+  bodyText       String?
+  isActive       Boolean        @default(true)
+  branchId       String?
   organisationId String?
-  organisation Organisation? @relation(fields: [organisationId], references: [id])
-  branch      Branch?        @relation(fields: [branchId], references: [id])
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  emails      EmailMessage[]
+  organisation   Organisation?  @relation(fields: [organisationId], references: [id])
+  branch         Branch?        @relation(fields: [branchId], references: [id])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  emails         EmailMessage[]
 
   @@unique([name, organisationId, branchId], name: "email_template_unique_constraint")
   @@index([branchId])
@@ -253,22 +253,22 @@ model EmailTemplate {
 }
 
 model EmailMessage {
-  id          String         @id @default(uuid())
-  subject     String
-  bodyHtml    String
-  bodyText    String?
-  senderEmail String
-  recipients  String[] // Array of email addresses
-  sentAt      DateTime?
-  status      MessageStatus
-  branchId    String?
+  id             String         @id @default(uuid())
+  subject        String
+  bodyHtml       String
+  bodyText       String?
+  senderEmail    String
+  recipients     String[] // Array of email addresses
+  sentAt         DateTime?
+  status         MessageStatus
+  branchId       String?
   organisationId String?
-  organisation Organisation? @relation(fields: [organisationId], references: [id])
-  branch      Branch?        @relation(fields: [branchId], references: [id])
-  templateId  String?
-  template    EmailTemplate? @relation(fields: [templateId], references: [id])
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  organisation   Organisation?  @relation(fields: [organisationId], references: [id])
+  branch         Branch?        @relation(fields: [branchId], references: [id])
+  templateId     String?
+  template       EmailTemplate? @relation(fields: [templateId], references: [id])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@index([branchId])
   @@index([templateId])
@@ -276,41 +276,41 @@ model EmailMessage {
 }
 
 model SmsMessage {
-  id           String        @id @default(uuid())
-  body         String
-  senderNumber String
-  recipients   String[] // Array of phone numbers
-  sentAt       DateTime?
-  status       MessageStatus
-  branchId     String?
+  id             String        @id @default(uuid())
+  body           String
+  senderNumber   String
+  recipients     String[] // Array of phone numbers
+  sentAt         DateTime?
+  status         MessageStatus
+  branchId       String?
   organisationId String?
-  organisation Organisation? @relation(fields: [organisationId], references: [id])
-  branch       Branch?       @relation(fields: [branchId], references: [id])
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  organisation   Organisation? @relation(fields: [organisationId], references: [id])
+  branch         Branch?       @relation(fields: [branchId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([branchId])
   @@index([organisationId])
 }
 
 model Notification {
-  id        String           @id @default(uuid())
-  userId    String
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  message   String
-  isRead    Boolean          @default(false)
-  readAt    DateTime?
-  link      String? // Link to relevant page in the app
-  type      NotificationType
-  branchId  String?
+  id             String           @id @default(uuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  message        String
+  isRead         Boolean          @default(false)
+  readAt         DateTime?
+  link           String? // Link to relevant page in the app
+  type           NotificationType
+  branchId       String?
   organisationId String?
-  organisation Organisation? @relation(fields: [organisationId], references: [id])
-  branch    Branch?          @relation(fields: [branchId], references: [id])
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  Member    Member?          @relation(fields: [memberId], references: [id])
-  memberId  String?
+  organisation   Organisation?    @relation(fields: [organisationId], references: [id])
+  branch         Branch?          @relation(fields: [branchId], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  Member         Member?          @relation(fields: [memberId], references: [id])
+  memberId       String?
 
   @@index([userId])
   @@index([branchId])
@@ -697,14 +697,14 @@ model AttendanceRecord {
   visitorPhone String?
 
   // Who recorded this attendance
-  recordedById String?
-  recordedBy   User?    @relation("UserAttendanceRecords", fields: [recordedById], references: [id], onDelete: SetNull)
-  branchId     String?
-  branch       Branch?  @relation("BranchAttendanceRecords", fields: [branchId], references: [id], onDelete: SetNull)
+  recordedById   String?
+  recordedBy     User?        @relation("UserAttendanceRecords", fields: [recordedById], references: [id], onDelete: SetNull)
+  branchId       String?
+  branch         Branch?      @relation("BranchAttendanceRecords", fields: [branchId], references: [id], onDelete: SetNull)
   organisationId String
-  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([sessionId])
   @@index([memberId])
@@ -1352,19 +1352,19 @@ model CheckInRecord {
 }
 
 model ChildrenMinistryVolunteer {
-  id                     String        @id @default(uuid())
-  memberId               String        @unique
-  role                   String
-  backgroundCheckStatus   String                     @default("PENDING") // PENDING, PASSED, FAILED
-  trainingCompleted       Boolean                    @default(false)
-  organisationId          String?
-  branchId                String?
-  member                  Member                     @relation(fields: [memberId], references: [id])
-  organisation            Organisation?              @relation(fields: [organisationId], references: [id])
-  branch                  Branch?                    @relation(fields: [branchId], references: [id])
-  eventAssignments        VolunteerEventAssignment[]
-  createdAt               DateTime                   @default(now())
-  updatedAt               DateTime                   @updatedAt
+  id                    String                     @id @default(uuid())
+  memberId              String                     @unique
+  role                  String
+  backgroundCheckStatus String                     @default("PENDING") // PENDING, PASSED, FAILED
+  trainingCompleted     Boolean                    @default(false)
+  organisationId        String?
+  branchId              String?
+  member                Member                     @relation(fields: [memberId], references: [id])
+  organisation          Organisation?              @relation(fields: [organisationId], references: [id])
+  branch                Branch?                    @relation(fields: [branchId], references: [id])
+  eventAssignments      VolunteerEventAssignment[]
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
 
   @@unique([memberId, organisationId, branchId], name: "children_ministry_volunteer_unique_constraint")
   @@index([memberId])
@@ -1699,7 +1699,7 @@ model Organisation {
   smsMessages                SmsMessage[]
   notifications              Notification[]
   attendanceRecords          AttendanceRecord[]
-  transactions               Transaction[] @relation("OrganisationTransactions")
+  transactions               Transaction[]               @relation("OrganisationTransactions")
 
   @@index([email])
 }
@@ -1762,22 +1762,22 @@ enum TransactionType {
 }
 
 model Transaction {
-  id             String   @id @default(uuid())
+  id             String          @id @default(uuid())
   organisationId String
   branchId       String?
   fundId         String?
   userId         String?
   type           TransactionType
   amount         Decimal
-  date           DateTime @default(now())
+  date           DateTime        @default(now())
   description    String?
   reference      String?
   metadata       Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
-  organisation   Organisation @relation("OrganisationTransactions", fields: [organisationId], references: [id])
-  branch         Branch?      @relation("BranchTransactions", fields: [branchId], references: [id])
-  fund           Fund?        @relation("FundTransactions", fields: [fundId], references: [id])
-  user           User?        @relation("UserTransactions", fields: [userId], references: [id])
+  organisation Organisation @relation("OrganisationTransactions", fields: [organisationId], references: [id])
+  branch       Branch?      @relation("BranchTransactions", fields: [branchId], references: [id])
+  fund         Fund?        @relation("FundTransactions", fields: [fundId], references: [id])
+  user         User?        @relation("UserTransactions", fields: [userId], references: [id])
 }
