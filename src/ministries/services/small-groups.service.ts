@@ -83,6 +83,7 @@ export class SmallGroupsService {
         status: input.status,
         branchId: input.branchId,
         ministryId: input.ministryId,
+        organisationId: input.organisationId,
       },
       include: {
         members: true,

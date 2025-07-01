@@ -1095,6 +1095,7 @@ input CreateSmallGroupInput {
   meetingSchedule: String
   ministryId: String
   name: String!
+  organisationId: String
   status: String!
   type: String!
 }
@@ -1411,6 +1412,7 @@ type FinancialOverview {
   pledge: Float!
   specialContribution: Float!
   tithes: Float!
+  topGivingBranches: [TopGivingBranch!]!
   totalContributions: Float!
 }
 
@@ -1858,6 +1860,7 @@ enum MemberStatus {
 }
 
 type MemberSummary {
+  newMembersThisMonth: Float
   total: Float!
 }
 
@@ -2878,6 +2881,12 @@ type TasksWidget {
 type TokenPayloadDto {
   accessToken: String!
   refreshToken: String!
+}
+
+type TopGivingBranch {
+  branchId: String!
+  branchName: String!
+  totalGiven: Float!
 }
 
 type TotalAttendanceStat {

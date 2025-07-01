@@ -19,37 +19,7 @@ export class SuperAdminDashboardResolver {
     @Args('organisationId', { type: () => ID, nullable: true }) organisationId?: string
   ): Promise<SuperAdminDashboardData> {
     // Aggregate all dashboard info for super admin
-    const [
-      organisationOverview,
-      branchesSummary,
-      memberSummary,
-      financialOverview,
-      attendanceOverview,
-      sacramentsOverview,
-      activityEngagement,
-      systemHealth,
-      announcements,
-    ] = await Promise.all([
-      this.superAdminDashboardService.getOrganisationOverview(),
-      this.superAdminDashboardService.getBranchesSummary(),
-      this.superAdminDashboardService.getMemberSummary(),
-      this.superAdminDashboardService.getFinancialOverview(),
-      this.superAdminDashboardService.getAttendanceOverview(),
-      this.superAdminDashboardService.getSacramentsOverview(),
-      this.superAdminDashboardService.getActivityEngagement(),
-      this.superAdminDashboardService.getSystemHealth(),
-      this.superAdminDashboardService.getAnnouncements(),
-    ]);
-    return {
-      organisationOverview,
-      branchesSummary,
-      memberSummary,
-      financialOverview,
-      attendanceOverview,
-      sacramentsOverview,
-      activityEngagement,
-      systemHealth,
-      announcements,
-    };
+    if (!organisationId) throw new Error('organisationId is required');
+    return this.superAdminDashboardService.getSuperAdminDashboardData(organisationId);
   }
 }

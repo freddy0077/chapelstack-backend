@@ -72,6 +72,11 @@ export class CreateSmallGroupInput {
   @IsUUID()
   @IsOptional()
   ministryId?: string;
+
+  @Field({ nullable: true })
+  @IsUUID()
+  @IsOptional()
+  organisationId?: string;
 }
 
 @InputType()

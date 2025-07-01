@@ -45,6 +45,20 @@ export class BranchesSummary {
 export class MemberSummary {
   @Field()
   total: number;
+  @Field({ nullable: true })
+  newMembersThisMonth?: number;
+}
+
+@ObjectType()
+export class TopGivingBranch {
+  @Field()
+  branchId: string;
+
+  @Field()
+  branchName: string;
+
+  @Field()
+  totalGiven: number;
 }
 
 @ObjectType()
@@ -69,6 +83,9 @@ export class FinancialOverview {
 
   @Field()
   specialContribution: number;
+
+  @Field(() => [TopGivingBranch])
+  topGivingBranches: TopGivingBranch[];
 }
 
 @ObjectType()

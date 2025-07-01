@@ -475,7 +475,9 @@ export class FinancialReportsService {
    * Aggregates financial data from the unified Transaction model.
    * Returns total contributions (income), total expenses, and their counts.
    */
-  async getTransactionSummary(filters: ReportFilterInput): Promise<TransactionSummary> {
+  async getTransactionSummary(
+    filters: ReportFilterInput,
+  ): Promise<TransactionSummary> {
     const { branchId, organisationId, dateRange } = filters;
     const whereBase: any = {};
     if (branchId) whereBase.branchId = branchId;
@@ -514,7 +516,10 @@ export class FinancialReportsService {
   /**
    * Returns the top N branches by total giving (sum of contributions in Transaction).
    */
-  async getTopGivingBranches({ organisationId, dateRange }: ReportFilterInput, topN = 5): Promise<TopGivingBranch[]> {
+  async getTopGivingBranches(
+    { organisationId, dateRange }: ReportFilterInput,
+    topN = 5,
+  ): Promise<TopGivingBranch[]> {
     // Only filter by organisation, not branch (for super admin scope)
     const where: any = { type: 'CONTRIBUTION' };
     if (organisationId) where.organisationId = organisationId;
@@ -533,7 +538,9 @@ export class FinancialReportsService {
       take: topN,
     });
     // Fetch branch names
-    const branchIds: string[] = grouped.map(g => g.branchId).filter((id): id is string => !!id);
+    const branchIds: string[] = grouped
+      .map((g) => g.branchId)
+      .filter((id): id is string => !!id);
     const branches = await this.prisma.branch.findMany({
       where: { id: { in: branchIds } },
       select: { id: true, name: true },
@@ -542,10 +549,11 @@ export class FinancialReportsService {
       return typeof val === 'number' ? val : val ? Number(val.toString()) : 0;
     }
     return grouped
-      .filter(g => g.branchId)
-      .map(g => ({
+      .filter((g) => g.branchId)
+      .map((g) => ({
         branchId: g.branchId as string,
-        branchName: branches.find(b => b.id === g.branchId)?.name || 'Unknown',
+        branchName:
+          branches.find((b) => b.id === g.branchId)?.name || 'Unknown',
         totalGiven: toNumber(g._sum.amount),
       }));
   }
