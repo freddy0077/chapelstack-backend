@@ -111,23 +111,33 @@ export async function seedTopGivingBranches() {
       });
     }
     // Seed expenses for each branch for this month using Transaction model
-    const expenseCategories = ["Utilities", "Salaries", "Rent", "Supplies", "Maintenance", "Events"];
+    const expenseCategories = [
+      'Utilities',
+      'Salaries',
+      'Rent',
+      'Supplies',
+      'Maintenance',
+      'Events',
+    ];
     for (const category of expenseCategories) {
       await prisma.transaction.create({
         data: {
           organisationId,
           branchId: branch.id,
           amount: 500 * (i + 1),
-          type: "EXPENSE",
+          type: 'EXPENSE',
           date: new Date(
             now.getFullYear(),
             now.getMonth(),
             1 + Math.floor(Math.random() * endOfMonth.getDate()),
-            15, 0, 0, 0
+            15,
+            0,
+            0,
+            0,
           ), // random day in current month
           description: `Seeded ${category} expense for ${branch.name}`,
           metadata: { expenseCategory: category },
-        }
+        },
       });
     }
   }

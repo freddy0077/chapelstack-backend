@@ -21,9 +21,11 @@ export class DashboardResolver {
   @RequirePermissions({ action: 'view', subject: 'dashboard' })
   async dashboardData(
     @CurrentUser() user: { id: string },
-    @Args('dashboardType', { type: () => DashboardType }) dashboardType: DashboardType,
+    @Args('dashboardType', { type: () => DashboardType })
+    dashboardType: DashboardType,
     @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
-    @Args('organisationId', { type: () => ID, nullable: true }) organisationId?: string,
+    @Args('organisationId', { type: () => ID, nullable: true })
+    organisationId?: string,
   ): Promise<DashboardData> {
     return await this.dashboardService.getDashboardData(
       user.id,
@@ -37,9 +39,11 @@ export class DashboardResolver {
   @RequirePermissions({ action: 'view', subject: 'dashboard' })
   async userDashboardPreference(
     @CurrentUser() user: { id: string },
-    @Args('dashboardType', { type: () => DashboardType }) dashboardType: DashboardType,
+    @Args('dashboardType', { type: () => DashboardType })
+    dashboardType: DashboardType,
     @Args('branchId', { type: () => ID }) branchId: string,
-    @Args('organisationId', { type: () => ID, nullable: true }) organisationId?: string,
+    @Args('organisationId', { type: () => ID, nullable: true })
+    organisationId?: string,
   ): Promise<UserDashboardPreference | null> {
     return await this.dashboardService.getUserDashboardPreference(
       user.id,
@@ -52,10 +56,13 @@ export class DashboardResolver {
   @RequirePermissions({ action: 'update', subject: 'dashboard' })
   async saveUserDashboardPreference(
     @CurrentUser() user: { id: string },
-    @Args('dashboardType', { type: () => DashboardType }) dashboardType: DashboardType,
-    @Args('layoutConfig', { type: () => GraphQLJSON }) layoutConfig: Record<string, any>,
+    @Args('dashboardType', { type: () => DashboardType })
+    dashboardType: DashboardType,
+    @Args('layoutConfig', { type: () => GraphQLJSON })
+    layoutConfig: Record<string, any>,
     @Args('branchId', { type: () => ID }) branchId: string,
-    @Args('organisationId', { type: () => ID, nullable: true }) organisationId?: string,
+    @Args('organisationId', { type: () => ID, nullable: true })
+    organisationId?: string,
   ): Promise<UserDashboardPreference> {
     return await this.dashboardService.saveUserDashboardPreference(
       user.id,

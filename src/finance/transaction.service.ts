@@ -12,10 +12,16 @@ export class TransactionService {
     return this.prisma.transaction.create({ data });
   }
 
-  findAll(params?: { organisationId?: string; type?: TransactionType; fundId?: string; }) {
+  findAll(params?: {
+    organisationId?: string;
+    type?: TransactionType;
+    fundId?: string;
+  }) {
     return this.prisma.transaction.findMany({
       where: {
-        ...(params?.organisationId && { organisationId: params.organisationId }),
+        ...(params?.organisationId && {
+          organisationId: params.organisationId,
+        }),
         ...(params?.type && { type: params.type }),
         ...(params?.fundId && { fundId: params.fundId }),
       },

@@ -1,14 +1,27 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  ID,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
 import { ValidationPipe } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { Event } from './entities/event.entity';
 import { CreateEventInput } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
 import { Event as PrismaEvent } from '@prisma/client';
+import { Branch } from '../branches/entities/branch.entity';
+import { BranchesService } from '../branches/branches.service';
 
 @Resolver(() => Event)
 export class EventsResolver {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(
+    private readonly eventsService: EventsService,
+    private readonly branchesService: BranchesService,
+  ) {}
 
   // Map Prisma event (with nulls) to GraphQL Event (with undefined)
   private toGraphQLEvent(prismaEvent: PrismaEvent | null): Event {
@@ -122,5 +135,11 @@ export class EventsResolver {
   ): Promise<Event> {
     const removed = await this.eventsService.remove(id);
     return this.toGraphQLEvent(removed);
+  }
+
+  @ResolveField('branch', () => Branch, { nullable: true })
+  async branch(@Parent() event: Event): Promise<Branch | null> {
+    if (!event.branchId) return null;
+    return this.branchesService.findOne(event.branchId);
   }
 }

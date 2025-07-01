@@ -7,7 +7,9 @@ async function seedCurrentMonthMembers() {
   // Find first organisation and branch
   const organisation = await prisma.organisation.findFirst();
   if (!organisation) throw new Error('No organisation found');
-  const branch = await prisma.branch.findFirst({ where: { organisationId: organisation.id } });
+  const branch = await prisma.branch.findFirst({
+    where: { organisationId: organisation.id },
+  });
   if (!branch) throw new Error('No branch found for organisation');
 
   // Seed 10 members in current month

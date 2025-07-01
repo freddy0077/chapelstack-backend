@@ -19,7 +19,11 @@ export async function seedContentData(
   console.log('  Content data seeding complete.');
 }
 
-async function seedSpeakers(prisma: PrismaClient, organisationId: string, branchId: string): Promise<Speaker[]> {
+async function seedSpeakers(
+  prisma: PrismaClient,
+  organisationId: string,
+  branchId: string,
+): Promise<Speaker[]> {
   const createdSpeakers: Speaker[] = [];
   for (let i = 0; i < 5; i++) {
     const name = faker.person.fullName();
@@ -38,7 +42,11 @@ async function seedSpeakers(prisma: PrismaClient, organisationId: string, branch
   return createdSpeakers;
 }
 
-async function seedSeries(prisma: PrismaClient, organisationId: string, branchId: string): Promise<Series[]> {
+async function seedSeries(
+  prisma: PrismaClient,
+  organisationId: string,
+  branchId: string,
+): Promise<Series[]> {
   const createdSeries: Series[] = [];
   for (let i = 0; i < 3; i++) {
     const title = faker.lorem.words(3);

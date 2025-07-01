@@ -82,6 +82,13 @@ export class BranchesResolver {
     );
   }
 
+  @ResolveField('location', () => String, { nullable: true })
+  location(@Parent() branch: Branch): string | null {
+    // Compose location from address, city, country (ignore empty/null values)
+    const parts = [branch.address, branch.city, branch.country].filter(Boolean);
+    return parts.length ? parts.join(', ') : null;
+  }
+
   @ResolveField('statistics', () => BranchStatistics)
   async getBranchStatistics(
     @Parent() branch: Branch,

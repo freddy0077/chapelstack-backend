@@ -18,7 +18,7 @@ export async function seedMembers(
     // If inCurrentMonth, pick a random date in current month; else random
     let createdAt: Date | undefined = undefined;
     if (inCurrentMonth) {
-      const day = 1 + Math.floor(Math.random() * (endOfMonth.getDate()));
+      const day = 1 + Math.floor(Math.random() * endOfMonth.getDate());
       createdAt = new Date(now.getFullYear(), now.getMonth(), day, 12, 0, 0, 0);
     }
     const member = await prisma.member.create({

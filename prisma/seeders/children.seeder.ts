@@ -13,7 +13,9 @@ export async function seedChildrenMinistryData(
   const { organisation, branch, members } = coreData;
 
   if (members.length < 20) {
-    console.log('  Skipping children ministry seeding: not enough members to create data.');
+    console.log(
+      '  Skipping children ministry seeding: not enough members to create data.',
+    );
     return;
   }
 
@@ -39,7 +41,12 @@ export async function seedChildrenMinistryData(
   console.log('  Children ministry data seeding complete.');
 }
 
-async function seedGuardians(prisma: PrismaClient, organisationId: string, branchId: string, members: Member[]) {
+async function seedGuardians(
+  prisma: PrismaClient,
+  organisationId: string,
+  branchId: string,
+  members: Member[],
+) {
   const createdGuardians: Guardian[] = [];
   for (const member of members) {
     const guardian = await prisma.guardian.upsert({
@@ -61,7 +68,12 @@ async function seedGuardians(prisma: PrismaClient, organisationId: string, branc
   return createdGuardians;
 }
 
-async function seedChildren(prisma: PrismaClient, organisationId: string, branchId: string, guardians: Guardian[]) {
+async function seedChildren(
+  prisma: PrismaClient,
+  organisationId: string,
+  branchId: string,
+  guardians: Guardian[],
+) {
   for (const guardian of guardians) {
     await createChildrenForGuardian(prisma, guardian, organisationId, branchId);
   }
@@ -84,7 +96,8 @@ async function createChildrenForGuardian(
         allergies: faker.helpers.maybe(() => faker.lorem.sentence(), {
           probability: 0.2,
         }),
-        emergencyContactName: `${guardian.firstName} ${guardian.lastName}`.trim(),
+        emergencyContactName:
+          `${guardian.firstName} ${guardian.lastName}`.trim(),
         emergencyContactPhone: guardian.phone,
         organisationId,
         branchId,
@@ -109,11 +122,21 @@ async function seedVolunteers(
 ) {
   for (const member of members) {
     await prisma.childrenMinistryVolunteer.upsert({
-      where: { children_ministry_volunteer_unique_constraint: { memberId: member.id, organisationId, branchId } },
+      where: {
+        children_ministry_volunteer_unique_constraint: {
+          memberId: member.id,
+          organisationId,
+          branchId,
+        },
+      },
       update: {},
       create: {
         memberId: member.id,
-        role: faker.helpers.arrayElement(['Teacher', 'Assistant', 'Coordinator']),
+        role: faker.helpers.arrayElement([
+          'Teacher',
+          'Assistant',
+          'Coordinator',
+        ]),
         backgroundCheckStatus: 'PASSED',
         trainingCompleted: true,
         organisationId,

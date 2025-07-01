@@ -70,7 +70,7 @@ export class MembersService {
         data: {
           ...data,
           status: MemberStatus.ACTIVE,
-          gender: 'NOT_SPECIFIED',
+          gender: 'MALE',
         },
       });
 

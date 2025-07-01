@@ -4,7 +4,9 @@ import { CreateTransactionInput } from './create-transaction.input';
 import { TransactionType } from '@prisma/client';
 
 @InputType()
-export class UpdateTransactionInput extends PartialType(CreateTransactionInput) {
+export class UpdateTransactionInput extends PartialType(
+  CreateTransactionInput,
+) {
   @Field(() => ID)
   id: string;
 

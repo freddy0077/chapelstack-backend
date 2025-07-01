@@ -23,7 +23,8 @@ export async function seedUsers(
       create: {
         email,
         passwordHash: hashedPassword,
-        firstName: role.name.charAt(0).toUpperCase() + role.name.slice(1).toLowerCase(),
+        firstName:
+          role.name.charAt(0).toUpperCase() + role.name.slice(1).toLowerCase(),
         lastName: 'User',
         organisationId,
         isEmailVerified: true,

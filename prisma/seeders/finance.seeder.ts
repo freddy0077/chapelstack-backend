@@ -1,4 +1,15 @@
-import { PrismaClient, Member, Fund, ContributionType, PaymentMethod, ExpenseCategory, Vendor, TransactionType, Transaction, User } from '@prisma/client';
+import {
+  PrismaClient,
+  Member,
+  Fund,
+  ContributionType,
+  PaymentMethod,
+  ExpenseCategory,
+  Vendor,
+  TransactionType,
+  Transaction,
+  User,
+} from '@prisma/client';
 import { faker } from '@faker-js/faker';
 
 // --- Transaction Seeder ---
@@ -18,14 +29,27 @@ async function seedTransactions(
   let seededCount = 0;
   console.log('    Seeding transactions...');
   for (const type of transactionTypes) {
-    for (let i = 0; i < 50; i++) { // More per type for realistic data
+    for (let i = 0; i < 50; i++) {
+      // More per type for realistic data
       const fund = faker.helpers.arrayElement(funds);
-      const user = users.length > 0 ? faker.helpers.arrayElement(users) : undefined;
-      const member = members.length > 0 ? faker.helpers.arrayElement(members) : undefined;
-      const contributionType = contributionTypes.length > 0 ? faker.helpers.arrayElement(contributionTypes) : undefined;
-      const paymentMethod = paymentMethods.length > 0 ? faker.helpers.arrayElement(paymentMethods) : undefined;
-      const vendor = vendors.length > 0 ? faker.helpers.arrayElement(vendors) : undefined;
-      const expenseCategory = expenseCategories.length > 0 ? faker.helpers.arrayElement(expenseCategories) : undefined;
+      const user =
+        users.length > 0 ? faker.helpers.arrayElement(users) : undefined;
+      const member =
+        members.length > 0 ? faker.helpers.arrayElement(members) : undefined;
+      const contributionType =
+        contributionTypes.length > 0
+          ? faker.helpers.arrayElement(contributionTypes)
+          : undefined;
+      const paymentMethod =
+        paymentMethods.length > 0
+          ? faker.helpers.arrayElement(paymentMethods)
+          : undefined;
+      const vendor =
+        vendors.length > 0 ? faker.helpers.arrayElement(vendors) : undefined;
+      const expenseCategory =
+        expenseCategories.length > 0
+          ? faker.helpers.arrayElement(expenseCategories)
+          : undefined;
 
       // Base transaction data
       const baseData = {
@@ -35,7 +59,10 @@ async function seedTransactions(
         userId: user?.id,
         type,
         amount: parseFloat(faker.finance.amount({ min: 10, max: 5000 })),
-        date: faker.date.between({ from: new Date(new Date().getFullYear(), 0, 1), to: new Date() }),
+        date: faker.date.between({
+          from: new Date(new Date().getFullYear(), 0, 1),
+          to: new Date(),
+        }),
         description: faker.lorem.sentence(),
         reference: faker.string.alphanumeric(10),
         metadata: {},
@@ -87,13 +114,25 @@ export async function seedFinanceData(
   // Seed Funds
   const funds = await seedFunds(prisma, organisation.id, branch.id);
   // Seed Contribution Types
-  const contributionTypes = await seedContributionTypes(prisma, organisation.id, branch.id);
+  const contributionTypes = await seedContributionTypes(
+    prisma,
+    organisation.id,
+    branch.id,
+  );
   // Seed Payment Methods
-  const paymentMethods = await seedPaymentMethods(prisma, organisation.id, branch.id);
+  const paymentMethods = await seedPaymentMethods(
+    prisma,
+    organisation.id,
+    branch.id,
+  );
   // Seed Vendors
   const vendors = await seedVendors(prisma, organisation.id, branch.id);
   // Seed Expense Categories
-  const expenseCategories = await seedExpenseCategories(prisma, organisation.id, branch.id);
+  const expenseCategories = await seedExpenseCategories(
+    prisma,
+    organisation.id,
+    branch.id,
+  );
 
   // Seed all transactions (all types)
   await seedTransactions(
@@ -113,7 +152,11 @@ export async function seedFinanceData(
 }
 
 // --- Keep only the supporting seeders for lookup tables (funds, types, methods, vendors, categories) ---
-async function seedFunds(prisma: PrismaClient, organisationId: string, branchId: string) {
+async function seedFunds(
+  prisma: PrismaClient,
+  organisationId: string,
+  branchId: string,
+) {
   const fundNames = [
     'General Fund',
     'Building Fund',
@@ -153,7 +196,9 @@ async function seedContributionTypes(
   const contributionTypes: ContributionType[] = [];
   for (const name of contributionTypesData) {
     const ct = await prisma.contributionType.upsert({
-      where: { contribution_type_unique_constraint: { name, organisationId, branchId } },
+      where: {
+        contribution_type_unique_constraint: { name, organisationId, branchId },
+      },
       update: {},
       create: {
         name,
@@ -182,7 +227,9 @@ async function seedPaymentMethods(
   const paymentMethods: PaymentMethod[] = [];
   for (const name of paymentMethodsData) {
     const pm = await prisma.paymentMethod.upsert({
-      where: { payment_method_unique_constraint: { name, organisationId, branchId } },
+      where: {
+        payment_method_unique_constraint: { name, organisationId, branchId },
+      },
       update: {},
       create: {
         name,
@@ -195,12 +242,25 @@ async function seedPaymentMethods(
   return paymentMethods;
 }
 
-async function seedExpenseCategories(prisma: PrismaClient, organisationId: string, branchId: string): Promise<ExpenseCategory[]> {
-  const expenseCategoriesData = ['Utilities', 'Salaries', 'Rent', 'Supplies', 'Maintenance', 'Events'];
+async function seedExpenseCategories(
+  prisma: PrismaClient,
+  organisationId: string,
+  branchId: string,
+): Promise<ExpenseCategory[]> {
+  const expenseCategoriesData = [
+    'Utilities',
+    'Salaries',
+    'Rent',
+    'Supplies',
+    'Maintenance',
+    'Events',
+  ];
   const expenseCategories: ExpenseCategory[] = [];
   for (const name of expenseCategoriesData) {
     const category = await prisma.expenseCategory.upsert({
-      where: { expense_category_unique_constraint: { name, organisationId, branchId } },
+      where: {
+        expense_category_unique_constraint: { name, organisationId, branchId },
+      },
       update: {},
       create: {
         name,
@@ -214,8 +274,17 @@ async function seedExpenseCategories(prisma: PrismaClient, organisationId: strin
   return expenseCategories;
 }
 
-async function seedVendors(prisma: PrismaClient, organisationId: string, branchId: string): Promise<Vendor[]> {
-  const vendorsData = ['Office Depot', 'Power & Light Co', 'City Water', 'Cleaning Services Inc.'];
+async function seedVendors(
+  prisma: PrismaClient,
+  organisationId: string,
+  branchId: string,
+): Promise<Vendor[]> {
+  const vendorsData = [
+    'Office Depot',
+    'Power & Light Co',
+    'City Water',
+    'Cleaning Services Inc.',
+  ];
   const vendors: Vendor[] = [];
   for (const name of vendorsData) {
     const vendor = await prisma.vendor.upsert({

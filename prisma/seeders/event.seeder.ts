@@ -47,7 +47,12 @@ export async function seedEventData(
           startDate: faker.date.future(),
           endDate: faker.date.future(),
           location: faker.location.streetAddress(),
-          category: faker.helpers.arrayElement(['Service', 'Meeting', 'Community', 'Worship']),
+          category: faker.helpers.arrayElement([
+            'Service',
+            'Meeting',
+            'Community',
+            'Worship',
+          ]),
           organisationId: organisation.id,
           branchId: branch.id,
           createdBy: randomUser.id,

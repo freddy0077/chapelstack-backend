@@ -14,7 +14,7 @@ async function seedBranchAdminUser() {
     const organisation = await prisma.organisation.findFirst();
     if (!organisation) throw new Error('No organisation found');
     const branch = await prisma.branch.findFirst({
-      where: { organisationId: organisation.id }
+      where: { organisationId: organisation.id },
     });
     if (!branch) throw new Error('No branch found');
 

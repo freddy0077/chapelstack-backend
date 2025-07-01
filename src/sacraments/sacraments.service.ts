@@ -330,7 +330,9 @@ export class SacramentsService {
     const deleted = await this.prisma.sacramentalRecord.delete({
       where: { id },
     });
-    return this.mapPrismaRecordToEntity(deleted as unknown as SacramentalRecord);
+    return this.mapPrismaRecordToEntity(
+      deleted as unknown as SacramentalRecord,
+    );
   }
 
   async uploadCertificate(

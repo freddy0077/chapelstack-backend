@@ -9,6 +9,8 @@ import { DashboardService } from './services/dashboard.service';
 import { DashboardResolver } from './resolvers/dashboard.resolver';
 import { SuperAdminDashboardResolver } from './resolvers/super-admin-dashboard.resolver';
 import { SuperAdminDashboardService } from './services/super-admin-dashboard.service';
+import { BranchDashboardResolver } from './resolvers/branch-dashboard.resolver';
+import { BranchDashboardService } from './services/branch-dashboard.service';
 
 import { ContentModule } from '../content/content.module';
 import { CommunicationsModule } from '../communications/communications.module';
@@ -36,6 +38,8 @@ import { MembersModule } from '../members/members.module';
     DashboardResolver,
     SuperAdminDashboardResolver,
     SuperAdminDashboardService,
+    BranchDashboardService,
+    BranchDashboardResolver,
   ],
   exports: [
     ReportingService,
@@ -43,6 +47,7 @@ import { MembersModule } from '../members/members.module';
     AttendanceReportsService,
     FinancialReportsService,
     DashboardService,
+    BranchDashboardService,
   ],
 })
 export class ReportingModule {}

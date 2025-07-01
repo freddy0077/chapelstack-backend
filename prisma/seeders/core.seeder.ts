@@ -24,7 +24,12 @@ export async function seedCoreData(prisma: PrismaClient) {
   const members = await seedMembers(prisma, branch.id, organisation.id, 50); // Create 50 members
 
   // 6. Attendance Sessions
-  const sessions = await seedAttendanceSessions(prisma, organisation.id, branch.id, 10); // Create 10 sessions
+  const sessions = await seedAttendanceSessions(
+    prisma,
+    organisation.id,
+    branch.id,
+    10,
+  ); // Create 10 sessions
 
   // 7. Attendance Records
   await seedAttendance(

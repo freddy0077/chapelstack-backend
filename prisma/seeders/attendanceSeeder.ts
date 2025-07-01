@@ -1,4 +1,8 @@
-import { PrismaClient, AttendanceRecord, AttendanceSession } from '@prisma/client';
+import {
+  PrismaClient,
+  AttendanceRecord,
+  AttendanceSession,
+} from '@prisma/client';
 import { subDays, setHours, setMinutes } from 'date-fns';
 
 export async function seedAttendance(
@@ -7,7 +11,7 @@ export async function seedAttendance(
   branchId: string,
   organisationId: string,
   sessions: AttendanceSession[],
-  days = 30
+  days = 30,
 ): Promise<AttendanceRecord[]> {
   const attendanceRecords: AttendanceRecord[] = [];
   if (sessions.length === 0) {
@@ -20,9 +24,14 @@ export async function seedAttendance(
     const date = subDays(now, i);
     for (const memberId of memberIds) {
       // Randomly decide if this member attended on this day
-      if (Math.random() < 0.7) { // 70% chance attended
-        const randomSession = sessions[Math.floor(Math.random() * sessions.length)];
-        const checkInTime = setMinutes(setHours(date, 9), Math.floor(Math.random() * 30));
+      if (Math.random() < 0.7) {
+        // 70% chance attended
+        const randomSession =
+          sessions[Math.floor(Math.random() * sessions.length)];
+        const checkInTime = setMinutes(
+          setHours(date, 9),
+          Math.floor(Math.random() * 30),
+        );
         const record = await prisma.attendanceRecord.create({
           data: {
             memberId,

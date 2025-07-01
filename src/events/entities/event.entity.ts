@@ -1,5 +1,6 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { GraphQLISODateTime } from '@nestjs/graphql';
+import { Branch } from '../../branches/entities/branch.entity';
 
 @ObjectType()
 export class Event {
@@ -35,4 +36,7 @@ export class Event {
 
   @Field({ nullable: true })
   updatedBy?: string;
+
+  @Field(() => Branch, { nullable: true })
+  branch?: Branch;
 }

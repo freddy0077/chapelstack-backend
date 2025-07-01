@@ -266,24 +266,78 @@ export class SuperAdminDashboardService {
     const typeIdSet = new Set(contributionTypes.map((ct) => ct.id));
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
 
     // Recreate typeIdMap for individual contribution type aggregation
     const typeIdMap = Object.fromEntries(
       contributionTypes.map((ct) => [ct.name.toLowerCase(), ct.id]),
     );
     // Aggregate financials
-    const [tithes, offering, donation, pledge, specialContribution, expenses] = await Promise.all([
-      this.prisma.contribution.aggregate({ _sum: { amount: true }, where: { contributionTypeId: typeIdMap['tithe'], organisationId, date: { gte: startOfMonth, lte: endOfMonth } } }),
-      this.prisma.contribution.aggregate({ _sum: { amount: true }, where: { contributionTypeId: typeIdMap['offering'], organisationId, date: { gte: startOfMonth, lte: endOfMonth } } }),
-      this.prisma.contribution.aggregate({ _sum: { amount: true }, where: { contributionTypeId: typeIdMap['donation'], organisationId, date: { gte: startOfMonth, lte: endOfMonth } } }),
-      this.prisma.contribution.aggregate({ _sum: { amount: true }, where: { contributionTypeId: typeIdMap['pledge'], organisationId, date: { gte: startOfMonth, lte: endOfMonth } } }),
-      this.prisma.contribution.aggregate({ _sum: { amount: true }, where: { contributionTypeId: typeIdMap['special contribution'], organisationId, date: { gte: startOfMonth, lte: endOfMonth } } }),
-      this.prisma.transaction.aggregate({ _sum: { amount: true }, where: { organisationId, type: 'EXPENSE', date: { gte: startOfMonth, lte: endOfMonth } } }),
-    ]);
+    const [tithes, offering, donation, pledge, specialContribution, expenses] =
+      await Promise.all([
+        this.prisma.contribution.aggregate({
+          _sum: { amount: true },
+          where: {
+            contributionTypeId: typeIdMap['tithe'],
+            organisationId,
+            date: { gte: startOfMonth, lte: endOfMonth },
+          },
+        }),
+        this.prisma.contribution.aggregate({
+          _sum: { amount: true },
+          where: {
+            contributionTypeId: typeIdMap['offering'],
+            organisationId,
+            date: { gte: startOfMonth, lte: endOfMonth },
+          },
+        }),
+        this.prisma.contribution.aggregate({
+          _sum: { amount: true },
+          where: {
+            contributionTypeId: typeIdMap['donation'],
+            organisationId,
+            date: { gte: startOfMonth, lte: endOfMonth },
+          },
+        }),
+        this.prisma.contribution.aggregate({
+          _sum: { amount: true },
+          where: {
+            contributionTypeId: typeIdMap['pledge'],
+            organisationId,
+            date: { gte: startOfMonth, lte: endOfMonth },
+          },
+        }),
+        this.prisma.contribution.aggregate({
+          _sum: { amount: true },
+          where: {
+            contributionTypeId: typeIdMap['special contribution'],
+            organisationId,
+            date: { gte: startOfMonth, lte: endOfMonth },
+          },
+        }),
+        this.prisma.transaction.aggregate({
+          _sum: { amount: true },
+          where: {
+            organisationId,
+            type: 'EXPENSE',
+            date: { gte: startOfMonth, lte: endOfMonth },
+          },
+        }),
+      ]);
 
     // Branches and top giving branches
-    const branches = await this.prisma.branch.findMany({ where: { organisationId }, select: { id: true, name: true } });
+    const branches = await this.prisma.branch.findMany({
+      where: { organisationId },
+      select: { id: true, name: true },
+    });
     // For each branch, sum contributions for the current month (any contribution type belonging to org)
     const branchContributions = await Promise.all(
       branches.map(async (branch) => {
@@ -324,7 +378,12 @@ export class SuperAdminDashboardService {
       branchesSummary,
       memberSummary,
       financialOverview: {
-        totalContributions: (tithes?._sum?.amount || 0) + (offering?._sum?.amount || 0) + (donation?._sum?.amount || 0) + (pledge?._sum?.amount || 0) + (specialContribution?._sum?.amount || 0),
+        totalContributions:
+          (tithes?._sum?.amount || 0) +
+          (offering?._sum?.amount || 0) +
+          (donation?._sum?.amount || 0) +
+          (pledge?._sum?.amount || 0) +
+          (specialContribution?._sum?.amount || 0),
         tithes: tithes?._sum?.amount || 0,
         expenses: Number(expenses?._sum?.amount || 0),
         pledge: pledge?._sum?.amount || 0,

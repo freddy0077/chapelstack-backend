@@ -47,14 +47,18 @@ export class DashboardService {
 
     const resolvedBranchId = branchId || preference?.branchId;
     if (!resolvedBranchId && !organisationId) {
-      throw new Error('Either Branch ID or Organisation ID is required to fetch dashboard data.');
+      throw new Error(
+        'Either Branch ID or Organisation ID is required to fetch dashboard data.',
+      );
     }
 
     const resolvedDashboardType =
       dashboardType || preference?.dashboardType || DashboardType.MEMBER;
 
     const dashboardData: DashboardData = {
-      ...(resolvedBranchId ? { branchId: resolvedBranchId, branchName: 'Main Branch' } : {}),
+      ...(resolvedBranchId
+        ? { branchId: resolvedBranchId, branchName: 'Main Branch' }
+        : {}),
       organisationId,
       dashboardType: resolvedDashboardType,
       generatedAt: new Date(),
@@ -163,7 +167,8 @@ export class DashboardService {
         content: event.description || 'No description available',
         date: event.startDate,
         author: event.creator
-          ? `${event.creator.firstName || ''} ${event.creator.lastName || ''}`.trim() || 'Church Admin'
+          ? `${event.creator.firstName || ''} ${event.creator.lastName || ''}`.trim() ||
+            'Church Admin'
           : 'Church Admin',
       })),
     };
@@ -198,24 +203,25 @@ export class DashboardService {
       },
     ];
 
-    const links: QuickLinkItem[] = quickLinks.length > 0
-      ? quickLinks.map((setting) => {
-          try {
-            const linkData = JSON.parse(setting.value);
-            return {
-              title: linkData.title || 'Link',
-              url: linkData.url || '#',
-              icon: linkData.icon || 'link-outline',
-            };
-          } catch (e) {
-            return {
-              title: 'Link',
-              url: '#',
-              icon: 'link-outline',
-            };
-          }
-        })
-      : defaultLinks;
+    const links: QuickLinkItem[] =
+      quickLinks.length > 0
+        ? quickLinks.map((setting) => {
+            try {
+              const linkData = JSON.parse(setting.value);
+              return {
+                title: linkData.title || 'Link',
+                url: linkData.url || '#',
+                icon: linkData.icon || 'link-outline',
+              };
+            } catch (e) {
+              return {
+                title: 'Link',
+                url: '#',
+                icon: 'link-outline',
+              };
+            }
+          })
+        : defaultLinks;
 
     return {
       title: 'Quick Links',
@@ -487,21 +493,19 @@ export class DashboardService {
       endDate: new Date(),
     };
 
-    const contributionsData = await this.financialReportsService.getContributionsReport(
-      {
+    const contributionsData =
+      await this.financialReportsService.getContributionsReport({
         branchId,
         organisationId,
         dateRange,
-      },
-    );
+      });
 
-    const budgetData = await this.financialReportsService.getBudgetVsActualReport(
-      {
+    const budgetData =
+      await this.financialReportsService.getBudgetVsActualReport({
         branchId,
         organisationId,
         dateRange,
-      },
-    );
+      });
 
     const totalContributions = contributionsData.total;
     const totalExpenses = budgetData.totals.actual;
@@ -641,7 +645,9 @@ export class DashboardService {
       },
       ...(organisationId ? { organisationId } : {}),
     };
-    const preference = await this.prisma.userDashboardPreference.findUnique({ where });
+    const preference = await this.prisma.userDashboardPreference.findUnique({
+      where,
+    });
     return preference as UserDashboardPreference | null;
   }
 
@@ -675,7 +681,12 @@ export class DashboardService {
       },
     });
     // Always return a valid UserDashboardPreference (never null)
-    const pref = await this.getUserDashboardPreference(userId, dashboardType, branchId, organisationId);
+    const pref = await this.getUserDashboardPreference(
+      userId,
+      dashboardType,
+      branchId,
+      organisationId,
+    );
     if (!pref) {
       throw new Error('Failed to save or retrieve dashboard preference');
     }
@@ -704,13 +715,20 @@ export class DashboardService {
     };
   }
 
-  private async getTransactionSummaryWidget(branchId?: string, organisationId?: string) {
+  private async getTransactionSummaryWidget(
+    branchId?: string,
+    organisationId?: string,
+  ) {
     // Use this for Super Admin dashboard
     const dateRange = {
       startDate: new Date(new Date().getFullYear(), 0, 1),
       endDate: new Date(),
     };
-    const summary = await this.financialReportsService.getTransactionSummary({ branchId, organisationId, dateRange });
+    const summary = await this.financialReportsService.getTransactionSummary({
+      branchId,
+      organisationId,
+      dateRange,
+    });
     return {
       widgetType: WidgetType.KPI_CARD,
       title: 'Transaction Summary (Income / Expense)',
@@ -719,12 +737,15 @@ export class DashboardService {
         currency: 'GHS',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-      }).format(summary.totalContributions)} / ${new Intl.NumberFormat('en-GH', {
-        style: 'currency',
-        currency: 'GHS',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(summary.totalExpenses)}`,
+      }).format(summary.totalContributions)} / ${new Intl.NumberFormat(
+        'en-GH',
+        {
+          style: 'currency',
+          currency: 'GHS',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        },
+      ).format(summary.totalExpenses)}`,
       percentChange: 0,
       icon: 'wallet-outline',
     };
@@ -735,29 +756,35 @@ export class DashboardService {
       startDate: new Date(new Date().getFullYear(), 0, 1),
       endDate: new Date(),
     };
-    const branches = await this.financialReportsService.getTopGivingBranches({ organisationId, dateRange }, 5);
+    const branches = await this.financialReportsService.getTopGivingBranches(
+      { organisationId, dateRange },
+      5,
+    );
     return {
       widgetType: WidgetType.CHART,
       chartType: 'bar',
       title: 'Top 5 Giving Branches',
       data: {
-        labels: branches.map(b => b.branchName),
-        datasets: [{
-          data: branches.map(b => b.totalGiven),
-          backgroundColor: [
-            'rgba(54, 162, 235, 0.6)',
-            'rgba(255, 206, 86, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(153, 102, 255, 0.6)',
-            'rgba(255, 99, 132, 0.6)',
-          ],
-        }],
+        labels: branches.map((b) => b.branchName),
+        datasets: [
+          {
+            data: branches.map((b) => b.totalGiven),
+            backgroundColor: [
+              'rgba(54, 162, 235, 0.6)',
+              'rgba(255, 206, 86, 0.6)',
+              'rgba(75, 192, 192, 0.6)',
+              'rgba(153, 102, 255, 0.6)',
+              'rgba(255, 99, 132, 0.6)',
+            ],
+          },
+        ],
       },
     };
   }
 
   private generateDefaultLayout(widgets: any[]): { lg: any[] } {
-    const layout: { i: string; x: number; y: number; w: number; h: number }[] = [];
+    const layout: { i: string; x: number; y: number; w: number; h: number }[] =
+      [];
     let x = 0;
     let y = 0;
     let rowMaxH = 0;

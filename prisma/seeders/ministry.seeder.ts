@@ -43,7 +43,10 @@ export async function seedMinistries(
   // Assign members to ministries
   for (const ministry of ministries) {
     // Assign a few members to each ministry
-    const membersToAssign = faker.helpers.arrayElements(members, { min: 5, max: 15 });
+    const membersToAssign = faker.helpers.arrayElements(members, {
+      min: 5,
+      max: 15,
+    });
     for (const member of membersToAssign) {
       const existingAssignment = await prisma.groupMember.findFirst({
         where: {

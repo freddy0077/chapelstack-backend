@@ -29,7 +29,11 @@ export class TransactionResolver {
     } else if (type) {
       parsedType = type;
     }
-    return this.transactionService.findAll({ organisationId, type: parsedType, fundId });
+    return this.transactionService.findAll({
+      organisationId,
+      type: parsedType,
+      fundId,
+    });
   }
 
   @Query(() => Transaction, { name: 'transaction' })

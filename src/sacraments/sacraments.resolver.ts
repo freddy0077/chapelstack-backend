@@ -128,7 +128,8 @@ export class SacramentsResolver {
   ): Promise<SacramentalRecord> {
     try {
       const result = await this.sacramentsService.remove(id);
-      if (!result || typeof result !== 'object') throw new Error('Failed to delete sacramental record');
+      if (!result || typeof result !== 'object')
+        throw new Error('Failed to delete sacramental record');
       return result;
     } catch (err) {
       throw new Error(

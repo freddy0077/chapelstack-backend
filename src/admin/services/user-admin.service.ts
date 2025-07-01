@@ -67,6 +67,13 @@ export class UserAdminService {
     isActive: boolean;
     organisationId: string;
   }) {
+    // Check if a user with this email already exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUser) {
+      throw new ConflictException('A user with this email already exists.');
+    }
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
     return this.prisma.user.create({

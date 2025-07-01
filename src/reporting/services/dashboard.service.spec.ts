@@ -204,7 +204,9 @@ describe('DashboardService', () => {
       expect(widgetTypes).toContain('PRAYER_REQUEST_SUMMARY');
 
       // Verify that the required methods were called
-      expect(mockMemberReportsService.getMemberDemographicsReport).toHaveBeenCalled();
+      expect(
+        mockMemberReportsService.getMemberDemographicsReport,
+      ).toHaveBeenCalled();
     });
 
     it('should return finance dashboard', async () => {
@@ -263,8 +265,12 @@ describe('DashboardService', () => {
       expect(result.branchId).toBe(branchId);
 
       // Verify that the financial methods were called
-      expect(mockFinancialReportsService.getContributionsReport).toHaveBeenCalled();
-      expect(mockFinancialReportsService.getBudgetVsActualReport).toHaveBeenCalled();
+      expect(
+        mockFinancialReportsService.getContributionsReport,
+      ).toHaveBeenCalled();
+      expect(
+        mockFinancialReportsService.getBudgetVsActualReport,
+      ).toHaveBeenCalled();
     });
 
     it('should return pastoral dashboard', async () => {
@@ -292,7 +298,9 @@ describe('DashboardService', () => {
 
       // Verify that the pastoral methods were called
       expect(mockPrismaService.member.count).toHaveBeenCalled();
-      expect(mockAttendanceReportsService.getAttendanceTrendReport).toHaveBeenCalled();
+      expect(
+        mockAttendanceReportsService.getAttendanceTrendReport,
+      ).toHaveBeenCalled();
     });
 
     it('should return ministry dashboard', async () => {
@@ -355,9 +363,9 @@ describe('DashboardService', () => {
       expect(result.title).toBe('Recent Sacraments');
       expect(result.sacraments.length).toBe(1);
       expect(result.sacraments[0].recipientName).toBe('John Doe');
-      expect(
-        mockPrismaService.sacramentalRecord.findMany,
-      ).toHaveBeenCalledWith(expect.objectContaining({ where: { branchId } }));
+      expect(mockPrismaService.sacramentalRecord.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { branchId } }),
+      );
     });
   });
 

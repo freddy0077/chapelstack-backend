@@ -16,10 +16,13 @@ export class SuperAdminDashboardResolver {
   @RequirePermissions({ action: 'view', subject: 'dashboard' })
   async superAdminDashboardData(
     @CurrentUser() user: { id: string },
-    @Args('organisationId', { type: () => ID, nullable: true }) organisationId?: string
+    @Args('organisationId', { type: () => ID, nullable: true })
+    organisationId?: string,
   ): Promise<SuperAdminDashboardData> {
     // Aggregate all dashboard info for super admin
     if (!organisationId) throw new Error('organisationId is required');
-    return this.superAdminDashboardService.getSuperAdminDashboardData(organisationId);
+    return this.superAdminDashboardService.getSuperAdminDashboardData(
+      organisationId,
+    );
   }
 }

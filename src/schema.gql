@@ -29,6 +29,11 @@ type ActivityEngagement {
   upcomingEvents: [EventInfo!]!
 }
 
+type ActivityStatsDto {
+  recentEvents: [EventDto!]!
+  upcomingEvents: [EventDto!]!
+}
+
 type AgeDistribution {
   ageGroup: String!
   count: Float!
@@ -177,6 +182,10 @@ type AttendanceStats {
   startDate: String!
 }
 
+type AttendanceStatsDto {
+  totalAttendance: Float!
+}
+
 input AttendanceStatsInput {
   branchId: String
   endDate: String!
@@ -318,6 +327,7 @@ type Branch {
   establishedAt: DateTime
   id: ID!
   isActive: Boolean!
+  location: String
   name: String!
   phoneNumber: String
   postalCode: String
@@ -326,6 +336,26 @@ type Branch {
   statistics: BranchStatistics!
   updatedAt: DateTime!
   website: String
+}
+
+type BranchAdminDto {
+  id: String!
+  name: String!
+}
+
+type BranchAnnouncementsDto {
+  announcements: [EventDto!]!
+}
+
+type BranchDashboardDataDto {
+  activityStats: ActivityStatsDto!
+  attendanceStats: AttendanceStatsDto!
+  branchAnnouncements: BranchAnnouncementsDto!
+  branchInfo: BranchInfoDto!
+  financeStats: FinanceStatsDto!
+  memberStats: MemberStatsDto!
+  sacramentStats: SacramentStatsDto!
+  systemStatus: SystemStatusDto!
 }
 
 input BranchFilterInput {
@@ -359,6 +389,14 @@ type BranchInfo {
   name: String!
   organisation: String
   status: String
+}
+
+type BranchInfoDto {
+  admins: [BranchAdminDto!]!
+  id: String!
+  isActive: Boolean!
+  name: String!
+  organisation: String
 }
 
 type BranchProfile {
@@ -637,6 +675,11 @@ type ContributionType {
 }
 
 type CpuUsage {
+  system: Float!
+  user: Float!
+}
+
+type CpuUsageDto {
   system: Float!
   user: Float!
 }
@@ -1285,6 +1328,7 @@ type EmailTemplateDto {
 }
 
 type Event {
+  branch: Branch
   branchId: String
   category: String
   createdBy: String
@@ -1308,6 +1352,12 @@ type EventAttendanceStats {
   currentlyPresent: Int!
   totalCheckedIn: Int!
   totalCheckedOut: Int!
+}
+
+type EventDto {
+  id: String!
+  startDate: DateTime!
+  title: String!
 }
 
 type EventInfo {
@@ -1403,6 +1453,16 @@ type FileUploadResponse {
   fileUrl: String!
   mediaItemId: String
   uploadUrl: String!
+}
+
+type FinanceStatsDto {
+  donation: Float!
+  expenses: Float!
+  offering: Float!
+  pledge: Float!
+  specialContribution: Float!
+  tithes: Float!
+  totalContributions: Float!
 }
 
 type FinancialOverview {
@@ -1850,6 +1910,11 @@ type MemberStatisticsPeriod {
   visitorsInPeriod: Int!
 }
 
+type MemberStatsDto {
+  newMembersThisMonth: Float!
+  total: Float!
+}
+
 """Status of a church member"""
 enum MemberStatus {
   ACTIVE
@@ -1871,6 +1936,13 @@ type MembershipStatusDistribution {
 }
 
 type MemoryUsage {
+  external: Float!
+  heapTotal: Float!
+  heapUsed: Float!
+  rss: Float!
+}
+
+type MemoryUsageDto {
   external: Float!
   heapTotal: Float!
   heapUsed: Float!
@@ -2375,6 +2447,7 @@ type Query {
   backup(id: ID!): Backup!
   backups(filter: BackupFilterInput): [Backup!]!
   branch(id: ID!): Branch
+  branchDashboard(branchId: String!): BranchDashboardDataDto!
   branches(filterInput: BranchFilterInput, paginationInput: PaginationInput): PaginatedBranches!
   budget(id: String!): Budget!
   budgets(organisationId: String): [Budget!]!
@@ -2614,6 +2687,10 @@ type SacramentItem {
   type: String!
 }
 
+type SacramentStatsDto {
+  totalSacraments: Float!
+}
+
 type SacramentStatsOutput {
   count: Float!
   percentage: Float
@@ -2847,6 +2924,11 @@ type SuperAdminDashboardData {
   systemHealth: SystemHealth!
 }
 
+type SystemDatabaseDto {
+  latency: Float!
+  status: String!
+}
+
 type SystemHealth {
   database: DatabaseHealth!
   system: SystemInfo!
@@ -2862,6 +2944,23 @@ type SystemInfo {
   processUptime: Float!
   systemUptime: Float!
   totalMemory: Float!
+}
+
+type SystemInfoDto {
+  cpuUsage: CpuUsageDto!
+  freeMemory: Float!
+  memoryUsage: MemoryUsageDto!
+  nodeVersion: String!
+  platform: String!
+  processUptime: Float!
+  systemUptime: Float!
+  totalMemory: Float!
+}
+
+type SystemStatusDto {
+  database: SystemDatabaseDto!
+  system: SystemInfoDto!
+  timestamp: DateTime!
 }
 
 type TaskItem {
