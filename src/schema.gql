@@ -1000,7 +1000,7 @@ input CreateMemberInput {
   email: String
   employerName: String
   firstName: String!
-  gender: Gender
+  gender: String
   lastName: String!
   maritalStatus: MaritalStatus
   membershipDate: DateTime
@@ -1151,6 +1151,19 @@ input CreateSpiritualMilestoneInput {
   memberId: ID!
   performedBy: String
   type: MilestoneType!
+}
+
+input CreateTransactionInput {
+  amount: Float!
+  branchId: String
+  date: DateTime
+  description: String
+  fundId: String
+  metadata: JSON
+  organisationId: String!
+  reference: String
+  type: TransactionType!
+  userId: String
 }
 
 input CreateUsersWithRoleInput {
@@ -1606,14 +1619,6 @@ type Fund {
   status: String!
 }
 
-"""Gender options"""
-enum Gender {
-  FEMALE
-  MALE
-  OTHER
-  PREFER_NOT_TO_SAY
-}
-
 type GenderDistribution {
   femaleCount: Float!
   femalePercentage: Float!
@@ -1829,7 +1834,7 @@ type Member {
   families: [Family!]
   familyRelationships: [FamilyRelationship!]
   firstName: String!
-  gender: Gender
+  gender: String
   groupMemberships: [JSON!]
   guardianProfile: JSON
   id: ID!
@@ -2089,6 +2094,7 @@ type Mutation {
   createSpiritualMilestone(createSpiritualMilestoneInput: CreateSpiritualMilestoneInput!): SpiritualMilestone!
   createSuperAdminUser(branchId: ID, email: String!, firstName: String!, lastName: String!, organisationId: ID!, password: String!): ID!
   createTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
+  createTransaction(input: CreateTransactionInput!): Transaction!
   createUsersWithRole(input: CreateUsersWithRoleInput!): [CreatedUserResult!]!
   createVendor(createVendorInput: CreateVendorInput!): Vendor!
   deleteAnnouncement(id: ID!): Announcement!
@@ -2150,6 +2156,7 @@ type Mutation {
   removeRfidCardFromMember(memberId: String!): Member!
   removeRoleFromUser(roleId: ID!, userId: ID!): AuthUser!
   removeSpiritualMilestone(id: String!): Boolean!
+  removeTransaction(id: ID!): Transaction!
   removeVendor(id: String!): Vendor!
   removeVolunteerFromEvent(eventId: ID!, volunteerId: ID!): Boolean!
   reorderFormFields(fieldIds: [String!]!, formId: String!): [FormField!]!
@@ -2197,6 +2204,7 @@ type Mutation {
   updateSmallGroup(id: ID!, input: UpdateSmallGroupInput!): SmallGroup!
   updateSpiritualMilestone(id: String!, updateSpiritualMilestoneInput: UpdateSpiritualMilestoneInput!): SpiritualMilestone!
   updateTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
+  updateTransaction(input: UpdateTransactionInput!): Transaction!
   updateUserActiveStatus(id: ID!, isActive: Boolean!): AuthUser!
   updateVendor(updateVendorInput: UpdateVendorInput!): Vendor!
   uploadOrganisationBrandingFile(file: Upload!, organisationId: ID!): String!
@@ -2555,6 +2563,8 @@ type Query {
   systemHealth: SystemHealth!
   template(id: ID!): EmailTemplateDto!
   templates(branchId: ID, organisationId: ID): [EmailTemplateDto!]!
+  transaction(id: ID!): Transaction!
+  transactions(fundId: String, organisationId: String, type: String): [Transaction!]!
   upcomingChildrenEvents(branchId: String!): [ChildrenEvent!]!
   upcomingSacramentAnniversaries(branchId: ID, limit: Int): [SacramentAnniversaryOutput!]!
   userDashboardPreference(branchId: ID!, dashboardType: DashboardType!, organisationId: ID): UserDashboardPreference
@@ -2993,6 +3003,30 @@ type TotalAttendanceStat {
   total: Float!
 }
 
+type Transaction {
+  amount: Float!
+  branchId: String
+  createdAt: DateTime!
+  date: DateTime!
+  description: String
+  fundId: String
+  id: ID!
+  metadata: JSON
+  organisationId: String!
+  reference: String
+  type: TransactionType!
+  updatedAt: DateTime!
+  userId: String
+}
+
+"""Type of transaction (INCOME, EXPENSE, etc.)"""
+enum TransactionType {
+  CONTRIBUTION
+  EXPENSE
+  FUND_ALLOCATION
+  TRANSFER
+}
+
 type UniqueMembersStat {
   period: String!
   unique_members: Float!
@@ -3284,7 +3318,7 @@ input UpdateMemberInput {
   email: String
   employerName: String
   firstName: String
-  gender: Gender
+  gender: String
   id: ID!
   lastName: String
   maritalStatus: MaritalStatus
@@ -3425,6 +3459,20 @@ input UpdateSpiritualMilestoneInput {
   memberId: ID
   performedBy: String
   type: MilestoneType
+}
+
+input UpdateTransactionInput {
+  amount: Float
+  branchId: String
+  date: DateTime
+  description: String
+  fundId: String
+  id: ID!
+  metadata: JSON
+  organisationId: String
+  reference: String
+  type: TransactionType
+  userId: String
 }
 
 input UpdateVendorInput {

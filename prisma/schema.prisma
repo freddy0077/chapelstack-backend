@@ -32,6 +32,14 @@ enum MediaType {
   OTHER
 }
 
+// Add Gender enum
+enum Gender {
+  MALE
+  FEMALE
+  UNKNOWN
+  NOT_SPECIFIED
+}
+
 model User {
   eventsCreated             Event[]                   @relation("EventCreatedBy")
   eventsUpdated             Event[]                   @relation("EventUpdatedBy")

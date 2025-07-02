@@ -44,8 +44,10 @@ export class SuperAdminDashboardService {
   }
 
   // 2. Branches Summary
-  async getBranchesSummary() {
+  async getBranchesSummary(organisationId?: string) {
+    const where = organisationId ? { organisationId } : undefined;
     const branches = await this.prisma.branch.findMany({
+      where,
       include: {
         organisation: true,
       },
@@ -239,12 +241,12 @@ export class SuperAdminDashboardService {
       announcements,
     ] = await Promise.all([
       this.getOrganisationOverview(),
-      this.getBranchesSummary(),
-      this.getAttendanceOverview(),
-      this.getSacramentsOverview(),
-      this.getActivityEngagement(),
+      this.getBranchesSummary(organisationId),
+      this.getAttendanceOverview(organisationId),
+      this.getSacramentsOverview(organisationId),
+      this.getActivityEngagement(organisationId),
       this.getSystemHealth(),
-      this.getAnnouncements(),
+      this.getAnnouncements(organisationId),
     ]);
 
     // Financials & member summary (org-specific)
@@ -401,33 +403,37 @@ export class SuperAdminDashboardService {
   }
 
   // 5. Attendance Overview
-  async getAttendanceOverview() {
-    const totalAttendance = await this.prisma.attendanceRecord.count();
+  async getAttendanceOverview(organisationId?: string) {
+    const where = organisationId ? { organisationId } : undefined;
+    const totalAttendance = await this.prisma.attendanceRecord.count({ where });
     // Add more stats as needed
     return { totalAttendance };
   }
 
   // 6. Sacraments Overview
-  async getSacramentsOverview() {
-    const totalSacraments = await this.prisma.sacramentalRecord.count();
+  async getSacramentsOverview(organisationId?: string) {
+    const where = organisationId ? { organisationId } : undefined;
+    const totalSacraments = await this.prisma.sacramentalRecord.count({ where });
     // Add more stats as needed
     return { totalSacraments };
   }
 
   // 7. Activity Engagement
-  async getActivityEngagement() {
+  async getActivityEngagement(organisationId?: string) {
     const now = new Date();
+    const whereRecent: any = { startDate: { lte: now } };
+    const whereUpcoming: any = { startDate: { gt: now } };
+    if (organisationId) {
+      whereRecent.organisationId = organisationId;
+      whereUpcoming.organisationId = organisationId;
+    }
     const recentEvents = await this.prisma.event.findMany({
-      where: {
-        startDate: { lte: now },
-      },
+      where: whereRecent,
       orderBy: { startDate: 'desc' },
       take: 5,
     });
     const upcomingEvents = await this.prisma.event.findMany({
-      where: {
-        startDate: { gt: now },
-      },
+      where: whereUpcoming,
       orderBy: { startDate: 'asc' },
       take: 5,
     });
@@ -495,9 +501,11 @@ export class SuperAdminDashboardService {
   }
 
   // 9. Announcements & Communication
-  async getAnnouncements() {
+  async getAnnouncements(organisationId?: string) {
+    const where: any = { category: 'ANNOUNCEMENT' };
+    if (organisationId) where.organisationId = organisationId;
     const announcements = await this.prisma.event.findMany({
-      where: { category: 'ANNOUNCEMENT' },
+      where,
       orderBy: { startDate: 'desc' },
       take: 5,
     });

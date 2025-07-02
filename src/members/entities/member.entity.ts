@@ -12,13 +12,6 @@ export enum MemberStatus {
   TRANSFERRED = 'TRANSFERRED',
 }
 
-export enum Gender {
-  MALE = 'MALE',
-  FEMALE = 'FEMALE',
-  OTHER = 'OTHER',
-  PREFER_NOT_TO_SAY = 'PREFER_NOT_TO_SAY',
-}
-
 export enum MaritalStatus {
   SINGLE = 'SINGLE',
   MARRIED = 'MARRIED',
@@ -31,11 +24,6 @@ export enum MaritalStatus {
 registerEnumType(MemberStatus, {
   name: 'MemberStatus',
   description: 'Status of a church member',
-});
-
-registerEnumType(Gender, {
-  name: 'Gender',
-  description: 'Gender options',
 });
 
 registerEnumType(MaritalStatus, {
@@ -81,7 +69,7 @@ export class Member {
   @Field(() => GraphQLISODateTime, { nullable: true })
   dateOfBirth?: Date | null;
 
-  @Field(() => Gender, { nullable: true })
+  @Field(() => String, { nullable: true })
   gender?: string | null;
 
   @Field(() => MaritalStatus, { nullable: true })

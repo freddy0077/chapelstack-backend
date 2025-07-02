@@ -8,7 +8,7 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Gender, MaritalStatus, MemberStatus } from '../entities/member.entity';
+import { MaritalStatus, MemberStatus } from '../entities/member.entity';
 import { GraphQLJSON } from 'graphql-type-json';
 import { GraphQLISODateTime } from '@nestjs/graphql';
 import { IsValidEnum } from '../../common/utils/enum-validation.util';
@@ -71,10 +71,10 @@ export class CreateMemberInput {
   @Type(() => Date)
   dateOfBirth?: Date;
 
-  @Field(() => Gender, { nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
-  @IsValidEnum(Gender)
-  gender?: Gender;
+  @IsString()
+  gender?: string;
 
   @Field(() => MaritalStatus, { nullable: true })
   @IsOptional()

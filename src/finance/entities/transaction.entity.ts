@@ -1,6 +1,12 @@
-import { ObjectType, Field, Float, ID } from '@nestjs/graphql';
+import { ObjectType, Field, Float, ID, registerEnumType } from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-type-json';
 import { TransactionType } from '@prisma/client';
+
+// Register TransactionType enum for GraphQL
+registerEnumType(TransactionType, {
+  name: 'TransactionType',
+  description: 'Type of transaction (INCOME, EXPENSE, etc.)',
+});
 
 @ObjectType()
 export class Transaction {
