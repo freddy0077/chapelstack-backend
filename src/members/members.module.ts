@@ -7,9 +7,11 @@ import { SpiritualMilestonesResolver } from './resolvers/spiritual-milestones.re
 import { FamiliesResolver } from './resolvers/families.resolver';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuditModule } from '../audit/audit.module';
+import { ConfigModule } from '@nestjs/config';
+import { ContentModule } from '../content/content.module';
 
 @Module({
-  imports: [PrismaModule, AuditModule],
+  imports: [PrismaModule, AuditModule, ConfigModule, ContentModule],
   providers: [
     MembersService,
     SpiritualMilestonesService,

@@ -1,4 +1,10 @@
-import { ObjectType, Field, Float, ID, registerEnumType } from '@nestjs/graphql';
+import {
+  ObjectType,
+  Field,
+  Float,
+  ID,
+  registerEnumType,
+} from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-type-json';
 import { TransactionType } from '@prisma/client';
 

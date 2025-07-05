@@ -104,6 +104,36 @@ export class MembersService {
     userAgent?: string,
   ): Promise<Member> {
     try {
+      // Fetch branch code
+      let branchCode = 'XXX';
+      if (createMemberInput.branchId) {
+        const branch = await this.prisma.branch.findUnique({
+          where: { id: createMemberInput.branchId },
+          select: { id: true, name: true },
+        });
+        // Use first 3 chars of branch name as code (uppercase)
+        if (branch) {
+          branchCode = branch.name.slice(0, 3).toUpperCase();
+        }
+      }
+
+      // Find the highest numeric member id (simulate incremental id)
+      // We'll use the count of members for the branch as a simple way to increment
+      let lastMemberCount = 0;
+      if (createMemberInput.branchId) {
+        lastMemberCount = await this.prisma.member.count({
+          where: { branchId: createMemberInput.branchId },
+        });
+      } else {
+        lastMemberCount = await this.prisma.member.count();
+      }
+
+      // Generate RFID Card ID
+      const prefix = 'M';
+      const year = new Date().getFullYear();
+      const id = String(lastMemberCount + 1).padStart(6, '0');
+      const rfidCardId = `${prefix}-${year}-${branchCode}-${id}`;
+
       const member = await this.prisma.member.create({
         data: {
           firstName: createMemberInput.firstName,
@@ -151,6 +181,7 @@ export class MembersService {
           organisationId: createMemberInput.organisationId,
           spouseId: createMemberInput.spouseId,
           parentId: createMemberInput.parentId,
+          rfidCardId, // Assign generated RFID Card ID
         },
         include: {
           branch: true,
@@ -180,6 +211,13 @@ export class MembersService {
           },
           prayerRequests: true,
           contributions: true,
+          familyRelationships: {
+            include: {
+              member: true,
+              relatedMember: true,
+              family: true,
+            },
+          },
         },
       });
 
@@ -214,13 +252,57 @@ export class MembersService {
     try {
       // Add search filter if provided
       if (search && search.trim().length > 0) {
+        // Split search on whitespace for full name support
+        const searchTerms = search.trim().split(/\s+/);
         where = {
           ...where,
           OR: [
-            { firstName: { contains: search, mode: 'insensitive' } },
-            { lastName: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { phoneNumber: { contains: search, mode: 'insensitive' } },
+            {
+              firstName: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              lastName: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            { email: { contains: search, mode: Prisma.QueryMode.insensitive } },
+            {
+              phoneNumber: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              rfidCardId: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            // Match full name (first + last)
+            ...(searchTerms.length > 1
+              ? [
+                  {
+                    AND: [
+                      {
+                        firstName: {
+                          contains: searchTerms[0],
+                          mode: Prisma.QueryMode.insensitive,
+                        },
+                      },
+                      {
+                        lastName: {
+                          contains: searchTerms.slice(1).join(' '),
+                          mode: Prisma.QueryMode.insensitive,
+                        },
+                      },
+                    ],
+                  },
+                ]
+              : []),
           ],
         };
       }
@@ -236,7 +318,13 @@ export class MembersService {
           children: true,
           spiritualMilestones: true,
           families: true,
-          familyRelationships: true,
+          familyRelationships: {
+            include: {
+              member: true,
+              relatedMember: true,
+              family: true,
+            },
+          },
           groupMemberships: {
             include: {
               ministry: true,
@@ -273,7 +361,13 @@ export class MembersService {
           children: true,
           spiritualMilestones: true,
           families: true,
-          familyRelationships: true,
+          familyRelationships: {
+            include: {
+              member: true,
+              relatedMember: true,
+              family: true,
+            },
+          },
           groupMemberships: {
             include: {
               ministry: true,
@@ -339,6 +433,7 @@ export class MembersService {
           firstName: updateMemberInput.firstName,
           middleName: updateMemberInput.middleName,
           lastName: updateMemberInput.lastName,
+          profileImageUrl: updateMemberInput.profileImageUrl,
           email: updateMemberInput.email,
           phoneNumber: updateMemberInput.phoneNumber,
           address: updateMemberInput.address,
@@ -918,7 +1013,13 @@ export class MembersService {
           children: true,
           spiritualMilestones: true,
           families: true,
-          familyRelationships: true,
+          familyRelationships: {
+            include: {
+              member: true,
+              relatedMember: true,
+              family: true,
+            },
+          },
           groupMemberships: {
             include: {
               ministry: true,

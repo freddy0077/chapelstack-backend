@@ -1,75 +1,91 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-} from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { S3Config } from '../../config/s3-config';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class S3UploadService {
-  private s3Client: S3Client;
-  private readonly bucketName: string;
+  private readonly s3Client: S3Client;
   private readonly region: string;
+  private readonly bucketName: string;
   private readonly baseUrl: string;
 
-  constructor(private configService: ConfigService) {
-    this.region =
-      this.configService.get<string>('AWS_S3_REGION') || 'us-east-1';
-    this.bucketName =
-      this.configService.get<string>('AWS_S3_BUCKET_NAME') || 'default-bucket';
+  private async init() {
+    try {
+      const command = new HeadBucketCommand({ Bucket: this.bucketName });
+      await this.s3Client.send(command);
+    } catch (error) {
+      if (error.name === 'NotFound') {
+        throw new Error(`S3 bucket ${this.bucketName} does not exist in region ${this.region}`);
+      }
+      throw error;
+    }
+  }
 
-    const accessKeyId =
-      this.configService.get<string>('AWS_ACCESS_KEY_ID') || 'default-key';
-    const secretAccessKey =
-      this.configService.get<string>('AWS_SECRET_ACCESS_KEY') ||
-      'default-secret';
+  constructor(private configService: ConfigService) {
+    const config = this.configService.get<S3Config>('s3');
+    
+    if (!config) {
+      throw new Error('S3 configuration not loaded');
+    }
+
+    this.region = config.region;
+    this.bucketName = config.bucketName;
+    this.baseUrl = `https://${config.bucketName}.s3.${config.region}.amazonaws.com`;
 
     this.s3Client = new S3Client({
-      region: this.region,
+      region: config.region,
       credentials: {
-        accessKeyId,
-        secretAccessKey,
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
       },
     });
 
-    this.baseUrl = `https://${this.bucketName}.s3.${this.region}.amazonaws.com`;
+    // Initialize bucket check
+    this.init();
   }
 
   /**
    * Generate a pre-signed URL for uploading a file directly to S3
-   * @param fileName Original file name
-   * @param contentType MIME type of the file
-   * @param directory Optional subdirectory within the bucket
+   * @param filename Original file name
+   * @param mimetype MIME type of the file
+   * @param folderPath Optional subdirectory within the bucket
    * @returns Object containing the upload URL and the final file URL
    */
   async generatePresignedUploadUrl(
-    fileName: string,
-    contentType: string,
-    directory = 'general',
+    filename: string,
+    mimetype: string,
+    folderPath: string,
   ): Promise<{ uploadUrl: string; fileUrl: string }> {
-    // Generate a unique file name to prevent collisions
-    const fileExtension = fileName.split('.').pop();
-    const uniqueFileName = `${directory}/${uuidv4()}.${fileExtension}`;
+    try {
+      if (!filename || !mimetype || !folderPath) {
+        throw new Error('Required parameters are missing');
+      }
 
-    const command = new PutObjectCommand({
-      Bucket: this.bucketName,
-      Key: uniqueFileName,
-      ContentType: contentType,
-    });
+      const fileExtension = filename.split('.').pop();
+      if (!fileExtension) {
+        throw new Error('Invalid filename');
+      }
 
-    // Generate a pre-signed URL that expires in 15 minutes
-    const uploadUrl = await getSignedUrl(this.s3Client, command, {
-      expiresIn: 900, // 15 minutes
-    });
+      const uniqueFilename = `${uuidv4()}.${fileExtension}`;
+      const key = `${folderPath}/${uniqueFilename}`;
+      
+      const command = new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        ContentType: mimetype,
+      });
 
-    // Return both the upload URL and the final URL where the file will be accessible
-    return {
-      uploadUrl,
-      fileUrl: `${this.baseUrl}/${uniqueFileName}`,
-    };
+      const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+      const fileUrl = `${this.baseUrl}/${key}`;
+
+      return { uploadUrl, fileUrl };
+    } catch (error) {
+      Logger.error('Error generating presigned URL:', error);
+      throw error;
+    }
   }
 
   /**
@@ -79,8 +95,14 @@ export class S3UploadService {
    */
   async deleteFile(fileUrl: string): Promise<boolean> {
     try {
-      // Extract the key from the file URL
+      if (!fileUrl) {
+        throw new Error('File URL is required');
+      }
+
       const key = fileUrl.replace(`${this.baseUrl}/`, '');
+      if (!key) {
+        throw new Error('Invalid file URL');
+      }
 
       const command = new DeleteObjectCommand({
         Bucket: this.bucketName,
@@ -90,7 +112,7 @@ export class S3UploadService {
       await this.s3Client.send(command);
       return true;
     } catch (error) {
-      console.error('Error deleting file from S3:', error);
+      Logger.error('Error deleting file from S3:', error);
       return false;
     }
   }
@@ -101,6 +123,9 @@ export class S3UploadService {
    * @returns The complete URL to access the file
    */
   getFileUrl(key: string): string {
+    if (!key) {
+      throw new Error('Key is required');
+    }
     return `${this.baseUrl}/${key}`;
   }
 }

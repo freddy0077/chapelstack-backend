@@ -31,7 +31,9 @@ export class S3Service {
     } else {
       throw new Error('Missing AWS S3 credentials');
     }
-    this.bucket = this.configService.get<string>('AWS_S3_BUCKET') as string;
+    this.bucket = this.configService.get<string>(
+      'AWS_S3_BUCKET_NAME',
+    ) as string;
     if (!this.bucket) {
       throw new Error('Missing AWS S3 bucket');
     }

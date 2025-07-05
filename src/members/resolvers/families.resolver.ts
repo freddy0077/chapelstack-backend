@@ -204,4 +204,26 @@ export class FamiliesResolver {
       relationship,
     );
   }
+
+  @Mutation(() => Family)
+  async addFamilyConnection(
+    @Args('familyId', { type: () => String }, ParseUUIDPipe) familyId: string,
+    @Args('memberId', { type: () => String }, ParseUUIDPipe) memberId: string,
+    @Args('relatedMemberId', { type: () => String }, ParseUUIDPipe)
+    relatedMemberId: string,
+    @Args('relationship', { type: () => String }) relationship: string,
+    @CurrentUser() userId?: string,
+    @IpAddress() ipAddress?: string,
+    @UserAgent() userAgent?: string,
+  ): Promise<Family> {
+    return this.familiesService.addFamilyConnection(
+      familyId,
+      memberId,
+      relatedMemberId,
+      relationship,
+      userId,
+      ipAddress,
+      userAgent,
+    );
+  }
 }

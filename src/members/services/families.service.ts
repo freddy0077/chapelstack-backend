@@ -270,6 +270,20 @@ export class FamiliesService {
         throw new NotFoundException(`Member with ID ${memberId} not found`);
       }
 
+      // Check if the member is already in the family
+      const existing = await this.prisma.family.findFirst({
+        where: {
+          id: familyId,
+          members: {
+            some: { id: memberId },
+          },
+        },
+      });
+      if (existing) {
+        // Optionally throw or just return the family
+        return family as unknown as Family;
+      }
+
       // Add member to family
       const updatedFamily = await this.prisma.family.update({
         where: { id: familyId },
@@ -827,6 +841,60 @@ export class FamiliesService {
       );
       throw error;
     }
+  }
+
+  async addFamilyConnection(
+    familyId: string,
+    memberId: string,
+    relatedMemberId: string,
+    relationship: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<Family> {
+    // Check if family exists
+    const family = await this.prisma.family.findUnique({
+      where: { id: familyId },
+    });
+    if (!family) {
+      throw new NotFoundException(`Family with ID ${familyId} not found`);
+    }
+    // Check if both members exist
+    const member = await this.prisma.member.findUnique({
+      where: { id: memberId },
+    });
+    if (!member) {
+      throw new NotFoundException(`Member with ID ${memberId} not found`);
+    }
+    const relatedMember = await this.prisma.member.findUnique({
+      where: { id: relatedMemberId },
+    });
+    if (!relatedMember) {
+      throw new NotFoundException(
+        `Related member with ID ${relatedMemberId} not found`,
+      );
+    }
+    // Create the family relationship
+    await this.prisma.familyRelationship.create({
+      data: {
+        familyId,
+        memberId,
+        relatedMemberId,
+        relationshipType: relationship,
+      },
+    });
+    // Log the action
+    await this.auditLogService.create({
+      action: 'CREATE',
+      entityType: 'FamilyRelationship',
+      entityId: familyId,
+      description: `Added family connection: ${member.firstName} (${relationship}) -> ${relatedMember.firstName}`,
+      userId,
+      ipAddress,
+      userAgent,
+    });
+    // Return updated family
+    return this.findFamilyById(familyId);
   }
 
   async addMemberToFamilyByRfidCard(

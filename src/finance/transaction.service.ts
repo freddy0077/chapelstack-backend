@@ -9,7 +9,18 @@ export class TransactionService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(data: CreateTransactionInput) {
-    return this.prisma.transaction.create({ data });
+    console.log('gddgedggded', data);
+    // Defensive: ensure type is a valid TransactionType enum value
+    if (!data.type || !Object.values(TransactionType).includes(data.type)) {
+      throw new Error(`Invalid or missing transaction type: ${data.type}`);
+    }
+    return this.prisma.transaction.create({
+      data: {
+        ...data,
+        // Defensive: ensure type is cast to TransactionType (enum)
+        type: data.type,
+      },
+    });
   }
 
   findAll(params?: {

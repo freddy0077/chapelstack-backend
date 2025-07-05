@@ -474,6 +474,7 @@ model Member {
   groupMemberships    GroupMember[]
   sacramentalRecords  SacramentalRecord[]
   prayerRequests      PrayerRequest[]
+  transactions        Transaction[]
 
   // Financial relations
   contributions      Contribution[]
@@ -1775,6 +1776,7 @@ model Transaction {
   branchId       String?
   fundId         String?
   userId         String?
+  memberId       String?
   type           TransactionType
   amount         Decimal
   date           DateTime        @default(now())
@@ -1788,4 +1790,5 @@ model Transaction {
   branch       Branch?      @relation("BranchTransactions", fields: [branchId], references: [id])
   fund         Fund?        @relation("FundTransactions", fields: [fundId], references: [id])
   user         User?        @relation("UserTransactions", fields: [userId], references: [id])
+  member       Member?      @relation(fields: [memberId], references: [id])
 }

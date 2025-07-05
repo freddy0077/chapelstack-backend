@@ -36,8 +36,8 @@ export class OrganisationService {
         description: input.description,
         timezone: input.timezone,
         currency: input.currency,
-        primaryColor: input.primaryColor,
-        secondaryColor: input.secondaryColor,
+        primaryColor: input.primaryColor ?? '',
+        secondaryColor: input.secondaryColor ?? '',
       },
     });
   }

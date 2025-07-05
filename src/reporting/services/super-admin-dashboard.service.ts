@@ -413,7 +413,9 @@ export class SuperAdminDashboardService {
   // 6. Sacraments Overview
   async getSacramentsOverview(organisationId?: string) {
     const where = organisationId ? { organisationId } : undefined;
-    const totalSacraments = await this.prisma.sacramentalRecord.count({ where });
+    const totalSacraments = await this.prisma.sacramentalRecord.count({
+      where,
+    });
     // Add more stats as needed
     return { totalSacraments };
   }

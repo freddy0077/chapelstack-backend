@@ -38,10 +38,10 @@ export class Organisation {
   timezone?: string;
   @Field({ nullable: true })
   currency?: string;
-  @Field()
-  primaryColor: string;
-  @Field()
-  secondaryColor: string;
+  @Field(() => String, { nullable: true })
+  primaryColor?: string;
+  @Field(() => String, { nullable: true })
+  secondaryColor?: string;
   @Field({ nullable: true })
   accentColor?: string;
   @Field({ nullable: true })

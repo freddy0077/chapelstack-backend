@@ -95,15 +95,15 @@ export class CreateOrganisationInput {
   @IsString()
   currency?: string;
 
-  @Field()
+  @Field(() => String, { nullable: true })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  primaryColor: string;
+  primaryColor?: string;
 
-  @Field()
+  @Field(() => String, { nullable: true })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  secondaryColor: string;
+  secondaryColor?: string;
 
   @Field({ nullable: true })
   @IsOptional()

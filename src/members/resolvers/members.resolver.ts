@@ -1,20 +1,31 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { MembersService } from '../services/members.service';
 import { Member } from '../entities/member.entity';
+import { AssignRfidCardInput } from '../dto/assign-rfid-card.input';
 import { CreateMemberInput } from '../dto/create-member.input';
 import { UpdateMemberInput } from '../dto/update-member.input';
-import { ParseUUIDPipe } from '@nestjs/common';
+import { UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { IpAddress, UserAgent } from '../../common/decorators';
+import { User } from '../../users/entities/user.entity';
+import { PrismaService } from '../../prisma/prisma.service';
+import { v4 as uuidv4 } from 'uuid';
+
 import { MemberStatus } from '../entities/member.entity';
+import { IpAddress, UserAgent } from '../../common/decorators';
 import { Prisma } from '@prisma/client';
-import { AssignRfidCardInput } from '../dto/assign-rfid-card.input';
 import { MemberStatistics } from '../dto/member-statistics.output';
 import { MemberDashboard } from '../dto/member-dashboard.dto';
+import { S3UploadService } from '../../content/services/s3-upload.service';
+import { FileUpload, GraphQLUpload } from 'graphql-upload';
 
 @Resolver(() => Member)
 export class MembersResolver {
-  constructor(private readonly membersService: MembersService) {}
+  constructor(
+    private readonly membersService: MembersService,
+    private readonly prisma: PrismaService,
+    private readonly s3UploadService: S3UploadService,
+  ) {}
 
   @Mutation(() => Member)
   async createMember(
@@ -86,6 +97,47 @@ export class MembersResolver {
       ipAddress,
       userAgent,
     );
+  }
+
+  @Mutation(() => String)
+  @UseGuards(GqlAuthGuard)
+  async uploadMemberImage(
+    @Args('memberId', { type: () => String }) memberId: string,
+    @Args({ name: 'file', type: () => GraphQLUpload }) file: FileUpload,
+    @CurrentUser() user: User,
+  ): Promise<string> {
+    // Read file buffer
+    const { createReadStream, mimetype, filename } = await file;
+    const chunks: Buffer[] = [];
+    const stream = createReadStream();
+    for await (const chunk of stream) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+    const fileObj: FileUpload = {
+      originalname: filename,
+      mimetype,
+      buffer,
+    };
+
+    // Generate a unique filename with member ID prefix
+    const fileKey = `members/${memberId}/profile/${uuidv4()}-${filename}`;
+
+    // Generate presigned URL for S3 upload
+    const { uploadUrl, fileUrl } =
+      await this.s3UploadService.generatePresignedUploadUrl(
+        filename,
+        mimetype,
+        `members/${memberId}/profile`,
+      );
+
+    // Update member record with new profile image URL
+    await this.membersService.update(memberId, {
+      id: memberId,
+      profileImageUrl: fileUrl,
+    });
+
+    return fileUrl;
   }
 
   @Mutation(() => Boolean)

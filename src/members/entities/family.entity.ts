@@ -68,8 +68,8 @@ export class FamilyRelationship {
   @Field(() => ID)
   memberId: string;
 
-  @Field(() => Member)
-  relatedMember: Member;
+  @Field(() => Member, { nullable: true })
+  relatedMember?: Member;
 
   @Field(() => ID)
   relatedMemberId: string;

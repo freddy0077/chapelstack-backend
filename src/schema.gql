@@ -1056,8 +1056,8 @@ input CreateOrganisationInput {
   missionStatement: String
   name: String!
   phoneNumber: String
-  primaryColor: String!
-  secondaryColor: String!
+  primaryColor: String
+  secondaryColor: String
   size: String
   slogan: String
   socialHandle: String
@@ -1436,7 +1436,7 @@ type FamilyRelationship {
   id: ID!
   member: Member
   memberId: ID!
-  relatedMember: Member!
+  relatedMember: Member
   relatedMemberId: ID!
   relationshipType: FamilyRelationshipType!
   updatedAt: DateTime!
@@ -2035,6 +2035,7 @@ type MinistryInvolvementWidget {
 }
 
 type Mutation {
+  addFamilyConnection(familyId: String!, memberId: String!, relatedMemberId: String!, relationship: String!): Family!
   addMemberToBranch(branchId: String!, memberId: String!): Member!
   addMemberToFamily(familyId: String!, memberId: String!): Family!
   addMemberToFamilyByRfidCard(familyId: String!, relatedMemberId: String!, relationship: String!, rfidCardId: String!): Family!
@@ -2207,6 +2208,7 @@ type Mutation {
   updateTransaction(input: UpdateTransactionInput!): Transaction!
   updateUserActiveStatus(id: ID!, isActive: Boolean!): AuthUser!
   updateVendor(updateVendorInput: UpdateVendorInput!): Vendor!
+  uploadMemberImage(file: Upload!, memberId: String!): String!
   uploadOrganisationBrandingFile(file: Upload!, organisationId: ID!): String!
   uploadSacramentalCertificate(file: Upload!, recordId: ID!): SacramentalRecord!
 }
@@ -2301,8 +2303,8 @@ type Organisation {
   missionStatement: String
   name: String!
   phoneNumber: String
-  primaryColor: String!
-  secondaryColor: String!
+  primaryColor: String
+  secondaryColor: String
   size: String
   slogan: String
   socialHandle: String
@@ -3331,6 +3333,7 @@ input UpdateMemberInput {
   phoneNumber: String
   postalCode: String
   privacySettings: JSON
+  profileImageUrl: String
   spouseId: ID
   state: String
   status: MemberStatus = ACTIVE
