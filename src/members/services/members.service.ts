@@ -111,28 +111,37 @@ export class MembersService {
           where: { id: createMemberInput.branchId },
           select: { id: true, name: true },
         });
-        // Use first 3 chars of branch name as code (uppercase)
         if (branch) {
           branchCode = branch.name.slice(0, 3).toUpperCase();
         }
       }
 
-      // Find the highest numeric member id (simulate incremental id)
-      // We'll use the count of members for the branch as a simple way to increment
-      let lastMemberCount = 0;
-      if (createMemberInput.branchId) {
-        lastMemberCount = await this.prisma.member.count({
-          where: { branchId: createMemberInput.branchId },
-        });
-      } else {
-        lastMemberCount = await this.prisma.member.count();
-      }
-
-      // Generate RFID Card ID
+      // Generate a unique RFID Card ID with retry logic
       const prefix = 'M';
       const year = new Date().getFullYear();
-      const id = String(lastMemberCount + 1).padStart(6, '0');
-      const rfidCardId = `${prefix}-${year}-${branchCode}-${id}`;
+      let rfidCardId: string;
+      let attempt = 0;
+      const maxAttempts = 5;
+      while (true) {
+        // Find the highest numeric member id (simulate incremental id)
+        let lastMemberCount = 0;
+        if (createMemberInput.branchId) {
+          lastMemberCount = await this.prisma.member.count({
+            where: { branchId: createMemberInput.branchId },
+          });
+        } else {
+          lastMemberCount = await this.prisma.member.count();
+        }
+        const id = String(lastMemberCount + 1 + attempt).padStart(6, '0');
+        rfidCardId = `${prefix}-${year}-${branchCode}-${id}`;
+        // Check for existing RFID
+        const exists = await this.prisma.member.findUnique({ where: { rfidCardId } });
+        if (!exists) break;
+        attempt++;
+        if (attempt >= maxAttempts) {
+          throw new Error('Failed to generate a unique RFID Card ID after several attempts.');
+        }
+      }
 
       const member = await this.prisma.member.create({
         data: {
@@ -154,9 +163,7 @@ export class MembersService {
           status: createMemberInput.status as unknown as string,
           membershipDate: createMemberInput.membershipDate,
           baptismDate: (() => {
-            const val: string | Date = createMemberInput.baptismDate as
-              | string
-              | Date;
+            const val: string | Date = createMemberInput.baptismDate as string | Date;
             if (val == null) return null;
             if (typeof val === 'string') {
               return val.trim() === '' ? null : val;
@@ -164,9 +171,7 @@ export class MembersService {
             return val;
           })(),
           confirmationDate: (() => {
-            const val: string | Date = createMemberInput.confirmationDate as
-              | string
-              | Date;
+            const val: string | Date = createMemberInput.confirmationDate as string | Date;
             if (val == null) return null;
             if (typeof val === 'string') {
               return val.trim() === '' ? null : val;
@@ -174,8 +179,7 @@ export class MembersService {
             return val;
           })(),
           customFields: createMemberInput.customFields as Prisma.InputJsonValue,
-          privacySettings:
-            createMemberInput.privacySettings as Prisma.InputJsonValue,
+          privacySettings: createMemberInput.privacySettings as Prisma.InputJsonValue,
           notes: createMemberInput.notes,
           branchId: createMemberInput.branchId,
           organisationId: createMemberInput.organisationId,
@@ -449,9 +453,7 @@ export class MembersService {
           status: updateMemberInput.status as unknown as string,
           membershipDate: updateMemberInput.membershipDate,
           baptismDate: (() => {
-            const val: string | Date = updateMemberInput.baptismDate as
-              | string
-              | Date;
+            const val: string | Date = updateMemberInput.baptismDate as string | Date;
             if (val == null) return null;
             if (typeof val === 'string') {
               return val.trim() === '' ? null : val;
@@ -459,9 +461,7 @@ export class MembersService {
             return val;
           })(),
           confirmationDate: (() => {
-            const val: string | Date = updateMemberInput.confirmationDate as
-              | string
-              | Date;
+            const val: string | Date = updateMemberInput.confirmationDate as string | Date;
             if (val == null) return null;
             if (typeof val === 'string') {
               return val.trim() === '' ? null : val;
@@ -469,8 +469,7 @@ export class MembersService {
             return val;
           })(),
           customFields: updateMemberInput.customFields as Prisma.InputJsonValue,
-          privacySettings:
-            updateMemberInput.privacySettings as Prisma.InputJsonValue,
+          privacySettings: updateMemberInput.privacySettings as Prisma.InputJsonValue,
           notes: updateMemberInput.notes,
           branchId: updateMemberInput.branchId,
           // userId is not directly updatable
