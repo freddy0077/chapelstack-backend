@@ -940,12 +940,9 @@ input CreateFormSubmissionInput {
 input CreateFundInput {
   branchId: String
   description: String
-  endDate: DateTime
-  goal: Float
+  isActive: Boolean
   name: String!
   organisationId: String
-  startDate: DateTime
-  status: String!
 }
 
 input CreateGuardianInput {
@@ -1156,7 +1153,7 @@ input CreateSpiritualMilestoneInput {
 input CreateTransactionInput {
   amount: Float!
   branchId: String
-  date: DateTime
+  date: String
   description: String
   fundId: String
   metadata: JSON
@@ -1300,8 +1297,8 @@ type DatabaseHealth {
 }
 
 input DateRangeInput {
-  endDate: DateTime!
-  startDate: DateTime!
+  endDate: DateTime
+  startDate: DateTime
 }
 
 """
@@ -2095,7 +2092,7 @@ type Mutation {
   createSpiritualMilestone(createSpiritualMilestoneInput: CreateSpiritualMilestoneInput!): SpiritualMilestone!
   createSuperAdminUser(branchId: ID, email: String!, firstName: String!, lastName: String!, organisationId: ID!, password: String!): ID!
   createTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
-  createTransaction(input: CreateTransactionInput!): Transaction!
+  createTransaction(createTransactionInput: CreateTransactionInput!): Transaction!
   createUsersWithRole(input: CreateUsersWithRoleInput!): [CreatedUserResult!]!
   createVendor(createVendorInput: CreateVendorInput!): Vendor!
   deleteAnnouncement(id: ID!): Announcement!
@@ -2347,6 +2344,13 @@ type PaginatedBranches {
   totalCount: Int!
 }
 
+type PaginatedTransaction {
+  hasNextPage: Boolean!
+  items: [Transaction!]
+  stats: TransactionStats
+  totalCount: Int!
+}
+
 type PaginatedUsers {
   hasNextPage: Boolean!
   items: [AuthUser!]!
@@ -2473,7 +2477,7 @@ type Query {
   communicationChannelStats(filter: CommunicationStatsFilterInput): [CommunicationChannelStats!]!
   communicationStats(filter: CommunicationStatsFilterInput): CommunicationStatsEntity!
   contribution(id: String!): Contribution!
-  contributionTypes(organisationId: String!): [ContributionType!]!
+  contributionTypes(branchId: String, organisationId: String!): [ContributionType!]!
   contributions(organisationId: String): [Contribution!]!
   currentChildrenEvents(branchId: String!): [ChildrenEvent!]!
   dashboardData(branchId: ID, dashboardType: DashboardType!, organisationId: ID): DashboardData!
@@ -2508,7 +2512,7 @@ type Query {
   formSubmissions(filter: SubmissionFilterInput!): [FormSubmission!]!
   forms(filter: FormFilterInput): [Form!]!
   fund(id: String!): Fund!
-  funds(organisationId: String): [Fund!]!
+  funds(branchId: String, organisationId: String!): [Fund!]!
   generateFundsImportTemplate: String!
   generateLicenseKey: String!
   generateMemberImportTemplate: String!
@@ -2566,7 +2570,8 @@ type Query {
   template(id: ID!): EmailTemplateDto!
   templates(branchId: ID, organisationId: ID): [EmailTemplateDto!]!
   transaction(id: ID!): Transaction!
-  transactions(fundId: String, organisationId: String, type: String): [Transaction!]!
+  transactionStats(branchId: String, contributionTypeId: String, dateRange: DateRangeInput, fundId: String, organisationId: String): TransactionStats!
+  transactions(branchId: String, dateRange: DateRangeInput, fundId: String, organisationId: String, paginationInput: PaginationInput, type: TransactionType): PaginatedTransaction!
   upcomingChildrenEvents(branchId: String!): [ChildrenEvent!]!
   upcomingSacramentAnniversaries(branchId: ID, limit: Int): [SacramentAnniversaryOutput!]!
   userDashboardPreference(branchId: ID!, dashboardType: DashboardType!, organisationId: ID): UserDashboardPreference
@@ -3021,7 +3026,15 @@ type Transaction {
   userId: String
 }
 
-"""Type of transaction (INCOME, EXPENSE, etc.)"""
+type TransactionStats {
+  netBalance: Float!
+  totalExpenses: Float!
+  totalIncome: Float!
+  totalOfferings: Float!
+  totalPledges: Float!
+  totalTithes: Float!
+}
+
 enum TransactionType {
   CONTRIBUTION
   EXPENSE
@@ -3256,13 +3269,10 @@ input UpdateFormInput {
 input UpdateFundInput {
   branchId: String
   description: String
-  endDate: DateTime
-  goal: Float
   id: String!
+  isActive: Boolean
   name: String
   organisationId: String
-  startDate: DateTime
-  status: String
 }
 
 input UpdateGroupMemberInput {
@@ -3467,7 +3477,7 @@ input UpdateSpiritualMilestoneInput {
 input UpdateTransactionInput {
   amount: Float
   branchId: String
-  date: DateTime
+  date: String
   description: String
   fundId: String
   id: ID!

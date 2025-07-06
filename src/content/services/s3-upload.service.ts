@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadBucketCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { S3Config } from '../../config/s3-config';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,7 +23,9 @@ export class S3UploadService {
       await this.s3Client.send(command);
     } catch (error) {
       if (error.name === 'NotFound') {
-        throw new Error(`S3 bucket ${this.bucketName} does not exist in region ${this.region}`);
+        throw new Error(
+          `S3 bucket ${this.bucketName} does not exist in region ${this.region}`,
+        );
       }
       throw error;
     }
@@ -26,7 +33,7 @@ export class S3UploadService {
 
   constructor(private configService: ConfigService) {
     const config = this.configService.get<S3Config>('s3');
-    
+
     if (!config) {
       throw new Error('S3 configuration not loaded');
     }
@@ -71,14 +78,16 @@ export class S3UploadService {
 
       const uniqueFilename = `${uuidv4()}.${fileExtension}`;
       const key = `${folderPath}/${uniqueFilename}`;
-      
+
       const command = new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
         ContentType: mimetype,
       });
 
-      const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+      const uploadUrl = await getSignedUrl(this.s3Client, command, {
+        expiresIn: 3600,
+      });
       const fileUrl = `${this.baseUrl}/${key}`;
 
       return { uploadUrl, fileUrl };

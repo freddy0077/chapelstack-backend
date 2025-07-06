@@ -4,35 +4,47 @@ import { Transaction } from './entities/transaction.entity';
 import { CreateTransactionInput } from './dto/create-transaction.input';
 import { UpdateTransactionInput } from './dto/update-transaction.input';
 import { TransactionType } from '@prisma/client';
+import { registerEnumType } from '@nestjs/graphql';
+import { PaginatedTransaction } from './dto/paginated-transaction.dto';
+import { PaginationInput } from '../common/dto/pagination.input';
+import { DateRangeInput } from '../common/dto/date-range.input';
+import { TransactionStats } from './dto/transaction-stats.dto';
+
+registerEnumType(TransactionType, {
+  name: 'TransactionType',
+});
 
 @Resolver(() => Transaction)
 export class TransactionResolver {
   constructor(private readonly transactionService: TransactionService) {}
 
   @Mutation(() => Transaction)
-  createTransaction(@Args('input') input: CreateTransactionInput) {
-    return this.transactionService.create(input);
+  createTransaction(
+    @Args('createTransactionInput')
+    createTransactionInput: CreateTransactionInput,
+  ) {
+    return this.transactionService.create(createTransactionInput);
   }
 
-  @Query(() => [Transaction], { name: 'transactions' })
+  @Query(() => PaginatedTransaction, { name: 'transactions' })
   findAll(
     @Args('organisationId', { nullable: true }) organisationId?: string,
-    @Args('type', { nullable: true }) type?: TransactionType,
+    @Args('type', { type: () => TransactionType, nullable: true })
+    type?: TransactionType,
     @Args('fundId', { nullable: true }) fundId?: string,
+    @Args('branchId', { nullable: true }) branchId?: string,
+    @Args('paginationInput', { nullable: true })
+    paginationInput?: PaginationInput,
+    @Args('dateRange', { nullable: true }) dateRange?: DateRangeInput,
   ) {
-    // If type is provided as a string (from client), cast to TransactionType if valid
-    let parsedType: TransactionType | undefined = undefined;
-    if (type && typeof type === 'string') {
-      if (Object.values(TransactionType).includes(type as TransactionType)) {
-        parsedType = type as TransactionType;
-      }
-    } else if (type) {
-      parsedType = type;
-    }
     return this.transactionService.findAll({
       organisationId,
-      type: parsedType,
+      branchId,
+      type,
       fundId,
+      skip: paginationInput?.skip,
+      take: paginationInput?.take,
+      dateRange,
     });
   }
 
@@ -49,5 +61,28 @@ export class TransactionResolver {
   @Mutation(() => Transaction)
   removeTransaction(@Args('id', { type: () => ID }) id: string) {
     return this.transactionService.remove(id);
+  }
+
+  @Query(() => TransactionStats, { name: 'transactionStats' })
+  getTransactionStats(
+    @Args('organisationId', { nullable: true }) organisationId?: string,
+    @Args('fundId', { nullable: true }) fundId?: string,
+    @Args('branchId', { nullable: true }) branchId?: string,
+    @Args('dateRange', { nullable: true }) dateRange?: DateRangeInput,
+    /**
+     * Optional filter by contribution type ID.
+     */
+    @Args('contributionTypeId', { nullable: true }) contributionTypeId?: string,
+  ) {
+    if (!organisationId) {
+      throw new Error('organisationId is required for transactionStats');
+    }
+    return this.transactionService.calculateTransactionStats({
+      organisationId,
+      branchId,
+      fundId,
+      dateRange,
+      contributionTypeId,
+    });
   }
 }

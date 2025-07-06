@@ -2,11 +2,8 @@ import { Resolver, Query, Args, ID } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { ReportingService } from '../services/reporting.service';
 import { ReportOutput } from '../entities/report-output.entity';
-import {
-  ReportRequestInput,
-  DateRangeInput,
-  OutputFormat,
-} from '../dto/report-filter.input';
+import { ReportRequestInput, OutputFormat } from '../dto/report-filter.input';
+import { DateRangeInput } from '../../common/dto/date-range.input';
 import { MemberDemographicsData } from '../entities/member-demographics-data.entity';
 import { AttendanceTrendData } from '../entities/attendance-trend-data.entity';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';

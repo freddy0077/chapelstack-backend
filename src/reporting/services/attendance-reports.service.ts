@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ReportFilterInput, DateRangeInput } from '../dto/report-filter.input';
+import { ReportFilterInput } from '../dto/report-filter.input';
+import { DateRangeInput } from '../../common/dto/date-range.input';
 import { AttendanceTrendData } from '../entities/attendance-trend-data.entity';
 
 @Injectable()

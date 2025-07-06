@@ -1,11 +1,5 @@
-import { InputType, Field, Float } from '@nestjs/graphql';
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { InputType, Field } from '@nestjs/graphql';
+import { IsNotEmpty, IsOptional, IsString, IsUUID, IsBoolean } from 'class-validator';
 
 @InputType()
 export class CreateFundInput {
@@ -19,23 +13,10 @@ export class CreateFundInput {
   @IsString()
   description?: string;
 
-  @Field(() => Float, { nullable: true })
+  @Field(() => Boolean, { nullable: true })
   @IsOptional()
-  @IsNumber()
-  goal?: number;
-
-  @Field(() => Date, { nullable: true })
-  @IsOptional()
-  startDate?: Date;
-
-  @Field(() => Date, { nullable: true })
-  @IsOptional()
-  endDate?: Date;
-
-  @Field(() => String)
-  @IsNotEmpty()
-  @IsString()
-  status: string;
+  @IsBoolean()
+  isActive?: boolean;
 
   @Field(() => String, { nullable: true })
   @IsOptional()

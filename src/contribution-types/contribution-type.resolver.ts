@@ -9,7 +9,13 @@ export class ContributionTypeResolver {
   @Query(() => [ContributionType])
   contributionTypes(
     @Args('organisationId') organisationId: string,
+    @Args('branchId', { nullable: true }) branchId?: string,
   ): Promise<ContributionType[]> {
-    return this.prisma.contributionType.findMany({ where: { organisationId } });
+    return this.prisma.contributionType.findMany({
+      where: {
+        organisationId,
+        ...(branchId && { branchId }),
+      },
+    });
   }
 }

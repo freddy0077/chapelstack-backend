@@ -22,8 +22,12 @@ export class FundsService {
     return this.prisma.fund.create({ data });
   }
 
-  findAll(organisationId?: string) {
-    return this.prisma.fund.findMany({ where: { organisationId } });
+  findAll(organisationId: string, branchId?: string) {
+    const where: any = { organisationId };
+    if (branchId) {
+      where.branchId = branchId;
+    }
+    return this.prisma.fund.findMany({ where });
   }
 
   findOne(id: string) {

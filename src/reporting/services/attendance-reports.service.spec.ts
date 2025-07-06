@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttendanceReportsService } from './attendance-reports.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ReportFilterInput, DateRangeInput } from '../dto/report-filter.input';
+import { ReportFilterInput } from '../dto/report-filter.input';
+import { DateRangeInput } from '../../common/dto/date-range.input';
 
 describe('AttendanceReportsService', () => {
   let service: AttendanceReportsService;

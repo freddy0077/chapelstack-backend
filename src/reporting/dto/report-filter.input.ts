@@ -1,16 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsOptional, IsUUID, IsDate, IsEnum, IsString } from 'class-validator';
-
-@InputType()
-export class DateRangeInput {
-  @Field(() => Date)
-  @IsDate()
-  startDate: Date;
-
-  @Field(() => Date)
-  @IsDate()
-  endDate: Date;
-}
+import { IsOptional, IsUUID, IsEnum, IsString } from 'class-validator';
+import { DateRangeInput } from '../../common/dto/date-range.input';
 
 @InputType()
 export class ReportFilterInput {

@@ -135,11 +135,15 @@ export class MembersService {
         const id = String(lastMemberCount + 1 + attempt).padStart(6, '0');
         rfidCardId = `${prefix}-${year}-${branchCode}-${id}`;
         // Check for existing RFID
-        const exists = await this.prisma.member.findUnique({ where: { rfidCardId } });
+        const exists = await this.prisma.member.findUnique({
+          where: { rfidCardId },
+        });
         if (!exists) break;
         attempt++;
         if (attempt >= maxAttempts) {
-          throw new Error('Failed to generate a unique RFID Card ID after several attempts.');
+          throw new Error(
+            'Failed to generate a unique RFID Card ID after several attempts.',
+          );
         }
       }
 
@@ -163,7 +167,9 @@ export class MembersService {
           status: createMemberInput.status as unknown as string,
           membershipDate: createMemberInput.membershipDate,
           baptismDate: (() => {
-            const val: string | Date = createMemberInput.baptismDate as string | Date;
+            const val: string | Date = createMemberInput.baptismDate as
+              | string
+              | Date;
             if (val == null) return null;
             if (typeof val === 'string') {
               return val.trim() === '' ? null : val;
@@ -171,7 +177,9 @@ export class MembersService {
             return val;
           })(),
           confirmationDate: (() => {
-            const val: string | Date = createMemberInput.confirmationDate as string | Date;
+            const val: string | Date = createMemberInput.confirmationDate as
+              | string
+              | Date;
             if (val == null) return null;
             if (typeof val === 'string') {
               return val.trim() === '' ? null : val;
@@ -179,7 +187,8 @@ export class MembersService {
             return val;
           })(),
           customFields: createMemberInput.customFields as Prisma.InputJsonValue,
-          privacySettings: createMemberInput.privacySettings as Prisma.InputJsonValue,
+          privacySettings:
+            createMemberInput.privacySettings as Prisma.InputJsonValue,
           notes: createMemberInput.notes,
           branchId: createMemberInput.branchId,
           organisationId: createMemberInput.organisationId,
@@ -453,7 +462,9 @@ export class MembersService {
           status: updateMemberInput.status as unknown as string,
           membershipDate: updateMemberInput.membershipDate,
           baptismDate: (() => {
-            const val: string | Date = updateMemberInput.baptismDate as string | Date;
+            const val: string | Date = updateMemberInput.baptismDate as
+              | string
+              | Date;
             if (val == null) return null;
             if (typeof val === 'string') {
               return val.trim() === '' ? null : val;
@@ -461,7 +472,9 @@ export class MembersService {
             return val;
           })(),
           confirmationDate: (() => {
-            const val: string | Date = updateMemberInput.confirmationDate as string | Date;
+            const val: string | Date = updateMemberInput.confirmationDate as
+              | string
+              | Date;
             if (val == null) return null;
             if (typeof val === 'string') {
               return val.trim() === '' ? null : val;
@@ -469,7 +482,8 @@ export class MembersService {
             return val;
           })(),
           customFields: updateMemberInput.customFields as Prisma.InputJsonValue,
-          privacySettings: updateMemberInput.privacySettings as Prisma.InputJsonValue,
+          privacySettings:
+            updateMemberInput.privacySettings as Prisma.InputJsonValue,
           notes: updateMemberInput.notes,
           branchId: updateMemberInput.branchId,
           // userId is not directly updatable

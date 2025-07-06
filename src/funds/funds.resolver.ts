@@ -15,10 +15,10 @@ export class FundsResolver {
 
   @Query(() => [Fund], { name: 'funds' })
   findAll(
-    @Args('organisationId', { type: () => String, nullable: true })
-    organisationId?: string,
+    @Args('organisationId', { type: () => String }) organisationId: string,
+    @Args('branchId', { type: () => String, nullable: true }) branchId?: string,
   ) {
-    return this.fundsService.findAll(organisationId);
+    return this.fundsService.findAll(organisationId, branchId);
   }
 
   @Query(() => Fund, { name: 'fund' })
