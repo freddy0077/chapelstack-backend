@@ -8,14 +8,13 @@ export class ContributionTypeResolver {
 
   @Query(() => [ContributionType])
   contributionTypes(
-    @Args('organisationId') organisationId: string,
-    @Args('branchId', { nullable: true }) branchId?: string,
+    @Args('organisationId', { type: () => String, nullable: true }) organisationId?: string,
+    @Args('branchId', { type: () => String, nullable: true }) branchId?: string,
   ): Promise<ContributionType[]> {
-    return this.prisma.contributionType.findMany({
-      where: {
-        organisationId,
-        ...(branchId && { branchId }),
-      },
-    });
+    // If you have a payment method resolver, ensure its organisationId argument is also nullable/type: String
+    const where: any = {};
+    if (organisationId) where.organisationId = organisationId;
+    if (branchId) where.branchId = branchId;
+    return this.prisma.contributionType.findMany({ where, take: 5, orderBy: { createdAt: 'desc' } });
   }
 }

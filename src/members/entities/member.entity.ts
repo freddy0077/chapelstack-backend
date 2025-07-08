@@ -3,6 +3,7 @@ import { GraphQLISODateTime } from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-type-json';
 import { Family, FamilyRelationship } from './family.entity';
 import { Branch } from '../../branches/entities/branch.entity';
+import { MinistryMember } from '../../ministries/entities/ministry-member.entity';
 
 export enum MemberStatus {
   ACTIVE = 'ACTIVE',
@@ -134,6 +135,9 @@ export class Member {
 
   @Field(() => [GraphQLJSON], { nullable: true })
   groupMemberships?: any[];
+
+  @Field(() => [MinistryMember], { nullable: true })
+  ministryMemberships?: MinistryMember[];
 
   @Field(() => [GraphQLJSON], { nullable: true })
   attendanceRecords?: any[];

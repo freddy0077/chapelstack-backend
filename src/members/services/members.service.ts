@@ -263,12 +263,11 @@ export class MembersService {
     search?: string,
   ): Promise<Member[]> {
     try {
-      // Add search filter if provided
+      let queryConditions: Prisma.MemberWhereInput = where || {};
+
       if (search && search.trim().length > 0) {
-        // Split search on whitespace for full name support
         const searchTerms = search.trim().split(/\s+/);
-        where = {
-          ...where,
+        const searchFilter: Prisma.MemberWhereInput = {
           OR: [
             {
               firstName: {
@@ -295,7 +294,6 @@ export class MembersService {
                 mode: Prisma.QueryMode.insensitive,
               },
             },
-            // Match full name (first + last)
             ...(searchTerms.length > 1
               ? [
                   {
@@ -318,11 +316,24 @@ export class MembersService {
               : []),
           ],
         };
+
+        queryConditions = {
+          ...queryConditions,
+          AND: [
+            ...(Array.isArray(queryConditions.AND)
+              ? queryConditions.AND
+              : queryConditions.AND
+                ? [queryConditions.AND]
+                : []),
+            searchFilter,
+          ],
+        };
       }
+
       const members = await this.prisma.member.findMany({
         skip,
         take,
-        where,
+        where: queryConditions,
         orderBy: { createdAt: 'desc' },
         include: {
           branch: true,

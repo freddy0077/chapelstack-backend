@@ -60,7 +60,6 @@ registerEnumType(AttendanceStatsPeriod, {
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
-      // Custom scalars from BaseModule (imported in AppModule) should be automatically picked up.
       buildSchemaOptions: {
         orphanedTypes: [Branch],
         scalarsMap: [

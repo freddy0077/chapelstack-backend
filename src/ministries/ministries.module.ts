@@ -8,6 +8,8 @@ import { GroupMembersService } from './services/group-members.service';
 import { GroupMembersResolver } from './resolvers/group-members.resolver';
 import { MinistryRoleGuard } from './guards/ministry-role.guard';
 import { MinistryIntegrationsService } from './services/ministry-integrations.service';
+import { MinistryMembersService } from './services/ministry-members.service';
+import { MinistryMembersResolver } from './resolvers/ministry-members.resolver';
 
 @Module({
   imports: [PrismaModule],
@@ -20,12 +22,15 @@ import { MinistryIntegrationsService } from './services/ministry-integrations.se
     GroupMembersResolver,
     MinistryRoleGuard,
     MinistryIntegrationsService,
+    MinistryMembersService,
+    MinistryMembersResolver,
     Logger,
   ],
   exports: [
     MinistriesService,
     SmallGroupsService,
     GroupMembersService,
+    MinistryMembersService,
     MinistryIntegrationsService,
   ],
 })

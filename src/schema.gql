@@ -1839,6 +1839,7 @@ type Member {
   maritalStatus: MaritalStatus
   membershipDate: DateTime
   middleName: String
+  ministryMemberships: [MinistryMember!]
   notes: String
   notifications: [JSON!]
   occupation: String
@@ -2031,12 +2032,21 @@ type MinistryInvolvementWidget {
   widgetType: WidgetType!
 }
 
+type MinistryMember {
+  id: ID!
+  joinDate: String
+  memberId: ID!
+  ministry: Ministry!
+  role: String
+}
+
 type Mutation {
   addFamilyConnection(familyId: String!, memberId: String!, relatedMemberId: String!, relationship: String!): Family!
   addMemberToBranch(branchId: String!, memberId: String!): Member!
   addMemberToFamily(familyId: String!, memberId: String!): Family!
   addMemberToFamilyByRfidCard(familyId: String!, relatedMemberId: String!, relationship: String!, rfidCardId: String!): Family!
   addMemberToGroup(groupId: ID!, memberId: ID!, roleInGroup: String): GroupMember!
+  addMemberToMinistry(joinDate: String, memberId: ID!, ministryId: ID!, role: String): MinistryMember!
   archiveForm(id: String!): Form!
   assignBranchRoleToUser(assignedBy: ID, branchId: ID!, roleId: ID!, userId: ID!): UserBranch!
   assignGroupLeader(groupId: ID!, memberId: ID!): GroupMember!
@@ -2477,7 +2487,7 @@ type Query {
   communicationChannelStats(filter: CommunicationStatsFilterInput): [CommunicationChannelStats!]!
   communicationStats(filter: CommunicationStatsFilterInput): CommunicationStatsEntity!
   contribution(id: String!): Contribution!
-  contributionTypes(branchId: String, organisationId: String!): [ContributionType!]!
+  contributionTypes(branchId: String, organisationId: String): [ContributionType!]!
   contributions(organisationId: String): [Contribution!]!
   currentChildrenEvents(branchId: String!): [ChildrenEvent!]!
   dashboardData(branchId: ID, dashboardType: DashboardType!, organisationId: ID): DashboardData!
@@ -2543,7 +2553,7 @@ type Query {
   organisation(id: ID!): Organisation
   organisations: [Organisation!]!
   pastChildrenEvents(branchId: String!): [ChildrenEvent!]!
-  paymentMethods(organisationId: String!): [PaymentMethod!]!
+  paymentMethods(organisationId: String): [PaymentMethod!]!
   permissionsGroupedBySubject: [[Permission!]!]!
   pledge(id: String!): Pledge!
   pledges(organisationId: String): [Pledge!]!
