@@ -63,6 +63,19 @@ type Sermon {
   branch: Branch!
   createdAt: DateTime!
   updatedAt: DateTime!
+  tags: [Tag!]
+  category: Category
+  notesUrl: String
+}
+
+type Tag {
+  id: ID!
+  name: String!
+}
+
+type Category {
+  id: ID!
+  name: String!
 }
 
 type MediaItem {
@@ -130,6 +143,9 @@ input CreateSermonInput {
   duration: Int
   branchId: String!
   status: ContentStatus
+  tags: [TagInput!]
+  categoryId: ID
+  notesUrl: String
 }
 
 input UpdateSermonInput {
@@ -147,6 +163,13 @@ input UpdateSermonInput {
   duration: Int
   branchId: String
   status: ContentStatus
+  tags: [TagInput!]
+  categoryId: ID
+  notesUrl: String
+}
+
+input TagInput {
+  name: String!
 }
 
 input CreateMediaItemInput {

@@ -9,9 +9,9 @@ export function mapToSeriesEntity(series: Series): SeriesEntity {
     id: series.id,
     title: series.title,
     description: series.description || undefined,
-    imageUrl: series.artworkUrl || undefined,
-    startDate: series.startDate || new Date(),
-    endDate: series.endDate || undefined,
+    startDate: series.startDate ? series.startDate.toISOString() : undefined,
+    endDate: series.endDate ? series.endDate.toISOString() : undefined,
+    artworkUrl: series.artworkUrl || undefined,
     isActive: Boolean(
       series.startDate && (!series.endDate || series.endDate > new Date()),
     ),

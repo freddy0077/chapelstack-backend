@@ -15,6 +15,12 @@ export class SpeakerEntity {
   bio?: string;
 
   @Field({ nullable: true })
+  imageUrl?: string;
+
+  @Field({ nullable: true })
+  memberId?: string;
+
+  @Field({ nullable: true })
   photoUrl?: string;
 
   @Field({ nullable: true })
@@ -25,9 +31,6 @@ export class SpeakerEntity {
 
   @Field({ nullable: true })
   website?: string;
-
-  @Field({ nullable: true })
-  memberId?: string;
 
   @Field()
   branchId: string;

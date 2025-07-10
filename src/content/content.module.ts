@@ -11,6 +11,8 @@ import { SeriesResolver } from './resolvers/series.resolver';
 import { SermonsResolver } from './resolvers/sermons.resolver';
 import { MediaItemsResolver } from './resolvers/media-items.resolver';
 import { FileUploadResolver } from './resolvers/file-upload.resolver';
+import { CategoryResolver } from './resolvers/category.resolver';
+import { CategoryService } from './services/category.service';
 import s3Config from '../config/s3-config';
 
 @Module({
@@ -22,6 +24,7 @@ import s3Config from '../config/s3-config';
     SermonsService,
     MediaItemsService,
     S3UploadService,
+    CategoryService,
 
     // Resolvers
     SpeakersResolver,

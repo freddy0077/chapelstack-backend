@@ -21,7 +21,7 @@ export class MediaItemsResolver {
     return mapToMediaItemEntity(mediaItem);
   }
 
-  @Query(() => [MediaItemEntity])
+  @Query(() => [MediaItemEntity], { name: 'mediaItems' })
   async findAll(
     @Args('branchId', { nullable: true }) branchId?: string,
     @Args('type', { nullable: true }) type?: MediaType,

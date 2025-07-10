@@ -41,6 +41,13 @@ export class SermonsService {
     }
 
     // Create sermon with proper relation connections
+    // Handle tags: connect or create
+    const tagsInput = createSermonInput.tags || [];
+    const tagConnectOrCreate = tagsInput.map((tagName) => ({
+      where: { name: tagName },
+      create: { name: tagName },
+    }));
+
     return this.prisma.sermon.create({
       data: {
         title: createSermonInput.title,
@@ -53,6 +60,7 @@ export class SermonsService {
         transcriptText: createSermonInput.transcriptText,
         duration: createSermonInput.duration,
         status: createSermonInput.status || ContentStatus.DRAFT,
+        notesUrl: createSermonInput.notesUrl,
         speaker: {
           connect: { id: createSermonInput.speakerId },
         },
@@ -64,10 +72,20 @@ export class SermonsService {
             connect: { id: createSermonInput.seriesId },
           },
         }),
+        ...(createSermonInput.categoryId && {
+          category: {
+            connect: { id: createSermonInput.categoryId },
+          },
+        }),
+        tags: {
+          connectOrCreate: tagConnectOrCreate,
+        },
       },
       include: {
         speaker: true,
         series: true,
+        tags: true,
+        category: true,
       },
     });
   }
@@ -90,6 +108,8 @@ export class SermonsService {
       include: {
         speaker: true,
         series: true,
+        tags: true,
+        category: true,
       },
       orderBy: {
         datePreached: 'desc',
@@ -97,69 +117,67 @@ export class SermonsService {
     });
   }
 
-  async findOne(id: string): Promise<Sermon> {
-    const sermon = await this.prisma.sermon.findUnique({
+  async findOne(id: string): Promise<Sermon | null> {
+    return this.prisma.sermon.findUnique({
       where: { id },
       include: {
         speaker: true,
         series: true,
+        tags: true,
+        category: true,
       },
     });
-
-    if (!sermon) {
-      throw new NotFoundException(`Sermon with ID ${id} not found`);
-    }
-
-    return sermon;
   }
 
   async update(updateSermonInput: UpdateSermonInput): Promise<Sermon> {
-    const { id, speakerId, seriesId, datePreached, ...data } =
-      updateSermonInput;
+    const {
+      id,
+      speakerId,
+      seriesId,
+      datePreached,
+      tags,
+      categoryId,
+      notesUrl,
+      ...data
+    } = updateSermonInput;
 
     // Check if sermon exists
-    await this.findOne(id);
-
-    // Check if speaker exists if provided
-    if (speakerId) {
-      const speaker = await this.prisma.speaker.findUnique({
-        where: { id: speakerId },
-      });
-
-      if (!speaker) {
-        throw new NotFoundException(`Speaker with ID ${speakerId} not found`);
-      }
+    const sermon = await this.prisma.sermon.findUnique({ where: { id } });
+    if (!sermon) {
+      throw new Error('Sermon not found');
     }
 
-    // Check if series exists if provided
-    if (seriesId) {
-      const series = await this.prisma.series.findUnique({
-        where: { id: seriesId },
-      });
-
-      if (!series) {
-        throw new NotFoundException(`Series with ID ${seriesId} not found`);
-      }
-    }
-
-    // Prepare update data
     const updateData: any = { ...data };
 
-    // Handle date conversion
-    if (datePreached) {
-      updateData.datePreached = new Date(datePreached);
-    }
-
-    // Handle relations
     if (speakerId) {
       updateData.speaker = { connect: { id: speakerId } };
     }
 
-    if (seriesId) {
-      updateData.series = { connect: { id: seriesId } };
-    } else if (seriesId === null) {
-      // If seriesId is explicitly set to null, disconnect the series
-      updateData.series = { disconnect: true };
+    if (typeof seriesId !== 'undefined') {
+      updateData.series = seriesId
+        ? { connect: { id: seriesId } }
+        : { disconnect: true };
+    }
+
+    if (datePreached) {
+      updateData.datePreached = new Date(datePreached);
+    }
+
+    if (tags) {
+      const tagConnectOrCreate = tags.map((tagName) => ({
+        where: { name: tagName },
+        create: { name: tagName },
+      }));
+      updateData.tags = { set: [], connectOrCreate: tagConnectOrCreate };
+    }
+
+    if (typeof categoryId !== 'undefined') {
+      updateData.category = categoryId
+        ? { connect: { id: categoryId } }
+        : { disconnect: true };
+    }
+    if (typeof notesUrl !== 'undefined') {
+      updateData.notesUrl = notesUrl;
     }
 
     return this.prisma.sermon.update({
@@ -168,6 +186,8 @@ export class SermonsService {
       include: {
         speaker: true,
         series: true,
+        tags: true,
+        category: true,
       },
     });
   }
@@ -191,6 +211,8 @@ export class SermonsService {
       include: {
         speaker: true,
         series: true,
+        tags: true,
+        category: true,
       },
     });
   }
@@ -208,6 +230,8 @@ export class SermonsService {
       include: {
         speaker: true,
         series: true,
+        tags: true,
+        category: true,
       },
     });
   }
@@ -230,6 +254,8 @@ export class SermonsService {
       include: {
         speaker: true,
         series: true,
+        tags: true,
+        category: true,
       },
       orderBy: {
         datePreached: 'desc',

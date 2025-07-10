@@ -477,6 +477,13 @@ input CardScanInput {
   sessionId: ID!
 }
 
+type Category {
+  createdAt: String!
+  id: ID!
+  name: String!
+  updatedAt: String!
+}
+
 type ChartData {
   chartType: String!
   data: JSON!
@@ -1119,6 +1126,25 @@ input CreateSacramentalRecordInput {
   sponsorName: String
   witness1Name: String
   witness2Name: String
+}
+
+input CreateSermonInput {
+  audioUrl: String
+  branchId: String!
+  categoryId: String
+  datePreached: String!
+  description: String
+  duration: Float
+  mainScripture: String
+  notesUrl: String
+  seriesId: String
+  speakerId: String!
+  status: String
+  tags: [String!]
+  title: String!
+  transcriptText: String
+  transcriptUrl: String
+  videoUrl: String
 }
 
 input CreateSettingInput {
@@ -2098,6 +2124,7 @@ type Mutation {
   createRole(input: CreateRoleInput!): Role!
   createRoleWithPermissions(input: CreateRoleWithPermissionsInput!): Role!
   createSacramentalRecord(input: CreateSacramentalRecordInput!): SacramentalRecord!
+  createSermon(createSermonInput: CreateSermonInput!): Sermon!
   createSmallGroup(input: CreateSmallGroupInput!): SmallGroup!
   createSpiritualMilestone(createSpiritualMilestoneInput: CreateSpiritualMilestoneInput!): SpiritualMilestone!
   createSuperAdminUser(branchId: ID, email: String!, firstName: String!, lastName: String!, organisationId: ID!, password: String!): ID!
@@ -2510,7 +2537,7 @@ type Query {
   familyRelationshipsByMember(memberId: String!): [FamilyRelationship!]!
   familyRelationshipsCount: Int!
   findAbsentMembers(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
-  findAll(branchId: String, type: String): [MediaItem!]!
+  findAll(branchId: String): [Series!]!
   findByMember(memberId: ID!): Speaker
   findByType(branchId: String, type: String!): [MediaItem!]!
   findOne(id: ID!): MediaItem!
@@ -2537,6 +2564,7 @@ type Query {
   licenseByKey(key: String!): License!
   licenses(filter: LicenseFilterInput): [License!]!
   me: UserProfile!
+  mediaItems(branchId: String, type: String): [MediaItem!]!
   member(id: String!): Member!
   memberAttendanceHistory(memberId: ID!): [AttendanceRecord!]!
   memberByRfidCard(rfidCardId: String!): Member
@@ -2566,6 +2594,7 @@ type Query {
   sacramentalRecords(filter: SacramentalRecordFilterInput): [SacramentalRecord!]!
   sacramentsByMember(memberId: ID!): [SacramentalRecord!]!
   search(branchId: String, query: String!, type: String): [MediaItem!]!
+  sermons(branchId: String, seriesId: String, speakerId: String, status: String): [Sermon!]!
   settings(branchId: String): [Setting!]!
   smallGroup(id: ID!): SmallGroup!
   smallGroups(filters: SmallGroupFilterInput): [SmallGroup!]!
@@ -2796,14 +2825,15 @@ input SendSmsInput {
 }
 
 type Series {
+  artworkUrl: String
   branchId: String!
   createdAt: DateTime!
   description: String
-  endDate: DateTime
+  endDate: String
   id: ID!
   imageUrl: String
   isActive: Boolean!
-  startDate: DateTime!
+  startDate: String
   title: String!
   updatedAt: DateTime!
 }
@@ -2811,15 +2841,21 @@ type Series {
 type Sermon {
   audioUrl: String
   branchId: String!
+  category: Category
+  categoryId: String
   createdAt: String!
   datePreached: String!
   description: String
   duration: Float
   id: ID!
   mainScripture: String
+  notesUrl: String
+  series: Series
   seriesId: String
-  speakerId: String!
+  speaker: Speaker
+  speakerId: String
   status: ContentStatus!
+  tags: [Tag!]
   title: String!
   transcriptText: String
   transcriptUrl: String
@@ -2897,6 +2933,7 @@ type Speaker {
   createdAt: DateTime!
   email: String
   id: ID!
+  imageUrl: String
   memberId: String
   name: String!
   phone: String
@@ -2988,6 +3025,11 @@ type SystemStatusDto {
   database: SystemDatabaseDto!
   system: SystemInfoDto!
   timestamp: DateTime!
+}
+
+type Tag {
+  id: ID!
+  name: String!
 }
 
 type TaskItem {

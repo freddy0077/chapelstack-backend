@@ -14,14 +14,14 @@ export class SermonsResolver {
   constructor(private readonly sermonsService: SermonsService) {}
 
   @Mutation(() => SermonEntity)
-  async create(
+  async createSermon(
     @Args('createSermonInput') createSermonInput: CreateSermonInput,
   ): Promise<SermonEntity> {
     const sermon = await this.sermonsService.create(createSermonInput);
     return mapToSermonEntity(sermon);
   }
 
-  @Query(() => [SermonEntity])
+  @Query(() => [SermonEntity], { name: 'sermons' })
   async findAll(
     @Args('branchId', { nullable: true }) branchId?: string,
     @Args('speakerId', { nullable: true }) speakerId?: string,

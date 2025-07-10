@@ -83,4 +83,18 @@ export class UpdateSermonInput {
   @IsOptional()
   @IsEnum(ContentStatus)
   status?: ContentStatus;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  tags?: string[];
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  notesUrl?: string;
 }

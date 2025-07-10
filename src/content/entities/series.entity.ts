@@ -12,13 +12,16 @@ export class SeriesEntity {
   description?: string;
 
   @Field({ nullable: true })
-  imageUrl?: string;
-
-  @Field()
-  startDate: Date;
+  startDate?: string;
 
   @Field({ nullable: true })
-  endDate?: Date;
+  endDate?: string;
+
+  @Field({ nullable: true })
+  imageUrl?: string;
+
+  @Field({ nullable: true })
+  artworkUrl?: string;
 
   @Field()
   isActive: boolean;

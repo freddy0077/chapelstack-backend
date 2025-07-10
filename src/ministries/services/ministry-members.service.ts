@@ -12,7 +12,9 @@ export class MinistryMembersService {
     input: AddMemberToMinistryInput,
   ): Promise<MinistryMember> {
     if (!input.memberId || !input.ministryId) {
-      throw new Error(`Both memberId and ministryId are required. Received memberId: ${input.memberId}, ministryId: ${input.ministryId}`);
+      throw new Error(
+        `Both memberId and ministryId are required. Received memberId: ${input.memberId}, ministryId: ${input.ministryId}`,
+      );
     }
 
     const groupMember = await this.prisma.groupMember.create({
