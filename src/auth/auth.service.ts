@@ -16,6 +16,9 @@ import { SignInDto } from './dto/signin.dto';
 import { TokenPayloadDto } from './dto/token-payload.dto';
 import { RefreshTokenInput } from './dto/refresh-token.input';
 import { SuccessMessageDto } from './dto/success-message.dto';
+import { ForgotPasswordInput } from './dto/forgot-password.input';
+import { ResetPasswordInput } from './dto/reset-password.input';
+import { EmailService } from '../communications/services/email.service';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +26,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
 
   // --- Helper method to generate access token ---
@@ -305,5 +309,69 @@ export class AuthService {
     });
 
     return { message: 'Successfully logged out.' };
+  }
+
+  async forgotPassword(input: ForgotPasswordInput): Promise<SuccessMessageDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: input.email },
+    });
+    if (!user) {
+      // Do not reveal if user exists
+      return {
+        message: 'If that email is registered, a reset link will be sent.',
+      };
+    }
+    // Generate a secure token and expiry (1 hour from now)
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: token,
+        passwordResetTokenExpiry: expiry,
+      },
+    });
+    // Build reset link (adjust base URL as needed)
+    const baseUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
+    const resetLink = `${baseUrl}/reset-password?token=${token}`;
+    // Send email
+    await this.emailService.sendEmail({
+      recipients: [user.email],
+      subject: 'Password Reset Request',
+      bodyHtml: `<p>You requested a password reset. <a href="${resetLink}">Click here</a> to reset your password. This link will expire in 1 hour.</p>`,
+      bodyText: `You requested a password reset. Visit the following link to reset your password: ${resetLink}`,
+    });
+    return {
+      message: 'If that email is registered, a reset link will be sent.',
+    };
+  }
+
+  async resetPassword(input: ResetPasswordInput): Promise<SuccessMessageDto> {
+    // Find user by token
+    const user = await this.prisma.user.findFirst({
+      where: {
+        passwordResetToken: input.token,
+        passwordResetTokenExpiry: { gte: new Date() },
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Invalid or expired reset token.');
+    }
+    // Hash new password
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(input.newPassword, saltRounds);
+    // Update user password and clear reset token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        passwordResetToken: null,
+        passwordResetTokenExpiry: null,
+      },
+    });
+    return { message: 'Password has been reset successfully.' };
   }
 }

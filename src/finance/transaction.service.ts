@@ -51,6 +51,7 @@ export class TransactionService {
   async findAll(params: {
     organisationId?: string;
     branchId?: string;
+    userId?: string;
     type?: TransactionType;
     fundId?: string;
     skip?: number;
@@ -61,6 +62,7 @@ export class TransactionService {
     const {
       organisationId,
       branchId,
+      userId,
       type,
       fundId,
       skip = 0,
@@ -73,6 +75,7 @@ export class TransactionService {
     const where: Prisma.TransactionWhereInput = {
       ...(organisationId && { organisationId }),
       ...(branchId && { branchId }),
+      ...(userId && { userId }),
       ...(type && { type }),
       ...(fundId && { fundId }),
     };

@@ -1517,6 +1517,10 @@ type FirstTimeVisitorsStat {
   period: String!
 }
 
+input ForgotPasswordInput {
+  email: String!
+}
+
 type Form {
   branchId: String
   createdAt: DateTime!
@@ -2145,6 +2149,7 @@ type Mutation {
   deleteSacramentalRecord(id: ID!): SacramentalRecord!
   deleteSmallGroup(id: ID!): Boolean!
   deleteTemplate(id: ID!): Boolean!
+  forgotPassword(input: ForgotPasswordInput!): SuccessMessage!
   generateAbsenceAlerts(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
   generateQRToken(input: GenerateQRTokenInput!): QRCodeToken!
   getPresignedUploadUrl(input: FileUploadInput!): FileUploadResponse!
@@ -2196,6 +2201,7 @@ type Mutation {
   removeVolunteerFromEvent(eventId: ID!, volunteerId: ID!): Boolean!
   reorderFormFields(fieldIds: [String!]!, formId: String!): [FormField!]!
   resetOnboarding(branchId: ID!): OnboardingProgress!
+  resetPassword(input: ResetPasswordInput!): SuccessMessage!
   restoreBackup(input: RestoreBackupInput!): Backup!
   saveUserDashboardPreference(branchId: ID!, dashboardType: DashboardType!, layoutConfig: JSON!, organisationId: ID): UserDashboardPreference!
   scheduleAbsenceCheck(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
@@ -2610,7 +2616,7 @@ type Query {
   templates(branchId: ID, organisationId: ID): [EmailTemplateDto!]!
   transaction(id: ID!): Transaction!
   transactionStats(branchId: String, contributionTypeId: String, dateRange: DateRangeInput, fundId: String, organisationId: String): TransactionStats!
-  transactions(branchId: String, dateRange: DateRangeInput, fundId: String, organisationId: String, paginationInput: PaginationInput, type: TransactionType): PaginatedTransaction!
+  transactions(branchId: String, dateRange: DateRangeInput, fundId: String, organisationId: String, paginationInput: PaginationInput, type: TransactionType, userId: String): PaginatedTransaction!
   upcomingChildrenEvents(branchId: String!): [ChildrenEvent!]!
   upcomingSacramentAnniversaries(branchId: ID, limit: Int): [SacramentAnniversaryOutput!]!
   userDashboardPreference(branchId: ID!, dashboardType: DashboardType!, organisationId: ID): UserDashboardPreference
@@ -2694,6 +2700,11 @@ input ReportRequestInput {
   filter: ReportFilterInput!
   outputFormat: String
   reportType: String!
+}
+
+input ResetPasswordInput {
+  newPassword: String!
+  token: String!
 }
 
 input RestoreBackupInput {
@@ -3068,6 +3079,7 @@ type Transaction {
   createdAt: DateTime!
   date: DateTime!
   description: String
+  fund: Fund
   fundId: String
   id: ID!
   metadata: JSON
@@ -3610,6 +3622,7 @@ input UserFilterInput {
   emailContains: String
   isActive: Boolean
   nameContains: String
+  organisationId: ID
   roleId: ID
 }
 

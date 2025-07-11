@@ -9,6 +9,7 @@ import { UpdateEmailTemplateInput } from '../dto/update-email-template.input';
 import { EmailTemplateDto } from '../dto/email-template.dto';
 import { EmailMessageDto } from '../dto/email-message.dto';
 import { TemplateService } from './template.service';
+import { sendSESEmail } from './ses.util';
 
 @Injectable()
 export class EmailService {
@@ -95,12 +96,33 @@ export class EmailService {
       // Create a record of the email in the database
       const emailMessage = await this.prisma.emailMessage.create({ data });
 
-      // TODO: Implement actual email sending using a provider like SendGrid, AWS SES, etc.
-      // For now, we'll just log the email and update the status
-      this.logger.log(
-        `[MOCK] Sending email to ${input.recipients.join(', ')} with subject: ${subject}`,
+      // Send via AWS SES
+      const region = this.configService.get<string>('AWS_SES_REGION');
+      const accessKeyId = this.configService.get<string>(
+        'AWS_SES_ACCESS_KEY_ID',
       );
-
+      const secretAccessKey = this.configService.get<string>(
+        'AWS_SES_SECRET_ACCESS_KEY',
+      );
+      const from = data.senderEmail;
+      if (!region || !accessKeyId || !secretAccessKey) {
+        throw new Error(
+          'Missing AWS SES configuration: region, accessKeyId, or secretAccessKey is undefined',
+        );
+      }
+      await sendSESEmail({
+        region,
+        accessKeyId,
+        secretAccessKey,
+        from,
+        to: rest.recipients,
+        subject,
+        html: bodyHtml,
+        text: bodyText,
+      });
+      this.logger.log(
+        `Sent email via SES to ${rest.recipients.join(', ')} with subject: ${subject}`,
+      );
       // Update the email status to SENT
       await this.prisma.emailMessage.update({
         where: { id: emailMessage.id },

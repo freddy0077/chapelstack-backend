@@ -11,6 +11,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { Response } from 'express';
 import { Res } from '@nestjs/common';
+import { ForgotPasswordInput } from './dto/forgot-password.input';
+import { ResetPasswordInput } from './dto/reset-password.input';
 
 @Resolver()
 export class AuthResolver {
@@ -63,5 +65,19 @@ export class AuthResolver {
     @Args('input') refreshTokenInput: RefreshTokenInput,
   ): Promise<TokenPayloadDto> {
     return this.authService.refreshToken(refreshTokenInput);
+  }
+
+  @Mutation(() => SuccessMessageDto, { name: 'forgotPassword' })
+  async forgotPassword(
+    @Args('input') input: ForgotPasswordInput,
+  ): Promise<SuccessMessageDto> {
+    return this.authService.forgotPassword(input);
+  }
+
+  @Mutation(() => SuccessMessageDto, { name: 'resetPassword' })
+  async resetPassword(
+    @Args('input') input: ResetPasswordInput,
+  ): Promise<SuccessMessageDto> {
+    return this.authService.resetPassword(input);
   }
 }

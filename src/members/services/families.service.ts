@@ -465,27 +465,85 @@ export class FamiliesService {
         },
       });
 
-      // Create reciprocal relationship if needed
+      // Always create reciprocal relationship with inverse type
+      const getInverseType = (type: FamilyRelationshipType) => {
+        switch (type) {
+          case FamilyRelationshipType.PARENT:
+            return FamilyRelationshipType.CHILD;
+          case FamilyRelationshipType.CHILD:
+            return FamilyRelationshipType.PARENT;
+          case FamilyRelationshipType.SPOUSE:
+            return FamilyRelationshipType.SPOUSE;
+          case FamilyRelationshipType.SIBLING:
+            return FamilyRelationshipType.SIBLING;
+          case FamilyRelationshipType.GRANDPARENT:
+            return FamilyRelationshipType.GRANDCHILD;
+          case FamilyRelationshipType.GRANDCHILD:
+            return FamilyRelationshipType.GRANDPARENT;
+          case FamilyRelationshipType.OTHER:
+            return FamilyRelationshipType.OTHER;
+          // Add more as needed
+          default:
+            return type; // fallback: same type
+        }
+      };
+
+      this.logger.log('Checking for reciprocalExists', {
+        memberId: createFamilyRelationshipInput.relatedMemberId,
+        relatedMemberId: createFamilyRelationshipInput.memberId,
+        relationshipType: getInverseType(
+          createFamilyRelationshipInput.relationshipType,
+        ),
+        familyId: createFamilyRelationshipInput.familyId,
+      });
+
+      const reciprocalExists = await this.prisma.familyRelationship.findFirst({
+        where: {
+          memberId: createFamilyRelationshipInput.relatedMemberId,
+          relatedMemberId: createFamilyRelationshipInput.memberId,
+          familyId: createFamilyRelationshipInput.familyId,
+          relationshipType: getInverseType(
+            createFamilyRelationshipInput.relationshipType,
+          ),
+        },
+      });
+
+      this.logger.log('reciprocalExists result:', reciprocalExists);
+
+      if (!reciprocalExists) {
+        try {
+          const reciprocal = await this.prisma.familyRelationship.create({
+            data: {
+              memberId: createFamilyRelationshipInput.relatedMemberId,
+              relatedMemberId: createFamilyRelationshipInput.memberId,
+              relationshipType: getInverseType(
+                createFamilyRelationshipInput.relationshipType,
+              ),
+              familyId: createFamilyRelationshipInput.familyId,
+            },
+          });
+          this.logger.log(
+            'Reciprocal family relationship created:',
+            reciprocal,
+          );
+        } catch (error) {
+          this.logger.error(
+            'Failed to create reciprocal family relationship',
+            error,
+          );
+          throw error;
+        }
+      }
+
+      // Special handling for spouse/parent/child (update member records)
       if (
         createFamilyRelationshipInput.relationshipType ===
         FamilyRelationshipType.SPOUSE
       ) {
-        await this.prisma.familyRelationship.create({
-          data: {
-            memberId: createFamilyRelationshipInput.relatedMemberId,
-            relatedMemberId: createFamilyRelationshipInput.memberId,
-            relationshipType:
-              FamilyRelationshipType.SPOUSE as unknown as string,
-            familyId: createFamilyRelationshipInput.familyId,
-          },
-        });
-
-        // Update spouse reference in member records
         await this.prisma.member.update({
           where: { id: createFamilyRelationshipInput.memberId },
           data: { spouseId: createFamilyRelationshipInput.relatedMemberId },
         });
-
         await this.prisma.member.update({
           where: { id: createFamilyRelationshipInput.relatedMemberId },
           data: { spouseId: createFamilyRelationshipInput.memberId },
@@ -494,16 +552,6 @@ export class FamiliesService {
         createFamilyRelationshipInput.relationshipType ===
         FamilyRelationshipType.PARENT
       ) {
-        await this.prisma.familyRelationship.create({
-          data: {
-            memberId: createFamilyRelationshipInput.relatedMemberId,
-            relatedMemberId: createFamilyRelationshipInput.memberId,
-            relationshipType: FamilyRelationshipType.CHILD as unknown as string,
-            familyId: createFamilyRelationshipInput.familyId,
-          },
-        });
-
-        // Update parent reference in child record
         await this.prisma.member.update({
           where: { id: createFamilyRelationshipInput.relatedMemberId },
           data: { parentId: createFamilyRelationshipInput.memberId },
@@ -512,33 +560,9 @@ export class FamiliesService {
         createFamilyRelationshipInput.relationshipType ===
         FamilyRelationshipType.CHILD
       ) {
-        await this.prisma.familyRelationship.create({
-          data: {
-            memberId: createFamilyRelationshipInput.relatedMemberId,
-            relatedMemberId: createFamilyRelationshipInput.memberId,
-            relationshipType:
-              FamilyRelationshipType.PARENT as unknown as string,
-            familyId: createFamilyRelationshipInput.familyId,
-          },
-        });
-
-        // Update parent reference in child record
         await this.prisma.member.update({
           where: { id: createFamilyRelationshipInput.memberId },
           data: { parentId: createFamilyRelationshipInput.relatedMemberId },
-        });
-      } else if (
-        createFamilyRelationshipInput.relationshipType ===
-        FamilyRelationshipType.SIBLING
-      ) {
-        await this.prisma.familyRelationship.create({
-          data: {
-            memberId: createFamilyRelationshipInput.relatedMemberId,
-            relatedMemberId: createFamilyRelationshipInput.memberId,
-            relationshipType:
-              FamilyRelationshipType.SIBLING as unknown as string,
-            familyId: createFamilyRelationshipInput.familyId,
-          },
         });
       }
 
@@ -632,16 +656,24 @@ export class FamiliesService {
     memberId: string,
   ): Promise<FamilyRelationship[]> {
     try {
+      // Fetch relationships where the member is either the source or the target
       const relationships = await this.prisma.familyRelationship.findMany({
-        where: { memberId },
+        where: {
+          OR: [{ memberId }, { relatedMemberId: memberId }],
+        },
         include: {
           member: true,
           relatedMember: true,
           family: true,
         },
       });
+      // Add a flag to each relationship to indicate if the member is the source or target
+      const relationshipsWithDirection = relationships.map((rel) => ({
+        ...rel,
+        direction: rel.memberId === memberId ? 'SOURCE' : 'TARGET',
+      }));
 
-      return relationships as unknown as FamilyRelationship[];
+      return relationshipsWithDirection as unknown as FamilyRelationship[];
     } catch (error) {
       this.logger.error(
         `Error finding family relationships by member: ${(error as Error).message}`,
@@ -852,47 +884,18 @@ export class FamiliesService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<Family> {
-    // Check if family exists
-    const family = await this.prisma.family.findUnique({
-      where: { id: familyId },
-    });
-    if (!family) {
-      throw new NotFoundException(`Family with ID ${familyId} not found`);
-    }
-    // Check if both members exist
-    const member = await this.prisma.member.findUnique({
-      where: { id: memberId },
-    });
-    if (!member) {
-      throw new NotFoundException(`Member with ID ${memberId} not found`);
-    }
-    const relatedMember = await this.prisma.member.findUnique({
-      where: { id: relatedMemberId },
-    });
-    if (!relatedMember) {
-      throw new NotFoundException(
-        `Related member with ID ${relatedMemberId} not found`,
-      );
-    }
-    // Create the family relationship
-    await this.prisma.familyRelationship.create({
-      data: {
+    // Use the reciprocal-creating logic
+    await this.createFamilyRelationship(
+      {
         familyId,
         memberId,
         relatedMemberId,
-        relationshipType: relationship,
+        relationshipType: relationship as FamilyRelationshipType,
       },
-    });
-    // Log the action
-    await this.auditLogService.create({
-      action: 'CREATE',
-      entityType: 'FamilyRelationship',
-      entityId: familyId,
-      description: `Added family connection: ${member.firstName} (${relationship}) -> ${relatedMember.firstName}`,
       userId,
       ipAddress,
       userAgent,
-    });
+    );
     // Return updated family
     return this.findFamilyById(familyId);
   }

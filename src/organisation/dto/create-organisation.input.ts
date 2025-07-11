@@ -16,8 +16,8 @@ export class CreateOrganisationInput {
   name: string;
 
   @Field({ nullable: true })
+  @IsEmail({}, { each: false, message: 'Email must be valid', always: false })
   @IsOptional()
-  @IsEmail()
   email?: string;
 
   @Field({ nullable: true })
@@ -27,7 +27,7 @@ export class CreateOrganisationInput {
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsUrl()
+  @IsUrl({}, { message: 'Website must be a valid URL', always: false })
   website?: string;
 
   @Field({ nullable: true })

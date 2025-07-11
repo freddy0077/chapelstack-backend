@@ -4,5 +4,6 @@ import { FundsResolver } from './funds.resolver';
 
 @Module({
   providers: [FundsResolver, FundsService],
+  exports: [FundsService],
 })
 export class FundsModule {}

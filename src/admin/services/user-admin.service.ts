@@ -112,6 +112,7 @@ export class UserAdminService {
       emailContains?: string;
       nameContains?: string;
       roleId?: string;
+      organisationId?: string;
     },
   ) {
     const { skip = 0, take = 10 } = paginationInput;
@@ -145,10 +146,11 @@ export class UserAdminService {
       }
       if (filterOptions.roleId) {
         where.roles = {
-          some: {
-            id: filterOptions.roleId,
-          },
+          some: { id: filterOptions.roleId },
         };
+      }
+      if (filterOptions.organisationId) {
+        where.organisationId = filterOptions.organisationId;
       }
     }
 

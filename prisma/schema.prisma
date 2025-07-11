@@ -69,6 +69,8 @@ model User {
   organisationId            String?
   member                    Member?                   @relation("UserToMember")
   transactions              Transaction[]             @relation("UserTransactions")
+  passwordResetToken        String?   @db.VarChar(255)
+  passwordResetTokenExpiry  DateTime?
 
   @@index([organisationId])
 }

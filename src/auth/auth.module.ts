@@ -7,6 +7,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthController } from './auth.controller';
 import { AuthResolver } from './auth.resolver';
 import { PermissionResolver } from './resolvers/permission.resolver';
+import { CommunicationsModule } from '../communications/communications.module';
 
 @Module({
   controllers: [AuthController],
@@ -23,6 +24,7 @@ import { PermissionResolver } from './resolvers/permission.resolver';
         },
       }),
     }),
+    CommunicationsModule,
   ],
   providers: [AuthService, JwtStrategy, AuthResolver, PermissionResolver],
   exports: [JwtModule, PassportModule, AuthService],

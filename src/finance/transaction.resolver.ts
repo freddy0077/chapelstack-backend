@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, ResolveField, Parent } from '@nestjs/graphql';
 import { TransactionService } from './transaction.service';
 import { Transaction } from './entities/transaction.entity';
 import { CreateTransactionInput } from './dto/create-transaction.input';
@@ -9,6 +9,9 @@ import { PaginatedTransaction } from './dto/paginated-transaction.dto';
 import { PaginationInput } from '../common/dto/pagination.input';
 import { DateRangeInput } from '../common/dto/date-range.input';
 import { TransactionStats } from './dto/transaction-stats.dto';
+import { Fund } from '../funds/entities/fund.entity';
+import { FundsService } from '../funds/funds.service';
+import { FundsModule } from '../funds/funds.module';
 
 registerEnumType(TransactionType, {
   name: 'TransactionType',
@@ -16,7 +19,10 @@ registerEnumType(TransactionType, {
 
 @Resolver(() => Transaction)
 export class TransactionResolver {
-  constructor(private readonly transactionService: TransactionService) {}
+  constructor(
+    private readonly transactionService: TransactionService,
+    private readonly fundsService: FundsService,
+  ) {}
 
   @Mutation(() => Transaction)
   createTransaction(
@@ -33,6 +39,7 @@ export class TransactionResolver {
     type?: TransactionType,
     @Args('fundId', { nullable: true }) fundId?: string,
     @Args('branchId', { nullable: true }) branchId?: string,
+    @Args('userId', { nullable: true }) userId?: string,
     @Args('paginationInput', { nullable: true })
     paginationInput?: PaginationInput,
     @Args('dateRange', { nullable: true }) dateRange?: DateRangeInput,
@@ -40,6 +47,7 @@ export class TransactionResolver {
     return this.transactionService.findAll({
       organisationId,
       branchId,
+      userId,
       type,
       fundId,
       skip: paginationInput?.skip,
@@ -84,5 +92,11 @@ export class TransactionResolver {
       dateRange,
       contributionTypeId,
     });
+  }
+
+  @ResolveField(() => Fund, { nullable: true })
+  async fund(@Parent() transaction: Transaction) {
+    if (!transaction.fundId) return null;
+    return this.fundsService.findOne(transaction.fundId);
   }
 }
