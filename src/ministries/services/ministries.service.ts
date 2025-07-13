@@ -68,6 +68,7 @@ export class MinistriesService {
         status: input.status,
         branchId: input.branchId,
         parentId: input.parentId,
+        organisationId: input.organisationId,
       },
       include: {
         subMinistries: true,
