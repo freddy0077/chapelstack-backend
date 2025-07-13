@@ -7,7 +7,8 @@ import {
 } from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-type-json';
 import { TransactionType } from '@prisma/client';
-import { Fund } from '../../funds/entities/fund.entity'; // Corrected import path
+import { Fund } from '../../funds/entities/fund.entity';
+import { Event } from '../../events/entities/event.entity';
 
 // Register TransactionType enum for GraphQL
 registerEnumType(TransactionType, {
@@ -32,6 +33,12 @@ export class Transaction {
   @Field({ nullable: true })
   userId?: string;
 
+  @Field({ nullable: true })
+  memberId?: string;
+
+  @Field({ nullable: true })
+  eventId?: string;
+
   @Field(() => TransactionType)
   type: TransactionType;
 
@@ -52,6 +59,9 @@ export class Transaction {
 
   @Field(() => Fund, { nullable: true })
   fund?: Fund;
+
+  @Field(() => Event, { nullable: true })
+  event?: Event;
 
   @Field()
   createdAt: Date;

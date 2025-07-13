@@ -29,6 +29,12 @@ type ActivityEngagement {
   upcomingEvents: [EventInfo!]!
 }
 
+type ActivityMetadata {
+  details: String
+  entityId: String
+  entityType: String
+}
+
 type ActivityStatsDto {
   recentEvents: [EventDto!]!
   upcomingEvents: [EventDto!]!
@@ -320,22 +326,36 @@ enum BackupType {
 
 type Branch {
   address: String
+  branchSettings: BranchSettings!
   city: String
   country: String
   createdAt: DateTime!
   email: String
   establishedAt: DateTime
   id: ID!
+  incomingTransfers(paginationInput: PaginationInput): PaginatedTransferRequests!
   isActive: Boolean!
   location: String
   name: String!
+  organisationId: String
+  outgoingTransfers(paginationInput: PaginationInput): PaginatedTransferRequests!
   phoneNumber: String
   postalCode: String
-  settings: [BranchSetting]
+  settings: BranchSettings!
   state: String
   statistics: BranchStatistics!
   updatedAt: DateTime!
   website: String
+}
+
+type BranchActivity {
+  branchId: String!
+  description: String!
+  id: ID!
+  metadata: ActivityMetadata
+  timestamp: DateTime!
+  type: String!
+  user: User
 }
 
 type BranchAdminDto {
@@ -426,9 +446,42 @@ type BranchSetting {
   value: String!
 }
 
+type BranchSettings {
+  allowMemberTransfers: Boolean!
+  allowResourceSharing: Boolean!
+  attendanceReportingLevel: String!
+  branchId: ID!
+  brandingSettings: BrandingSettings
+  createdAt: DateTime
+  currency: String
+  financialReportingLevel: String!
+  id: ID
+  language: String
+  memberDataVisibility: String!
+  notificationSettings: NotificationSettings
+  timezone: String
+  updatedAt: DateTime
+  visibilityToOtherBranches: String!
+}
+
 type BranchStatistics {
   """Number of active members in this branch."""
   activeMembers: Int!
+
+  """Annual budget for this branch."""
+  annualBudget: Float
+
+  """Average weekly attendance in this branch."""
+  averageWeeklyAttendance: Int
+
+  """Number of baptisms year-to-date in this branch."""
+  baptismsYTD: Int
+
+  """Number of confirmations year-to-date in this branch."""
+  confirmationsYTD: Int
+
+  """Number of first communions year-to-date in this branch."""
+  firstCommunionsYTD: Int
 
   """Number of inactive members in this branch."""
   inactiveMembers: Int!
@@ -436,18 +489,45 @@ type BranchStatistics {
   """Statistics for the previous month."""
   lastMonth: BranchStatistics
 
+  """Number of marriages year-to-date in this branch."""
+  marriagesYTD: Int
+
   """
   Number of new members who joined this branch in the relevant period (current or last month).
   """
   newMembersInPeriod: Int!
 
+  """Total number of families in this branch."""
+  totalFamilies: Int
+
   """Total number of members in this branch."""
   totalMembers: Int!
+
+  """Total number of ministries in this branch."""
+  totalMinistries: Int
+
+  """Year-to-date expenses for this branch."""
+  ytdExpenses: Float
+
+  """Year-to-date income for this branch."""
+  ytdIncome: Float
 }
 
 type BranchesSummary {
   branches: [BranchInfo!]!
   total: Float!
+}
+
+type BrandingSettings {
+  fontFamily: String!
+  primaryColor: String!
+  secondaryColor: String!
+}
+
+input BrandingSettingsInput {
+  fontFamily: String!
+  primaryColor: String!
+  secondaryColor: String!
 }
 
 type Budget {
@@ -1181,12 +1261,22 @@ input CreateTransactionInput {
   branchId: String
   date: String
   description: String
+  eventId: String
   fundId: String
+  memberId: String
   metadata: JSON
   organisationId: String!
   reference: String
   type: TransactionType!
   userId: String
+}
+
+input CreateTransferRequestInput {
+  destinationBranchId: ID!
+  memberId: ID!
+  reason: String!
+  sourceBranchId: ID!
+  transferData: [TransferDataType!]!
 }
 
 input CreateUsersWithRoleInput {
@@ -1364,10 +1454,13 @@ type EmailTemplateDto {
 }
 
 type Event {
+  attendees: [User!]
   branch: Branch
   branchId: String
   category: String
+  createdAt: DateTime
   createdBy: String
+  creator: User
   description: String
   endDate: DateTime
   id: ID!
@@ -1375,6 +1468,7 @@ type Event {
   organisationId: String
   startDate: DateTime!
   title: String!
+  updatedAt: DateTime
   updatedBy: String
 }
 
@@ -2077,12 +2171,14 @@ type Mutation {
   addMemberToFamilyByRfidCard(familyId: String!, relatedMemberId: String!, relationship: String!, rfidCardId: String!): Family!
   addMemberToGroup(groupId: ID!, memberId: ID!, roleInGroup: String): GroupMember!
   addMemberToMinistry(joinDate: String, memberId: ID!, ministryId: ID!, role: String): MinistryMember!
+  addUserToBranch(branchId: String!, role: String!, userId: String!): User!
   archiveForm(id: String!): Form!
   assignBranchRoleToUser(assignedBy: ID, branchId: ID!, roleId: ID!, userId: ID!): UserBranch!
   assignGroupLeader(groupId: ID!, memberId: ID!): GroupMember!
   assignPermissionToRole(permissionId: ID!, roleId: ID!): Role!
   assignRfidCardToMember(assignRfidCardInput: AssignRfidCardInput!): Member!
   assignRoleToUser(roleId: ID!, userId: ID!): AuthUser!
+  assignUserRole(branchId: String!, role: String!, userId: String!): User!
   assignVolunteerToEvent(input: CreateVolunteerAssignmentInput!): VolunteerEventAssignment!
   cancelDataOperation(id: ID!): DataOperation!
   checkInChild(input: CheckInInput!): CheckInRecord!
@@ -2134,6 +2230,7 @@ type Mutation {
   createSuperAdminUser(branchId: ID, email: String!, firstName: String!, lastName: String!, organisationId: ID!, password: String!): ID!
   createTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
   createTransaction(createTransactionInput: CreateTransactionInput!): Transaction!
+  createTransferRequest(input: CreateTransferRequestInput!): TransferRequest!
   createUsersWithRole(input: CreateUsersWithRoleInput!): [CreatedUserResult!]!
   createVendor(createVendorInput: CreateVendorInput!): Vendor!
   deleteAnnouncement(id: ID!): Announcement!
@@ -2197,6 +2294,8 @@ type Mutation {
   removeRoleFromUser(roleId: ID!, userId: ID!): AuthUser!
   removeSpiritualMilestone(id: String!): Boolean!
   removeTransaction(id: ID!): Transaction!
+  removeTransferRequest(id: ID!): Boolean!
+  removeUserRole(branchId: String!, role: String!, userId: String!): User!
   removeVendor(id: String!): Vendor!
   removeVolunteerFromEvent(eventId: ID!, volunteerId: ID!): Boolean!
   reorderFormFields(fieldIds: [String!]!, formId: String!): [FormField!]!
@@ -2213,7 +2312,7 @@ type Mutation {
   updateAnnouncement(id: ID!, input: UpdateAnnouncementInput!): Announcement!
   updateAttendanceSession(input: UpdateAttendanceSessionInput!): AttendanceSession!
   updateBranch(id: ID!, updateBranchInput: UpdateBranchInput!): Branch!
-  updateBranchSetting(branchId: ID!, updateSettingInput: UpdateBranchSettingInput!): BranchSetting!
+  updateBranchSettings(branchId: ID!, input: UpdateBranchSettingsInput!): BranchSettings!
   updateBudget(updateBudgetInput: UpdateBudgetInput!): Budget!
   updateChild(input: UpdateChildInput!): Child!
   updateChildrenEvent(input: UpdateChildrenEventInput!): ChildrenEvent!
@@ -2246,6 +2345,7 @@ type Mutation {
   updateSpiritualMilestone(id: String!, updateSpiritualMilestoneInput: UpdateSpiritualMilestoneInput!): SpiritualMilestone!
   updateTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
   updateTransaction(input: UpdateTransactionInput!): Transaction!
+  updateTransferRequest(input: UpdateTransferRequestInput!): TransferRequest!
   updateUserActiveStatus(id: ID!, isActive: Boolean!): AuthUser!
   updateVendor(updateVendorInput: UpdateVendorInput!): Vendor!
   uploadMemberImage(file: Upload!, memberId: String!): String!
@@ -2280,6 +2380,20 @@ type NotificationItem {
   message: String!
   read: Boolean!
   type: String!
+}
+
+type NotificationSettings {
+  emailNotifications: Boolean!
+  financialNotifications: Boolean!
+  smsNotifications: Boolean!
+  transferNotifications: Boolean!
+}
+
+input NotificationSettingsInput {
+  emailNotifications: Boolean!
+  financialNotifications: Boolean!
+  smsNotifications: Boolean!
+  transferNotifications: Boolean!
 }
 
 """Type of notification"""
@@ -2394,6 +2508,12 @@ type PaginatedTransaction {
   totalCount: Int!
 }
 
+type PaginatedTransferRequests {
+  hasNextPage: Boolean!
+  items: [TransferRequest!]!
+  totalCount: Int!
+}
+
 type PaginatedUsers {
   hasNextPage: Boolean!
   items: [AuthUser!]!
@@ -2503,8 +2623,11 @@ type Query {
   auditLogs(filter: AuditLogFilterInput, pagination: PaginationInput): [AuditLog!]!
   backup(id: ID!): Backup!
   backups(filter: BackupFilterInput): [Backup!]!
-  branch(id: ID!): Branch
+  branch(id: String!): Branch
+  branchActivities(branchId: String!, limit: Float, skip: Float): [BranchActivity!]!
   branchDashboard(branchId: String!): BranchDashboardDataDto!
+  branchUpcomingEvents(branchId: String!, limit: Float): [Event!]!
+  branchUsers(branchId: String!): [User!]!
   branches(filterInput: BranchFilterInput, paginationInput: PaginationInput): PaginatedBranches!
   budget(id: String!): Budget!
   budgets(organisationId: String): [Budget!]!
@@ -2535,6 +2658,7 @@ type Query {
   expenseCategory(id: String!): ExpenseCategory!
   expenses(organisationId: String): [Expense!]!
   exportFormSubmissions(formId: String!): JSON!
+  exportTransactions(branchId: String, dateRange: DateRangeInput, eventId: String, exportFormat: String!, fundId: String, organisationId: String, searchTerm: String, type: TransactionType): String!
   families(skip: Int = 0, take: Int = 10): [Family!]!
   familiesCount: Int!
   family(id: String!): Family!
@@ -2615,8 +2739,10 @@ type Query {
   template(id: ID!): EmailTemplateDto!
   templates(branchId: ID, organisationId: ID): [EmailTemplateDto!]!
   transaction(id: ID!): Transaction!
-  transactionStats(branchId: String, contributionTypeId: String, dateRange: DateRangeInput, fundId: String, organisationId: String): TransactionStats!
-  transactions(branchId: String, dateRange: DateRangeInput, fundId: String, organisationId: String, paginationInput: PaginationInput, type: TransactionType, userId: String): PaginatedTransaction!
+  transactionStats(branchId: String, contributionTypeId: String, dateRange: DateRangeInput, eventId: String, fundId: String, organisationId: String): TransactionStats!
+  transactions(branchId: String, dateRange: DateRangeInput, eventId: String, fundId: String, organisationId: String, paginationInput: PaginationInput, type: TransactionType, userId: String): PaginatedTransaction!
+  transferRequest(id: ID!): TransferRequest!
+  transferRequests(filterInput: TransferRequestFilterInput, paginationInput: PaginationInput): PaginatedTransferRequests!
   upcomingChildrenEvents(branchId: String!): [ChildrenEvent!]!
   upcomingSacramentAnniversaries(branchId: ID, limit: Int): [SacramentAnniversaryOutput!]!
   userDashboardPreference(branchId: ID!, dashboardType: DashboardType!, organisationId: ID): UserDashboardPreference
@@ -3079,9 +3205,12 @@ type Transaction {
   createdAt: DateTime!
   date: DateTime!
   description: String
+  event: Event
+  eventId: String
   fund: Fund
   fundId: String
   id: ID!
+  memberId: String
   metadata: JSON
   organisationId: String!
   reference: String
@@ -3104,6 +3233,49 @@ enum TransactionType {
   EXPENSE
   FUND_ALLOCATION
   TRANSFER
+}
+
+"""Types of data to transfer with the member"""
+enum TransferDataType {
+  DONATION_HISTORY
+  MINISTRIES
+  PERSONAL
+  SACRAMENTS
+}
+
+type TransferRequest {
+  approvedDate: DateTime
+  completedDate: DateTime
+  createdAt: DateTime!
+  destinationBranchId: ID!
+  destinationBranchName: String!
+  id: ID!
+  memberId: ID!
+  memberName: String!
+  reason: String!
+  rejectedDate: DateTime
+  rejectionReason: String
+  requestDate: DateTime!
+  sourceBranchId: ID!
+  sourceBranchName: String!
+  status: TransferStatus!
+  transferData: [TransferDataType!]!
+  updatedAt: DateTime!
+}
+
+input TransferRequestFilterInput {
+  destinationBranchId: ID
+  memberId: ID
+  sourceBranchId: ID
+  status: TransferStatus
+}
+
+"""Status of a member transfer request"""
+enum TransferStatus {
+  APPROVED
+  COMPLETED
+  PENDING
+  REJECTED
 }
 
 type UniqueMembersStat {
@@ -3158,14 +3330,19 @@ input UpdateBranchInput {
   website: String
 }
 
-input UpdateBranchSettingInput {
-  """
-  The key of the setting to update. e.g., "defaultCurrency", "timezone"
-  """
-  key: String!
-
-  """The new value for the setting."""
-  value: String!
+input UpdateBranchSettingsInput {
+  allowMemberTransfers: Boolean
+  allowResourceSharing: Boolean
+  attendanceReportingLevel: String
+  branchId: ID!
+  brandingSettings: BrandingSettingsInput
+  currency: String
+  financialReportingLevel: String
+  language: String
+  memberDataVisibility: String
+  notificationSettings: NotificationSettingsInput
+  timezone: String
+  visibilityToOtherBranches: String
 }
 
 input UpdateBudgetInput {
@@ -3543,13 +3720,21 @@ input UpdateTransactionInput {
   branchId: String
   date: String
   description: String
+  eventId: String
   fundId: String
   id: ID!
+  memberId: String
   metadata: JSON
   organisationId: String
   reference: String
   type: TransactionType
   userId: String
+}
+
+input UpdateTransferRequestInput {
+  id: ID!
+  rejectionReason: String
+  status: TransferStatus
 }
 
 input UpdateVendorInput {
@@ -3584,6 +3769,7 @@ type User {
   lastName: String
   name: String!
   phoneNumber: String
+  roles: [String!]
   updatedAt: DateTime!
 }
 

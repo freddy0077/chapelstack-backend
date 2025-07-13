@@ -8,6 +8,7 @@ import {
   IsBoolean,
   IsDate,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 
 @InputType()
@@ -61,12 +62,18 @@ export class CreateBranchInput {
 
   @Field({ nullable: true })
   @IsOptional()
+  @ValidateIf(
+    (o) => o.email !== '' && o.email !== null && o.email !== undefined,
+  )
   @IsEmail({}, { message: 'Please provide a valid email address.' })
   @MaxLength(255)
   email?: string;
 
   @Field({ nullable: true })
   @IsOptional()
+  @ValidateIf(
+    (o) => o.website !== '' && o.website !== null && o.website !== undefined,
+  )
   @IsUrl({}, { message: 'Please provide a valid URL for the website.' })
   @MaxLength(255)
   website?: string;

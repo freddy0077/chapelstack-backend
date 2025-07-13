@@ -33,6 +33,16 @@ export class CreateTransactionInput {
   @IsOptional()
   userId?: string;
 
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  memberId?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  eventId?: string;
+
   @Field(() => TransactionType)
   @IsEnum(TransactionType)
   @IsNotEmpty()

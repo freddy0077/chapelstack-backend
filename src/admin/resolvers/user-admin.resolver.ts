@@ -47,7 +47,55 @@ export class UserAdminResolver {
     return {
       ...userBranch,
       branchId: userBranch.branchId ?? undefined,
-      branch: userBranch.branch ?? undefined,
+      branch: userBranch.branch
+        ? {
+            id: userBranch.branch.id,
+            name: userBranch.branch.name,
+            address:
+              userBranch.branch.address === null
+                ? undefined
+                : userBranch.branch.address,
+            city:
+              userBranch.branch.city === null
+                ? undefined
+                : userBranch.branch.city,
+            state:
+              userBranch.branch.state === null
+                ? undefined
+                : userBranch.branch.state,
+            postalCode:
+              userBranch.branch.postalCode === null
+                ? undefined
+                : userBranch.branch.postalCode,
+            country:
+              userBranch.branch.country === null
+                ? undefined
+                : userBranch.branch.country,
+            phoneNumber:
+              userBranch.branch.phoneNumber === null
+                ? undefined
+                : userBranch.branch.phoneNumber,
+            email:
+              userBranch.branch.email === null
+                ? undefined
+                : userBranch.branch.email,
+            website:
+              userBranch.branch.website === null
+                ? undefined
+                : userBranch.branch.website,
+            establishedAt:
+              userBranch.branch.establishedAt === null
+                ? undefined
+                : userBranch.branch.establishedAt,
+            isActive: userBranch.branch.isActive,
+            createdAt: userBranch.branch.createdAt,
+            updatedAt: userBranch.branch.updatedAt,
+            organisationId:
+              userBranch.branch.organisationId === null
+                ? undefined
+                : userBranch.branch.organisationId,
+          }
+        : undefined,
     };
   }
 

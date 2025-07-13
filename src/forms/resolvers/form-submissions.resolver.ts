@@ -216,9 +216,25 @@ export class FormSubmissionsResolver {
         where: { id: submission.branchId },
       });
       if (!branch) return null;
+
+      // Map Prisma branch to GraphQL Branch entity
       return {
-        ...branch,
-        settings: null, // This will be resolved by a separate resolver if needed
+        id: branch.id,
+        name: branch.name,
+        address: branch.address || undefined,
+        city: branch.city || undefined,
+        state: branch.state || undefined,
+        postalCode: branch.postalCode || undefined,
+        country: branch.country || undefined,
+        phoneNumber: branch.phoneNumber || undefined,
+        email: branch.email || undefined,
+        website: branch.website || undefined,
+        establishedAt: branch.establishedAt || undefined,
+        isActive: branch.isActive,
+        createdAt: branch.createdAt,
+        updatedAt: branch.updatedAt,
+        organisationId: branch.organisationId || undefined,
+        settings: undefined,
       };
     } catch (error) {
       console.error(

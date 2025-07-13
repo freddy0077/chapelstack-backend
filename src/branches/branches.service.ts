@@ -13,30 +13,44 @@ import { Prisma, Branch as PrismaBranch } from '@prisma/client'; // Using standa
 import { Branch } from './entities/branch.entity'; // For GQL type
 
 // Helper function to map Prisma Branch to GraphQL Branch
-function toGraphQLBranch(prismaBranch: PrismaBranch): Branch {
+function toGraphQLBranch(
+  prismaBranch: PrismaBranch & { settings?: any[] },
+): Branch {
   return {
     ...prismaBranch,
 
-    address: prismaBranch.address,
+    address: prismaBranch.address === null ? undefined : prismaBranch.address,
 
-    city: prismaBranch.city,
+    city: prismaBranch.city === null ? undefined : prismaBranch.city,
 
-    state: prismaBranch.state,
+    state: prismaBranch.state === null ? undefined : prismaBranch.state,
 
-    postalCode: prismaBranch.postalCode,
+    postalCode:
+      prismaBranch.postalCode === null ? undefined : prismaBranch.postalCode,
 
-    country: prismaBranch.country,
+    country: prismaBranch.country === null ? undefined : prismaBranch.country,
 
-    phoneNumber: prismaBranch.phoneNumber,
+    phoneNumber:
+      prismaBranch.phoneNumber === null ? undefined : prismaBranch.phoneNumber,
 
-    email: prismaBranch.email,
+    email: prismaBranch.email === null ? undefined : prismaBranch.email,
 
-    website: prismaBranch.website,
+    website: prismaBranch.website === null ? undefined : prismaBranch.website,
 
-    establishedAt: prismaBranch.establishedAt,
+    establishedAt:
+      prismaBranch.establishedAt === null
+        ? undefined
+        : prismaBranch.establishedAt,
 
-    // settings are handled by ResolveField, not directly mapped here
-    settings: null,
+    // Map settings if they are included in the query result
+    settings:
+      prismaBranch.settings === null ? undefined : prismaBranch.settings,
+
+    // Convert organisationId from null to undefined if needed
+    organisationId:
+      prismaBranch.organisationId === null
+        ? undefined
+        : prismaBranch.organisationId,
   };
 }
 
@@ -86,7 +100,7 @@ export class BranchesService {
         organisationId: createBranchInput.organisationId,
       },
     });
-    return toGraphQLBranch(newBranch);
+    return this.mapPrismaBranchToEntity(newBranch);
   }
 
   async findAll(
@@ -149,7 +163,7 @@ export class BranchesService {
     ]);
 
     return {
-      items: prismaBranches.map(toGraphQLBranch),
+      items: prismaBranches.map(this.mapPrismaBranchToEntity),
       totalCount,
       hasNextPage: skip + take < totalCount,
     };
@@ -158,11 +172,16 @@ export class BranchesService {
   async findOne(id: string) {
     const branch = await this.prisma.branch.findUnique({
       where: { id },
+      include: {
+        settings: true,
+      },
     });
+
     if (!branch) {
       throw new NotFoundException(`Branch with ID ${id} not found`);
     }
-    return toGraphQLBranch(branch);
+
+    return this.mapPrismaBranchToEntity(branch);
   }
 
   async update(id: string, updateBranchInput: UpdateBranchInput) {
@@ -186,7 +205,7 @@ export class BranchesService {
       where: { id },
       data: updateBranchInput,
     });
-    return toGraphQLBranch(updatedBranch);
+    return this.mapPrismaBranchToEntity(updatedBranch);
   }
 
   async remove(id: string) {
@@ -198,7 +217,7 @@ export class BranchesService {
       where: { id },
       data: { isActive: false }, // Soft delete
     });
-    return toGraphQLBranch(removedBranch);
+    return this.mapPrismaBranchToEntity(removedBranch);
   }
 
   async findBranchSettings(branchId: string) {
@@ -214,11 +233,26 @@ export class BranchesService {
   ) {
     await this.findOne(branchId); // Ensure branch exists
 
-    return this.prisma.branchSetting.upsert({
-      where: { branchId_key: { branchId, key } },
-      update: { value },
-      create: { branchId, key, value },
+    // First check if the setting exists
+    const existingSetting = await this.prisma.branchSetting.findFirst({
+      where: {
+        branchId,
+        key,
+      },
     });
+
+    if (existingSetting) {
+      // Update existing setting
+      return this.prisma.branchSetting.update({
+        where: { id: existingSetting.id },
+        data: { value },
+      });
+    } else {
+      // Create new setting
+      return this.prisma.branchSetting.create({
+        data: { branchId, key, value },
+      });
+    }
   }
 
   // Helper to load settings for a branch, can be used by DataLoader
@@ -226,5 +260,38 @@ export class BranchesService {
     return await this.prisma.branchSetting.findMany({
       where: { branchId },
     });
+  }
+
+  private mapPrismaBranchToEntity(prismaBranch: any): Branch {
+    // Convert null values to undefined for optional fields
+    return {
+      id: prismaBranch.id,
+      name: prismaBranch.name,
+      address: prismaBranch.address === null ? undefined : prismaBranch.address,
+      city: prismaBranch.city === null ? undefined : prismaBranch.city,
+      state: prismaBranch.state === null ? undefined : prismaBranch.state,
+      postalCode:
+        prismaBranch.postalCode === null ? undefined : prismaBranch.postalCode,
+      country: prismaBranch.country === null ? undefined : prismaBranch.country,
+      phoneNumber:
+        prismaBranch.phoneNumber === null
+          ? undefined
+          : prismaBranch.phoneNumber,
+      email: prismaBranch.email === null ? undefined : prismaBranch.email,
+      website: prismaBranch.website === null ? undefined : prismaBranch.website,
+      establishedAt:
+        prismaBranch.establishedAt === null
+          ? undefined
+          : prismaBranch.establishedAt,
+      isActive: prismaBranch.isActive,
+      createdAt: prismaBranch.createdAt,
+      updatedAt: prismaBranch.updatedAt,
+      settings:
+        prismaBranch.settings === null ? undefined : prismaBranch.settings,
+      organisationId:
+        prismaBranch.organisationId === null
+          ? undefined
+          : prismaBranch.organisationId,
+    };
   }
 }

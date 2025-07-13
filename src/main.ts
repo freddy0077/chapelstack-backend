@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost } from '@nestjs/core';
 import { AllExceptionsFilter } from './base/filters/all-exceptions.filter';
 import { graphqlUploadExpress } from 'graphql-upload';
+import * as express from 'express';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -20,6 +22,9 @@ async function bootstrap() {
 
   // Enable file upload middleware for GraphQL
   app.use(graphqlUploadExpress({ maxFileSize: 5_000_000, maxFiles: 1 }));
+
+  // Serve static exports directory for file downloads
+  app.use('/exports', express.static(join(process.cwd(), 'public', 'exports')));
 
   const httpAdapterHost = app.get(HttpAdapterHost);
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));

@@ -1,6 +1,7 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { GraphQLISODateTime } from '@nestjs/graphql';
 import { Branch } from '../../branches/entities/branch.entity';
+import { User } from '../../users/entities/user.entity';
 
 @ObjectType()
 export class Event {
@@ -39,4 +40,16 @@ export class Event {
 
   @Field(() => Branch, { nullable: true })
   branch?: Branch;
+  
+  @Field(() => [User], { nullable: true })
+  attendees?: User[];
+  
+  @Field(() => User, { nullable: true })
+  creator?: User;
+  
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  createdAt?: Date;
+  
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  updatedAt?: Date;
 }

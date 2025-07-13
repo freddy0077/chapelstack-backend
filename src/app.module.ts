@@ -41,6 +41,7 @@ import { VendorsModule } from './vendors/vendors.module';
 import { ContributionTypesModule } from './contribution-types/contribution-types.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { TransactionModule } from './finance/transaction.module';
+import { TransfersModule } from './transfers/transfers.module';
 
 import { registerEnumType } from '@nestjs/graphql';
 
@@ -96,6 +97,7 @@ registerEnumType(AttendanceStatsPeriod, {
     ContributionTypesModule,
     PaymentMethodsModule,
     TransactionModule,
+    TransfersModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppResolver],

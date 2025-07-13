@@ -131,6 +131,10 @@ model Branch {
   organisation          Organisation?       @relation(fields: [organisationId], references: [id])
   organisationId        String?
   transactions          Transaction[]       @relation("BranchTransactions")
+  
+  // Transfer relations
+  sourceTransfers       TransferRequest[]   @relation("SourceBranchTransfers")
+  destinationTransfers  TransferRequest[]   @relation("DestinationBranchTransfers")
 
   // Financial relations
   funds             Fund[]
@@ -328,15 +332,33 @@ model Notification {
 }
 
 model BranchSetting {
-  id        String   @id @default(uuid())
-  branchId  String
-  key       String
-  value     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  id                      String    @id @default(uuid())
+  branchId                String
+  key                     String?
+  value                   String?
+  
+  // New settings fields
+  allowMemberRegistration Boolean?
+  allowMemberTransfers    Boolean?
+  enableAttendanceTracking Boolean?
+  enableFinancialReporting Boolean?
+  enableSacramentTracking Boolean?
+  enableMinistryManagement Boolean?
+  enableEventManagement   Boolean?
+  enableSmallGroups       Boolean?
+  defaultLanguage         String?
+  timeZone                String?
+  dateFormat              String?
+  currencyCode            String?
+  enableEmailNotifications Boolean?
+  enableSmsNotifications  Boolean?
+  enablePushNotifications Boolean?
+  notificationEvents      String[]
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  branch                  Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
-  @@unique([branchId, key])
   @@index([branchId])
 }
 
@@ -477,6 +499,9 @@ model Member {
   sacramentalRecords  SacramentalRecord[]
   prayerRequests      PrayerRequest[]
   transactions        Transaction[]
+  
+  // Transfer relation
+  transferRequests    TransferRequest[]
 
   // Financial relations
   contributions      Contribution[]
@@ -1758,6 +1783,7 @@ model Event {
   updatedAt      DateTime      @updatedAt
 
   // Relationships
+  transactions   Transaction[]
 }
 
 model PrayerRequest {
@@ -1802,6 +1828,7 @@ model Transaction {
   fundId         String?
   userId         String?
   memberId       String?
+  eventId        String?
   type           TransactionType
   amount         Decimal
   date           DateTime        @default(now())
@@ -1816,4 +1843,37 @@ model Transaction {
   fund         Fund?        @relation("FundTransactions", fields: [fundId], references: [id])
   user         User?        @relation("UserTransactions", fields: [userId], references: [id])
   member       Member?      @relation(fields: [memberId], references: [id])
+  event        Event?       @relation(fields: [eventId], references: [id])
+}
+
+// Member transfer request model
+model TransferRequest {
+  id                    String         @id @default(uuid())
+  memberId              String
+  memberName            String
+  sourceBranchId        String
+  sourceBranchName      String
+  destinationBranchId   String
+  destinationBranchName String
+  requestDate           DateTime
+  status                String         @default("pending") // pending, approved, rejected, completed
+  reason                String
+  transferData          String[]       // personal, sacraments, ministries, donation_history
+  approvedDate          DateTime?
+  rejectedDate          DateTime?
+  rejectionReason       String?
+  completedDate         DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  
+  // Relations
+  member               Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  sourceBranch         Branch         @relation("SourceBranchTransfers", fields: [sourceBranchId], references: [id])
+  destinationBranch    Branch         @relation("DestinationBranchTransfers", fields: [destinationBranchId], references: [id])
+
+  @@index([memberId])
+  @@index([sourceBranchId])
+  @@index([destinationBranchId])
+  @@index([status])
+  @@index([requestDate])
 }
