@@ -21,10 +21,15 @@ async function bootstrap() {
     ],
     credentials: true,
   });
+
+  // Increase body size limit for JSON requests
+  app.use(express.json({ limit: '10gb' }));
+  app.use(express.urlencoded({ limit: '10gb', extended: true }));
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  // Enable file upload middleware for GraphQL
-  app.use(graphqlUploadExpress({ maxFileSize: 5_000_000, maxFiles: 1 }));
+  // Enable file upload middleware for GraphQL with increased limits
+  app.use(graphqlUploadExpress({ maxFileSize: 10_000_000_000, maxFiles: 10 }));
 
   // Serve static exports directory for file downloads
   app.use('/exports', express.static(join(process.cwd(), 'public', 'exports')));
