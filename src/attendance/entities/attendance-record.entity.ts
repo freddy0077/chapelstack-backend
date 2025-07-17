@@ -3,6 +3,7 @@ import { Member } from '../../members/entities/member.entity';
 import { User } from '../../users/entities/user.entity';
 import { Branch } from '../../branches/entities/branch.entity';
 import { AttendanceSession } from './attendance-session.entity';
+import { Event } from '../../events/entities/event.entity';
 
 @ObjectType()
 export class AttendanceRecord {
@@ -23,6 +24,9 @@ export class AttendanceRecord {
 
   @Field(() => AttendanceSession, { nullable: true })
   session?: AttendanceSession;
+
+  @Field(() => Event, { nullable: true })
+  event?: Event;
 
   @Field(() => Member, { nullable: true })
   member?: Member;

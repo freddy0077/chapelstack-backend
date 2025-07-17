@@ -19,6 +19,10 @@ export class BranchActivitiesResolver {
     @Args('limit', { type: () => Number, nullable: true }) limit?: number,
     @Args('skip', { type: () => Number, nullable: true }) skip?: number,
   ): Promise<BranchActivity[]> {
-    return this.branchActivitiesService.getBranchActivities(branchId, limit, skip);
+    return this.branchActivitiesService.getBranchActivities(
+      branchId,
+      limit,
+      skip,
+    );
   }
 }

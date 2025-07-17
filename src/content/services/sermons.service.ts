@@ -61,22 +61,11 @@ export class SermonsService {
         duration: createSermonInput.duration,
         status: createSermonInput.status || ContentStatus.DRAFT,
         notesUrl: createSermonInput.notesUrl,
-        speaker: {
-          connect: { id: createSermonInput.speakerId },
-        },
-        branch: {
-          connect: { id: createSermonInput.branchId },
-        },
-        ...(createSermonInput.seriesId && {
-          series: {
-            connect: { id: createSermonInput.seriesId },
-          },
-        }),
-        ...(createSermonInput.categoryId && {
-          category: {
-            connect: { id: createSermonInput.categoryId },
-          },
-        }),
+        organisationId: createSermonInput.organisationId,
+        speakerId: createSermonInput.speakerId,
+        branchId: createSermonInput.branchId,
+        seriesId: createSermonInput.seriesId || null,
+        categoryId: createSermonInput.categoryId || null,
         tags: {
           connectOrCreate: tagConnectOrCreate,
         },
@@ -112,7 +101,7 @@ export class SermonsService {
         category: true,
       },
       orderBy: {
-        datePreached: 'desc',
+        createdAt: 'desc',
       },
     });
   }
@@ -138,6 +127,7 @@ export class SermonsService {
       tags,
       categoryId,
       notesUrl,
+      organisationId,
       ...data
     } = updateSermonInput;
 
@@ -178,6 +168,9 @@ export class SermonsService {
     }
     if (typeof notesUrl !== 'undefined') {
       updateData.notesUrl = notesUrl;
+    }
+    if (organisationId) {
+      updateData.organisationId = organisationId;
     }
 
     return this.prisma.sermon.update({
@@ -225,7 +218,7 @@ export class SermonsService {
       where,
       take: limit,
       orderBy: {
-        datePreached: 'desc',
+        createdAt: 'desc',
       },
       include: {
         speaker: true,
@@ -258,7 +251,7 @@ export class SermonsService {
         category: true,
       },
       orderBy: {
-        datePreached: 'desc',
+        createdAt: 'desc',
       },
     });
   }

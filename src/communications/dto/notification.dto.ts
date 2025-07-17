@@ -31,7 +31,10 @@ export class NotificationDto {
   memberId: string | null;
 
   @Field(() => String, { nullable: true })
-  branchId?: string;
+  organisationId?: string | null;
+
+  @Field(() => String, { nullable: true })
+  branchId?: string | null;
 
   @Field(() => Date)
   createdAt: Date;

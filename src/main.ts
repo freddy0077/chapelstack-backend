@@ -8,6 +8,9 @@ import { graphqlUploadExpress } from 'graphql-upload';
 import * as express from 'express';
 import { join } from 'path';
 
+// Auto-start the SMS queue worker
+import './communications/queue/sms.processor';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({

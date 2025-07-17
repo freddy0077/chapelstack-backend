@@ -71,13 +71,28 @@ export class AuthResolver {
   async forgotPassword(
     @Args('input') input: ForgotPasswordInput,
   ): Promise<SuccessMessageDto> {
+    console.log('forgotPassword input:', input);
+    console.log('forgotPassword input type:', typeof input);
+    console.log('forgotPassword input email:', input?.email);
+    console.log('forgotPassword input email type:', typeof input?.email);
+
+    // Validate input
+    if (!input || !input.email) {
+      throw new Error('Email is required');
+    }
+
     return this.authService.forgotPassword(input);
   }
 
   @Mutation(() => SuccessMessageDto, { name: 'resetPassword' })
   async resetPassword(
-    @Args('input') input: ResetPasswordInput,
+    @Args('token') token: string,
+    @Args('newPassword') newPassword: string,
   ): Promise<SuccessMessageDto> {
+    console.log('resetPassword token:', token);
+    console.log('resetPassword newPassword:', newPassword);
+
+    const input: ResetPasswordInput = { token, newPassword };
     return this.authService.resetPassword(input);
   }
 }

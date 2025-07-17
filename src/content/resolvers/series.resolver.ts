@@ -12,7 +12,7 @@ import {
 export class SeriesResolver {
   constructor(private readonly seriesService: SeriesService) {}
 
-  @Mutation(() => SeriesEntity)
+  @Mutation(() => SeriesEntity, { name: 'createSeries' })
   async create(
     @Args('createSeriesInput') createSeriesInput: CreateSeriesInput,
   ): Promise<SeriesEntity> {
@@ -20,7 +20,7 @@ export class SeriesResolver {
     return mapToSeriesEntity(series);
   }
 
-  @Query(() => [SeriesEntity])
+  @Query(() => [SeriesEntity], { name: 'series' })
   async findAll(
     @Args('branchId', { nullable: true }) branchId?: string,
   ): Promise<SeriesEntity[]> {
@@ -28,7 +28,7 @@ export class SeriesResolver {
     return mapToSeriesEntities(seriesArray);
   }
 
-  @Query(() => SeriesEntity)
+  @Query(() => SeriesEntity, { name: 'seriesById' })
   async findOne(
     @Args('id', { type: () => ID }) id: string,
   ): Promise<SeriesEntity> {
@@ -36,7 +36,7 @@ export class SeriesResolver {
     return mapToSeriesEntity(series);
   }
 
-  @Mutation(() => SeriesEntity)
+  @Mutation(() => SeriesEntity, { name: 'updateSeries' })
   async update(
     @Args('updateSeriesInput') updateSeriesInput: UpdateSeriesInput,
   ): Promise<SeriesEntity> {
@@ -44,7 +44,7 @@ export class SeriesResolver {
     return mapToSeriesEntity(series);
   }
 
-  @Mutation(() => SeriesEntity)
+  @Mutation(() => SeriesEntity, { name: 'removeSeries' })
   async remove(
     @Args('id', { type: () => ID }) id: string,
   ): Promise<SeriesEntity> {

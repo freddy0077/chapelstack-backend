@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -6,6 +6,10 @@ import { SendSmsInput } from '../dto/send-sms.input';
 import { SmsMessageDto } from '../dto/sms-message.dto';
 import { MessageStatus } from '../enums/message-status.enum';
 import { MessageStatus as PrismaMessageStatus } from '@prisma/client';
+import { smsQueue } from '../queue/sms.queue';
+import { NaloSmsProvider } from '../providers/nalo-sms.provider';
+import { format } from 'date-fns';
+import { RecipientService } from '../services/recipient.service';
 
 @Injectable()
 export class SmsService {
@@ -23,53 +27,315 @@ export class SmsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly naloSmsProvider: NaloSmsProvider,
+    private readonly recipientService: RecipientService,
   ) {}
 
   /**
-   * Send an SMS to one or more recipients
+   * Helper to get member IDs by birthday range
+   */
+  private async getBirthdayRangeMemberIds(
+    birthdayRange: 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH',
+  ): Promise<string[]> {
+    const today = new Date();
+    let start: Date, end: Date;
+    if (birthdayRange === 'TODAY') {
+      start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      end = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + 1,
+      );
+    } else if (birthdayRange === 'THIS_WEEK') {
+      const day = today.getDay();
+      start = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() - day,
+      );
+      end = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + (6 - day) + 1,
+      );
+    } else {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    }
+    const birthdayMembers = await this.prisma.member.findMany({
+      where: {
+        dateOfBirth: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: { id: true },
+    });
+    return birthdayMembers.map((m) => m.id);
+  }
+
+  /**
+   * Replace placeholders in the message for a recipient
+   */
+  private async personalizeMessage(
+    template: string,
+    member: any,
+    churchName: string,
+  ): Promise<string> {
+    return this.recipientService.personalizeMessage(
+      template,
+      member,
+      churchName,
+    );
+  }
+
+  /**
+   * Send an SMS to one or more recipients (now queues the job)
    * @param input SendSmsInput containing recipients, message, etc.
-   * @returns Promise<boolean> indicating success or failure
+   * @returns Promise<boolean> indicating job was queued
    */
   async sendSms(input: SendSmsInput): Promise<boolean> {
     try {
-      const { branchId, organisationId, ...rest } = input;
-      // Create a record of the SMS in the database
-      const data: Prisma.SmsMessageCreateInput = {
-        body: rest.message,
-        senderNumber:
-          this.configService.get<string>('SMS_SENDER_NUMBER') || 'CHURCH',
-        recipients: rest.recipients,
-        status: PrismaMessageStatus.SENDING,
-      };
-
-      if (branchId) {
-        data.branch = { connect: { id: branchId } };
+      let allRecipientIds: string[] = [...input.recipients];
+      if (input.groupIds && input.groupIds.length > 0) {
+        const groupMembers = await this.prisma.member.findMany({
+          where: {
+            groupMemberships: { some: { ministryId: { in: input.groupIds } } },
+          },
+          select: { id: true },
+        });
+        allRecipientIds.push(...groupMembers.map((m) => m.id));
       }
-      if (organisationId) {
-        data.organisation = { connect: { id: organisationId } };
+      // Add birthday range recipients if specified
+      if (input.birthdayRange) {
+        const birthdayIds = await this.getBirthdayRangeMemberIds(
+          input.birthdayRange,
+        );
+        allRecipientIds.push(...birthdayIds);
       }
-
-      const smsMessage = await this.prisma.smsMessage.create({ data });
-
-      // TODO: Implement actual SMS sending using a provider like Twilio, AWS SNS, etc.
-      // For now, we'll just log the SMS and update the status
-      this.logger.log(
-        `[MOCK] Sending SMS to ${input.recipients.join(', ')}: ${input.message}`,
+      // Add recipients from filters (centralized)
+      if (input.filters && input.filters.length > 0) {
+        const centralizedIds =
+          await this.recipientService.resolveFilterRecipients(input.filters, {
+            branchId: input.branchId,
+            organisationId: input.organisationId,
+            contactType: 'id',
+          });
+        allRecipientIds.push(...centralizedIds);
+      }
+      allRecipientIds = Array.from(new Set(allRecipientIds));
+      if (allRecipientIds.length === 0) {
+        throw new BadRequestException('No recipients found for SMS');
+      }
+      // Save audit/history record (optional, can keep for SCHEDULED only)
+      const now = new Date();
+      let delay = 0;
+      if (input.scheduledAt && new Date(input.scheduledAt) > now) {
+        delay = new Date(input.scheduledAt).getTime() - now.getTime();
+        // Personalized message per recipient for scheduled SMS
+        const members = await this.prisma.member.findMany({
+          where: { id: { in: allRecipientIds } },
+        });
+        for (const member of members) {
+          const personalizedBody =
+            await this.recipientService.personalizeMessage(
+              input.message,
+              member,
+              input.organisationId
+                ? (
+                    await this.prisma.organisation.findUnique({
+                      where: { id: input.organisationId },
+                    })
+                  )?.name
+                : undefined,
+            );
+          await this.prisma.smsMessage.create({
+            data: {
+              body: personalizedBody,
+              senderNumber:
+                this.configService.get<string>('SMS_SENDER_NUMBER') || 'CHURCH',
+              recipients: [member.id],
+              status: PrismaMessageStatus.SCHEDULED,
+              scheduledAt: new Date(input.scheduledAt),
+              branchId: input.branchId,
+              organisationId: input.organisationId,
+            },
+          });
+        }
+      }
+      // Always queue the job (immediate or delayed)
+      await smsQueue.add('send', input, delay > 0 ? { delay } : {});
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to queue SMS: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
       );
+      if (error instanceof BadRequestException) throw error;
+      return false;
+    }
+  }
 
-      // Update the SMS status to SENT
-      await this.prisma.smsMessage.update({
-        where: { id: smsMessage.id },
-        data: {
-          status: PrismaMessageStatus.SENT,
-          sentAt: new Date(),
-        },
+  /**
+   * Process and send SMS job from the queue.
+   * - Collects all recipient IDs from direct, group, and birthday filters
+   * - Validates recipients
+   * - Persists SMS message with status
+   * - Updates status after sending
+   */
+  async processSmsJob(input: SendSmsInput): Promise<boolean> {
+    try {
+      // Destructure relevant fields
+      const {
+        branchId,
+        organisationId,
+        recipients = [],
+        groupIds = [],
+        birthdayRange,
+      } = input;
+
+      // Aggregate all recipient IDs
+      let allRecipientIds: string[] = [...recipients];
+
+      // Add group member IDs
+      if (groupIds.length > 0) {
+        const groupMembers = await this.prisma.member.findMany({
+          where: {
+            OR: [
+              { groupMemberships: { some: { ministryId: { in: groupIds } } } },
+              {
+                groupMemberships: { some: { smallGroupId: { in: groupIds } } },
+              },
+            ],
+          },
+          select: { id: true },
+        });
+        allRecipientIds.push(...groupMembers.map((m) => m.id));
+      }
+
+      // Remove duplicate IDs
+      allRecipientIds = Array.from(new Set(allRecipientIds));
+
+      // Fetch phone numbers for all recipients
+      const members = await this.prisma.member.findMany({
+        where: { id: { in: allRecipientIds } },
       });
+      const allRecipients = members
+        .map((m) => m.phoneNumber)
+        .filter((e): e is string => !!e);
+
+      this.logger.debug('Recipients:', allRecipients);
+      if (allRecipients.length === 0) {
+        throw new BadRequestException('No valid recipient phone numbers found');
+      }
+
+      // Personalize and save SMS per recipient
+      const smsMessages: {
+        smsMessage: any;
+        member: any;
+        phoneNumber: string;
+      }[] = [];
+      for (const member of members) {
+        if (!member.phoneNumber) continue;
+        const personalizedBody = await this.recipientService.personalizeMessage(
+          input.message,
+          member,
+          organisationId
+            ? (
+                await this.prisma.organisation.findUnique({
+                  where: { id: organisationId },
+                })
+              )?.name
+            : undefined,
+        );
+        const smsData: any = {
+          body: personalizedBody,
+          senderNumber:
+            this.configService.get<string>('SMS_SENDER_NUMBER') || 'CHURCH',
+          recipients: [member.id],
+          status: PrismaMessageStatus.SENDING,
+        };
+        if (branchId) {
+          smsData.branch = { connect: { id: branchId } };
+        }
+        if (organisationId) {
+          smsData.organisation = { connect: { id: organisationId } };
+        }
+        const smsMessage = await this.prisma.smsMessage.create({
+          data: smsData,
+        });
+        smsMessages.push({
+          smsMessage,
+          member,
+          phoneNumber: member.phoneNumber,
+        });
+      }
+
+      // Handle recipients that are raw phone numbers (not members)
+      const memberPhoneNumbers = new Set(members.map((m) => m.phoneNumber));
+      const extraPhoneNumbers = allRecipients.filter(
+        (pn) => !memberPhoneNumbers.has(pn),
+      );
+      for (const phoneNumber of extraPhoneNumbers) {
+        // Personalize with empty member object
+        const personalizedBody = await this.recipientService.personalizeMessage(
+          input.message,
+          {},
+          organisationId
+            ? (
+                await this.prisma.organisation.findUnique({
+                  where: { id: organisationId },
+                })
+              )?.name
+            : undefined,
+        );
+        const smsData: any = {
+          body: personalizedBody,
+          senderNumber:
+            this.configService.get<string>('SMS_SENDER_NUMBER') || 'CHURCH',
+          recipients: [], // no member id
+          status: PrismaMessageStatus.SENDING,
+        };
+        if (branchId) {
+          smsData.branch = { connect: { id: branchId } };
+        }
+        if (organisationId) {
+          smsData.organisation = { connect: { id: organisationId } };
+        }
+        const smsMessage = await this.prisma.smsMessage.create({
+          data: smsData,
+        });
+        smsMessages.push({ smsMessage, member: {}, phoneNumber });
+      }
+
+      // Send SMS via Nalo Solutions
+      for (const { smsMessage, phoneNumber } of smsMessages) {
+        if (!phoneNumber) continue;
+        const sent = await this.naloSmsProvider.sendSms(
+          phoneNumber,
+          smsMessage.body,
+        );
+        if (!sent) {
+          this.logger.error('SMS provider failed to send message.');
+          await this.prisma.smsMessage.update({
+            where: { id: smsMessage.id },
+            data: { status: PrismaMessageStatus.FAILED },
+          });
+          continue;
+        }
+        await this.prisma.smsMessage.update({
+          where: { id: smsMessage.id },
+          data: {
+            status: PrismaMessageStatus.SENT,
+            sentAt: new Date(),
+          },
+        });
+      }
 
       return true;
     } catch (error) {
       this.logger.error(
-        `Failed to send SMS: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to process SMS job: ${error instanceof Error ? error.message : 'Unknown error'}`,
         error instanceof Error ? error.stack : undefined,
       );
       return false;
@@ -77,33 +343,127 @@ export class SmsService {
   }
 
   /**
-   * Get all SMS messages, optionally filtered by branch and organisation
-   * @param branchId Optional branch ID to filter messages
-   * @param organisationId Optional organisation ID to filter messages
-   * @returns Promise<SmsMessageDto[]>
+   * Get all SMS messages with optional filtering by branch and organisation.
    */
   async getSms(
     branchId?: string,
     organisationId?: string,
   ): Promise<SmsMessageDto[]> {
     try {
+      this.logger.log(
+        `getSms called with branchId=${branchId} (${typeof branchId}), organisationId=${organisationId} (${typeof organisationId})`,
+      );
+
       const where: Prisma.SmsMessageWhereInput = {};
-      if (branchId) {
-        where.branchId = branchId;
-      }
-      if (organisationId) {
+
+      // Only add filters if they are valid strings
+      if (
+        organisationId &&
+        typeof organisationId === 'string' &&
+        organisationId.trim() !== ''
+      ) {
         where.organisationId = organisationId;
+        this.logger.log(`Adding organisationId filter: ${organisationId}`);
       }
+
+      if (branchId && typeof branchId === 'string' && branchId.trim() !== '') {
+        where.branchId = branchId;
+        this.logger.log(`Adding branchId filter: ${branchId}`);
+      }
+
+      this.logger.log(`SMS query where clause: ${JSON.stringify(where)}`);
+
       const messages = await this.prisma.smsMessage.findMany({
         where,
         orderBy: { createdAt: 'desc' },
       });
 
-      // Map Prisma MessageStatus to our enum
-      return messages.map((message) => ({
-        ...message,
-        status: message.status as unknown as MessageStatus,
-      }));
+      this.logger.log(
+        `Found ${messages.length} SMS messages with filter: organisationId=${organisationId}, branchId=${branchId}`,
+      );
+
+      // Process each message to look up recipient information
+      const messagesWithRecipientInfo = await Promise.all(
+        messages.map(async (message) => {
+          // Check if recipients contains valid UUIDs (member IDs)
+          const potentialMemberIds = message.recipients.filter((recipient) =>
+            // Basic UUID validation pattern
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+              recipient,
+            ),
+          );
+
+          let recipientInfo: Array<{
+            id: string;
+            firstName?: string;
+            lastName?: string;
+            phoneNumber?: string;
+            email?: string;
+            fullName?: string;
+          }> = [];
+
+          if (potentialMemberIds.length > 0) {
+            this.logger.debug(
+              `Looking up ${potentialMemberIds.length} potential member IDs for SMS ${message.id}`,
+            );
+
+            // Look up members by IDs
+            const members = await this.prisma.member.findMany({
+              where: { id: { in: potentialMemberIds } },
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phoneNumber: true,
+                email: true,
+              },
+            });
+
+            this.logger.debug(
+              `Found ${members.length} members for SMS ${message.id}`,
+            );
+
+            // Map members to RecipientInfoDto
+            recipientInfo = members.map((member) => ({
+              id: member.id,
+              firstName: member.firstName || undefined,
+              lastName: member.lastName || undefined,
+              phoneNumber: member.phoneNumber || undefined,
+              email: member.email || undefined,
+              fullName:
+                `${member.firstName || ''} ${member.lastName || ''}`.trim() ||
+                undefined,
+            }));
+          }
+
+          // For any recipients that aren't member IDs, they're likely direct phone numbers
+          const phoneNumberRecipients = message.recipients.filter(
+            (recipient) =>
+              !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                recipient,
+              ),
+          );
+
+          // Add phone numbers as recipient info without member details
+          if (phoneNumberRecipients.length > 0) {
+            const phoneRecipients = phoneNumberRecipients.map((phone) => ({
+              id: `phone-${phone}`,
+              phoneNumber: phone,
+              fullName: `Phone: ${phone}`,
+            }));
+
+            recipientInfo = [...recipientInfo, ...phoneRecipients];
+          }
+
+          return {
+            ...message,
+            status: message.status as unknown as MessageStatus,
+            recipientInfo,
+          };
+        }),
+      );
+
+      return messagesWithRecipientInfo;
     } catch (error) {
       this.logger.error(
         `Failed to get SMS messages: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -128,10 +488,81 @@ export class SmsService {
         throw new Error(`SMS message with ID ${id} not found`);
       }
 
-      // Map Prisma MessageStatus to our enum
+      // Check if recipients contains valid UUIDs (member IDs)
+      const potentialMemberIds = message.recipients.filter((recipient) =>
+        // Basic UUID validation pattern
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          recipient,
+        ),
+      );
+
+      let recipientInfo: Array<{
+        id: string;
+        firstName?: string;
+        lastName?: string;
+        phoneNumber?: string;
+        email?: string;
+        fullName?: string;
+      }> = [];
+
+      if (potentialMemberIds.length > 0) {
+        this.logger.debug(
+          `Looking up ${potentialMemberIds.length} potential member IDs for SMS ${message.id}`,
+        );
+
+        // Look up members by IDs
+        const members = await this.prisma.member.findMany({
+          where: { id: { in: potentialMemberIds } },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phoneNumber: true,
+            email: true,
+          },
+        });
+
+        this.logger.debug(
+          `Found ${members.length} members for SMS ${message.id}`,
+        );
+
+        // Map members to RecipientInfoDto
+        recipientInfo = members.map((member) => ({
+          id: member.id,
+          firstName: member.firstName || undefined,
+          lastName: member.lastName || undefined,
+          phoneNumber: member.phoneNumber || undefined,
+          email: member.email || undefined,
+          fullName:
+            `${member.firstName || ''} ${member.lastName || ''}`.trim() ||
+            undefined,
+        }));
+      }
+
+      // For any recipients that aren't member IDs, they're likely direct phone numbers
+      const phoneNumberRecipients = message.recipients.filter(
+        (recipient) =>
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            recipient,
+          ),
+      );
+
+      // Add phone numbers as recipient info without member details
+      if (phoneNumberRecipients.length > 0) {
+        const phoneRecipients = phoneNumberRecipients.map((phone) => ({
+          id: `phone-${phone}`,
+          phoneNumber: phone,
+          fullName: `Phone: ${phone}`,
+        }));
+
+        recipientInfo = [...recipientInfo, ...phoneRecipients];
+      }
+
+      // Map Prisma MessageStatus to our enum and include recipient info
       return {
         ...message,
         status: message.status as unknown as MessageStatus,
+        recipientInfo,
       };
     } catch (error) {
       this.logger.error(

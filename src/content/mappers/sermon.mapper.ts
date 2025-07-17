@@ -27,6 +27,7 @@ export function mapToSermonEntity(sermon: any): SermonEntity {
     duration: sermon.duration || undefined,
     notesUrl: sermon.notesUrl || undefined,
     branchId: sermon.branchId,
+    organisationId: sermon.organisationId || undefined,
     status: sermon.status as unknown as ContentStatus,
     createdAt: sermon.createdAt.toISOString(),
     updatedAt: sermon.updatedAt.toISOString(),

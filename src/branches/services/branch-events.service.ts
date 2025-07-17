@@ -7,9 +7,12 @@ import { User } from '../../users/entities/user.entity';
 export class BranchEventsService {
   constructor(private prisma: PrismaService) {}
 
-  async getBranchUpcomingEvents(branchId: string, limit?: number): Promise<Event[]> {
+  async getBranchUpcomingEvents(
+    branchId: string,
+    limit?: number,
+  ): Promise<Event[]> {
     const now = new Date();
-    
+
     // Get upcoming events for the branch
     const events = await this.prisma.event.findMany({
       where: {
@@ -34,15 +37,17 @@ export class BranchEventsService {
     });
 
     // Transform to match our GraphQL schema
-    return events.map(event => {
+    return events.map((event) => {
       // Convert null values to undefined to match GraphQL schema
-      const description = event.description === null ? undefined : event.description;
+      const description =
+        event.description === null ? undefined : event.description;
       const endDate = event.endDate === null ? undefined : event.endDate;
       const location = event.location === null ? undefined : event.location;
       const category = event.category === null ? undefined : event.category;
       const branchId = event.branchId === null ? undefined : event.branchId;
-      const organisationId = event.organisationId === null ? undefined : event.organisationId;
-      
+      const organisationId =
+        event.organisationId === null ? undefined : event.organisationId;
+
       // Create a proper User object from creator data
       let creator: User | undefined = undefined;
       if (event.creator) {
@@ -56,10 +61,10 @@ export class BranchEventsService {
         partialUser.createdAt = new Date();
         partialUser.updatedAt = new Date();
         partialUser.isActive = true;
-        
+
         creator = partialUser;
       }
-      
+
       // Create a new Event object
       const eventObj = new Event();
       eventObj.id = event.id;
@@ -71,13 +76,15 @@ export class BranchEventsService {
       eventObj.category = category;
       eventObj.branchId = branchId;
       eventObj.organisationId = organisationId;
-      eventObj.createdBy = event.createdBy === null ? undefined : event.createdBy;
-      eventObj.updatedBy = event.updatedBy === null ? undefined : event.updatedBy;
+      eventObj.createdBy =
+        event.createdBy === null ? undefined : event.createdBy;
+      eventObj.updatedBy =
+        event.updatedBy === null ? undefined : event.updatedBy;
       eventObj.createdAt = event.createdAt;
       eventObj.updatedAt = event.updatedAt;
       eventObj.creator = creator;
       eventObj.attendees = []; // Empty array for attendees
-      
+
       return eventObj;
     });
   }

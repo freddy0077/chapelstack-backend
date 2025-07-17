@@ -8,10 +8,12 @@ import { AuthController } from './auth.controller';
 import { AuthResolver } from './auth.resolver';
 import { PermissionResolver } from './resolvers/permission.resolver';
 import { CommunicationsModule } from '../communications/communications.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   controllers: [AuthController],
   imports: [
+    EmailModule,
     ConfigModule, // Ensure ConfigModule is imported if not already globally available
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
@@ -27,6 +29,6 @@ import { CommunicationsModule } from '../communications/communications.module';
     CommunicationsModule,
   ],
   providers: [AuthService, JwtStrategy, AuthResolver, PermissionResolver],
-  exports: [JwtModule, PassportModule, AuthService],
+  exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

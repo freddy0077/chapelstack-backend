@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -312,8 +313,20 @@ export class AuthService {
   }
 
   async forgotPassword(input: ForgotPasswordInput): Promise<SuccessMessageDto> {
+    console.log('forgotPassword input:', input); // Debug log
+    if (!input || !input.email) {
+      throw new Error('Email is required');
+    }
     const user = await this.prisma.user.findUnique({
       where: { email: input.email },
+      include: {
+        userBranches: {
+          include: {
+            branch: true,
+          },
+          take: 1,
+        },
+      },
     });
     if (!user) {
       // Do not reveal if user exists
@@ -336,20 +349,49 @@ export class AuthService {
       'FRONTEND_URL',
       'http://localhost:3000',
     );
-    const resetLink = `${baseUrl}/reset-password?token=${token}`;
-    // Send email
-    await this.emailService.sendEmail({
-      recipients: [user.email],
+    const resetLink = `${baseUrl}/auth/reset-password?token=${token}`;
+
+    // Send email using the new sendSingleEmail method
+    await this.emailService.sendSingleEmail({
+      to: user.email,
       subject: 'Password Reset Request',
-      bodyHtml: `<p>You requested a password reset. <a href="${resetLink}">Click here</a> to reset your password. This link will expire in 1 hour.</p>`,
-      bodyText: `You requested a password reset. Visit the following link to reset your password: ${resetLink}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="color: #111827; margin-bottom: 8px;">Password Reset Request</h1>
+            <p style="color: #6B7280; margin-top: 0;">You requested to reset your password</p>
+          </div>
+          <div style="background: linear-gradient(to right, #4F46E5, #7C3AED); height: 2px; margin: 20px 0;"></div>
+          <p style="color: #374151; font-size: 16px; line-height: 1.5;">Hello,</p>
+          <p style="color: #374151; font-size: 16px; line-height: 1.5;">We received a request to reset your password for your Chapel Stack account. Click the button below to reset your password. This link will expire in 1 hour.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetLink}" style="background: linear-gradient(to right, #4F46E5, #7C3AED); color: white; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Password</a>
+          </div>
+          <p style="color: #374151; font-size: 16px; line-height: 1.5;">If you did not request a password reset, please ignore this email or contact support if you have concerns.</p>
+          <p style="color: #374151; font-size: 16px; line-height: 1.5;">Thank you,<br>The Chapel Stack Team</p>
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6B7280; text-align: center;">
+            <p>If you're having trouble clicking the button, copy and paste the URL below into your web browser:</p>
+            <p style="word-break: break-all;">${resetLink}</p>
+          </div>
+        </div>
+      `,
+      text: `You requested a password reset. Visit the following link to reset your password: ${resetLink}. This link will expire in 1 hour.`,
+      // Use optional chaining for branchId and organizationId
+      branchId: user.userBranches?.[0]?.branch?.id,
+      organisationId: user.organisationId || undefined,
     });
+
     return {
       message: 'If that email is registered, a reset link will be sent.',
     };
   }
 
   async resetPassword(input: ResetPasswordInput): Promise<SuccessMessageDto> {
+    // Validate input
+    if (!input || !input.token || !input.newPassword) {
+      throw new BadRequestException('Token and new password are required');
+    }
+
     // Find user by token
     const user = await this.prisma.user.findFirst({
       where: {

@@ -13,14 +13,14 @@ import { MembersModule } from '../members/members.module';
 @Module({
   imports: [PrismaModule, UsersModule, MembersModule],
   providers: [
-    BranchesResolver, 
-    BranchesService, 
+    BranchesResolver,
+    BranchesService,
     BranchStatisticsResolver,
     BranchActivitiesResolver,
     BranchActivitiesService,
     BranchEventsResolver,
-    BranchEventsService
+    BranchEventsService,
   ],
-  exports: [BranchesService]
+  exports: [BranchesService],
 })
 export class BranchesModule {}

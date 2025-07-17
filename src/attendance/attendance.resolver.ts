@@ -2,10 +2,12 @@ import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
 import { AttendanceService } from './attendance.service';
 import { AttendanceAlertsService } from './attendance-alerts.service';
 import { AttendanceStatsService } from './attendance-stats.service';
+import { AttendanceReportsService } from './attendance-reports.service';
 import { AttendanceSession } from './entities/attendance-session.entity';
 import { AttendanceRecord } from './entities/attendance-record.entity';
 import { QRCodeToken } from './entities/qr-code-token.entity';
 import { AttendanceStats } from './entities/attendance-stats.entity';
+import { AttendanceReport } from './entities/attendance-report.entity';
 import { AbsenceAlertResult } from './entities/absence-alert.entity';
 import { CreateAttendanceSessionInput } from './dto/create-attendance-session.input';
 import { UpdateAttendanceSessionInput } from './dto/update-attendance-session.input';
@@ -15,6 +17,7 @@ import { CheckOutInput } from './dto/check-out.input';
 import { AttendanceFilterInput } from './dto/attendance-filter.input';
 import { GenerateQRTokenInput } from './dto/generate-qr-token.input';
 import { AttendanceStatsInput } from './dto/attendance-stats.input';
+import { AttendanceReportInput } from './dto/attendance-report.input';
 import { AbsenceAlertConfigInput } from './dto/absence-alert-config.input';
 import { CardScanInput } from './dto/card-scan.input';
 import { ParseUUIDPipe } from '@nestjs/common';
@@ -26,6 +29,7 @@ export class AttendanceResolver {
     private readonly attendanceService: AttendanceService,
     private readonly attendanceAlertsService: AttendanceAlertsService,
     private readonly attendanceStatsService: AttendanceStatsService,
+    private readonly attendanceReportsService: AttendanceReportsService,
   ) {}
 
   @Mutation(() => AttendanceSession)
@@ -96,10 +100,27 @@ export class AttendanceResolver {
 
   @Query(() => [AttendanceRecord], { name: 'attendanceRecords' })
   async findAttendanceRecords(
-    @Args('sessionId', { type: () => ID }, ParseUUIDPipe) sessionId: string,
+    @Args('sessionId', { type: () => ID, nullable: true }, ParseUUIDPipe)
+    sessionId?: string,
     @Args('filter', { nullable: true }) filter?: AttendanceFilterInput,
   ) {
     return this.attendanceService.findAttendanceRecords(sessionId, filter);
+  }
+
+  @Query(() => [AttendanceRecord], { name: 'eventAttendanceRecords' })
+  async findEventAttendanceRecords(
+    @Args('eventId', { type: () => ID }, ParseUUIDPipe) eventId: string,
+    @Args('filter', { nullable: true }) filter?: AttendanceFilterInput,
+  ) {
+    const eventFilter = { ...filter, eventId };
+    return this.attendanceService.findAttendanceRecords(undefined, eventFilter);
+  }
+
+  @Query(() => [AttendanceRecord], { name: 'allAttendanceRecords' })
+  async findAllAttendanceRecords(
+    @Args('filter', { nullable: true }) filter?: AttendanceFilterInput,
+  ) {
+    return this.attendanceService.findAttendanceRecords(undefined, filter);
   }
 
   @Query(() => [AttendanceRecord], { name: 'memberAttendanceHistory' })
@@ -149,5 +170,21 @@ export class AttendanceResolver {
   @Mutation(() => AbsenceAlertResult)
   async scheduleAbsenceCheck(@Args('input') input: AbsenceAlertConfigInput) {
     return this.attendanceAlertsService.scheduleAbsenceCheck(input);
+  }
+
+  @Query(() => AttendanceReport, { name: 'generateAttendanceReport' })
+  async generateAttendanceReport(
+    @Args('input') input: AttendanceReportInput,
+    @Args('generatedBy', { type: () => String, defaultValue: 'system' })
+    generatedBy: string,
+  ) {
+    if (!input.startDate || !input.endDate) {
+      throw new BadRequestException('startDate and endDate are required');
+    }
+
+    return this.attendanceReportsService.generateAttendanceReport(
+      input,
+      generatedBy,
+    );
   }
 }

@@ -86,15 +86,18 @@ export class BranchesResolver {
     });
 
     // Transform the data to include roles as a string array
-    return branchUsers.map(user => {
-      const roles = user.userBranches.map(ub => ub.role.name);
+    return branchUsers.map((user) => {
+      const roles = user.userBranches.map((ub) => ub.role.name);
       return {
         ...user,
         roles,
         // Ensure name getter works by providing firstName and lastName
         get name() {
-          return [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Unknown';
-        }
+          return (
+            [user.firstName, user.lastName].filter(Boolean).join(' ') ||
+            'Unknown'
+          );
+        },
       };
     });
   }
@@ -378,10 +381,13 @@ export class BranchesResolver {
       where: { userId: currentUser.id },
       include: { role: true },
     });
-    
-    const currentUserRoleNames = currentUserRoles.map(ur => ur.role.name);
-    
-    if (roleName === Role.ADMIN && !currentUserRoleNames.includes(Role.SUPER_ADMIN)) {
+
+    const currentUserRoleNames = currentUserRoles.map((ur) => ur.role.name);
+
+    if (
+      roleName === Role.ADMIN &&
+      !currentUserRoleNames.includes(Role.SUPER_ADMIN)
+    ) {
       throw new ForbiddenException('Only SUPER_ADMIN can assign ADMIN role');
     }
 
@@ -463,10 +469,13 @@ export class BranchesResolver {
       where: { userId: currentUser.id },
       include: { role: true },
     });
-    
-    const currentUserRoleNames = currentUserRoles.map(ur => ur.role.name);
-    
-    if (roleName === Role.ADMIN && !currentUserRoleNames.includes(Role.SUPER_ADMIN)) {
+
+    const currentUserRoleNames = currentUserRoles.map((ur) => ur.role.name);
+
+    if (
+      roleName === Role.ADMIN &&
+      !currentUserRoleNames.includes(Role.SUPER_ADMIN)
+    ) {
       throw new ForbiddenException('Only SUPER_ADMIN can remove ADMIN role');
     }
 
@@ -482,7 +491,9 @@ export class BranchesResolver {
     });
 
     if (!userBranch) {
-      throw new NotFoundException(`User does not have role ${roleName} in this branch`);
+      throw new NotFoundException(
+        `User does not have role ${roleName} in this branch`,
+      );
     }
 
     // Remove the role from the user
@@ -541,10 +552,13 @@ export class BranchesResolver {
       where: { userId: currentUser.id },
       include: { role: true },
     });
-    
-    const currentUserRoleNames = currentUserRoles.map(ur => ur.role.name);
-    
-    if (roleName === Role.ADMIN && !currentUserRoleNames.includes(Role.SUPER_ADMIN)) {
+
+    const currentUserRoleNames = currentUserRoles.map((ur) => ur.role.name);
+
+    if (
+      roleName === Role.ADMIN &&
+      !currentUserRoleNames.includes(Role.SUPER_ADMIN)
+    ) {
       throw new ForbiddenException('Only SUPER_ADMIN can assign ADMIN role');
     }
 
@@ -581,7 +595,10 @@ export class BranchesResolver {
   }
 
   // Helper method to get user with roles
-  private async getUserWithRoles(userId: string, branchId: string): Promise<User> {
+  private async getUserWithRoles(
+    userId: string,
+    branchId: string,
+  ): Promise<User> {
     const userWithBranches = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -600,15 +617,19 @@ export class BranchesResolver {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
-    const roles = userWithBranches.userBranches.map(ub => ub.role.name);
-    
+    const roles = userWithBranches.userBranches.map((ub) => ub.role.name);
+
     return {
       ...userWithBranches,
       roles,
       // Ensure name getter works by providing firstName and lastName
       get name() {
-        return [userWithBranches.firstName, userWithBranches.lastName].filter(Boolean).join(' ') || 'Unknown';
-      }
+        return (
+          [userWithBranches.firstName, userWithBranches.lastName]
+            .filter(Boolean)
+            .join(' ') || 'Unknown'
+        );
+      },
     };
   }
 

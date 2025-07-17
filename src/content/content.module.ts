@@ -32,6 +32,7 @@ import s3Config from '../config/s3-config';
     SermonsResolver,
     MediaItemsResolver,
     FileUploadResolver,
+    CategoryResolver,
   ],
   exports: [
     SpeakersService,

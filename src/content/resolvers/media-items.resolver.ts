@@ -13,7 +13,7 @@ import {
 export class MediaItemsResolver {
   constructor(private readonly mediaItemsService: MediaItemsService) {}
 
-  @Mutation(() => MediaItemEntity)
+  @Mutation(() => MediaItemEntity, { name: 'createMediaItem' })
   async create(
     @Args('createMediaItemInput') createMediaItemInput: CreateMediaItemInput,
   ): Promise<MediaItemEntity> {
@@ -30,7 +30,7 @@ export class MediaItemsResolver {
     return mapToMediaItemEntities(mediaItems);
   }
 
-  @Query(() => MediaItemEntity)
+  @Query(() => MediaItemEntity, { name: 'mediaItem' })
   async findOne(
     @Args('id', { type: () => ID }) id: string,
   ): Promise<MediaItemEntity> {
@@ -38,7 +38,7 @@ export class MediaItemsResolver {
     return mapToMediaItemEntity(mediaItem);
   }
 
-  @Mutation(() => MediaItemEntity)
+  @Mutation(() => MediaItemEntity, { name: 'updateMediaItem' })
   async update(
     @Args('updateMediaItemInput') updateMediaItemInput: UpdateMediaItemInput,
   ): Promise<MediaItemEntity> {
@@ -46,7 +46,7 @@ export class MediaItemsResolver {
     return mapToMediaItemEntity(mediaItem);
   }
 
-  @Mutation(() => MediaItemEntity)
+  @Mutation(() => MediaItemEntity, { name: 'removeMediaItem' })
   async remove(
     @Args('id', { type: () => ID }) id: string,
   ): Promise<MediaItemEntity> {

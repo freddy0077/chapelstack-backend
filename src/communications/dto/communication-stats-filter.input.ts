@@ -8,6 +8,11 @@ export class CommunicationStatsFilterInput {
   @IsUUID()
   branchId?: string;
 
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsUUID()
+  organisationId?: string;
+
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()

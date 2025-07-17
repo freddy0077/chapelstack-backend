@@ -18,14 +18,16 @@ export class StatsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getCommunicationStats(
+    organisationId?: string,
     branchId?: string,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: string,
+    endDate?: string,
   ): Promise<CommunicationStatsEntity> {
     // Set default date range if not provided (last 30 days)
-    const end = endDate || new Date();
-    const start =
-      startDate || new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+    const start = startDate
+      ? new Date(startDate)
+      : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Build filter conditions
     const dateFilter = {
@@ -35,8 +37,13 @@ export class StatsService {
       },
     };
 
-    const branchFilter = branchId ? { branchId } : {};
-    const filter = { ...dateFilter, ...branchFilter };
+    let orgBranchFilter: any = {};
+    if (branchId) {
+      orgBranchFilter.branchId = branchId;
+    } else if (organisationId) {
+      orgBranchFilter.organisationId = organisationId;
+    }
+    const filter = { ...dateFilter, ...orgBranchFilter };
 
     // Get email stats
     const emailCount = await this.prisma.emailMessage.count({
@@ -54,21 +61,24 @@ export class StatsService {
 
     // Get notification stats
     const notificationCount = await this.prisma.notification.count({
-      where: {
-        createdAt: dateFilter.createdAt,
-      },
+      where: filter,
     });
 
     // Get active templates
     const activeTemplates = await this.prisma.emailTemplate.count({
       where: {
-        ...branchFilter,
+        ...orgBranchFilter,
         isActive: true,
       },
     });
 
     // Get messages by date (time series data)
-    const messagesByDate = await this.getMessagesByDate(start, end, branchId);
+    const messagesByDate = await this.getMessagesByDate(
+      start,
+      end,
+      branchId,
+      organisationId,
+    );
 
     // Calculate delivery rate (delivered / sent)
     const deliveredEmails =
@@ -102,17 +112,17 @@ export class StatsService {
   }
 
   async getChannelStats(
+    organisationId?: string,
     branchId?: string,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: string,
+    endDate?: string,
     channels?: string[],
   ): Promise<CommunicationChannelStats[]> {
-    // Set default date range if not provided (last 30 days)
-    const end = endDate || new Date();
-    const start =
-      startDate || new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+    const start = startDate
+      ? new Date(startDate)
+      : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Build filter conditions
     const dateFilter = {
       createdAt: {
         gte: start,
@@ -120,8 +130,13 @@ export class StatsService {
       },
     };
 
-    const branchFilter = branchId ? { branchId } : {};
-    const filter = { ...dateFilter, ...branchFilter };
+    let orgBranchFilter: any = {};
+    if (branchId) {
+      orgBranchFilter.branchId = branchId;
+    } else if (organisationId) {
+      orgBranchFilter.organisationId = organisationId;
+    }
+    const filter = { ...dateFilter, ...orgBranchFilter };
 
     // Get email stats
     const emailCount = await this.prisma.emailMessage.count({
@@ -151,14 +166,12 @@ export class StatsService {
 
     // Get notification stats
     const notificationCount = await this.prisma.notification.count({
-      where: {
-        createdAt: dateFilter.createdAt,
-      },
+      where: filter,
     });
 
     const readNotifications = await this.prisma.notification.count({
       where: {
-        createdAt: dateFilter.createdAt,
+        ...filter,
         isRead: true,
       },
     });
@@ -201,42 +214,51 @@ export class StatsService {
   }
 
   async getRecipientGroupStats(
+    organisationId?: string,
     branchId?: string,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: string,
+    endDate?: string,
   ): Promise<RecipientGroupStats[]> {
-    // This is a placeholder implementation
-    // In a real implementation, you would analyze the recipients of messages
-    // and group them by member type, ministry, etc.
+    const end = endDate ? new Date(endDate) : new Date();
+    const start = startDate
+      ? new Date(startDate)
+      : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // For now, we'll return some sample data
     const dateFilter =
-      startDate && endDate
-        ? { createdAt: { gte: startDate, lte: endDate } }
-        : {};
+      startDate && endDate ? { createdAt: { gte: start, lte: end } } : {};
 
-    const branchFilter = branchId ? { branchId } : {};
-    const filter = { ...dateFilter, ...branchFilter };
+    let orgBranchFilter: any = {};
+    if (branchId) {
+      orgBranchFilter.branchId = branchId;
+    } else if (organisationId) {
+      orgBranchFilter.organisationId = organisationId;
+    }
+    const filter = { ...dateFilter, ...orgBranchFilter };
 
     return [
       {
         groupName: 'All Members',
         recipientCount: await this.prisma.member.count({
-          where: branchId ? { branchId } : {},
+          where: orgBranchFilter,
         }),
-        messagesSent: await this.getTotalMessagesSentToGroup('all', branchId),
+        messagesSent: await this.getTotalMessagesSentToGroup(
+          'all',
+          branchId,
+          organisationId,
+        ),
       },
       {
         groupName: 'Active Members',
         recipientCount: await this.prisma.member.count({
           where: {
-            ...(branchId ? { branchId } : {}),
+            ...orgBranchFilter,
             status: 'ACTIVE',
           },
         }),
         messagesSent: await this.getTotalMessagesSentToGroup(
           'active',
           branchId,
+          organisationId,
         ),
       },
       {
@@ -245,27 +267,29 @@ export class StatsService {
           where: {
             role: 'LEADER',
             ...(branchId ? { ministry: { branchId } } : {}),
+            ...(organisationId ? { ministry: { organisationId } } : {}),
           },
         }),
         messagesSent: await this.getTotalMessagesSentToGroup(
           'leaders',
           branchId,
+          organisationId,
         ),
       },
     ];
   }
 
   async getMessagePerformanceMetrics(
+    organisationId?: string,
     branchId?: string,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: string,
+    endDate?: string,
   ): Promise<MessagePerformanceEntity> {
-    // Set default date range if not provided (last 30 days)
-    const end = endDate || new Date();
-    const start =
-      startDate || new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+    const start = startDate
+      ? new Date(startDate)
+      : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Build filter conditions
     const dateFilter = {
       createdAt: {
         gte: start,
@@ -273,12 +297,17 @@ export class StatsService {
       },
     };
 
-    const branchFilter = branchId ? { branchId } : {};
-    const filter = { ...dateFilter, ...branchFilter };
+    let orgBranchFilter: any = {};
+    if (branchId) {
+      orgBranchFilter.branchId = branchId;
+    } else if (organisationId) {
+      orgBranchFilter.organisationId = organisationId;
+    }
+    const filter = { ...dateFilter, ...orgBranchFilter };
 
     // Get all email templates
     const templates = await this.prisma.emailTemplate.findMany({
-      where: branchFilter,
+      where: orgBranchFilter,
       select: {
         id: true,
         name: true,
@@ -441,6 +470,7 @@ export class StatsService {
     startDate: Date,
     endDate: Date,
     branchId?: string,
+    organisationId?: string,
   ): Promise<MessageTimeSeriesData[]> {
     // Generate date range
     const dates: Date[] = [];
@@ -457,26 +487,26 @@ export class StatsService {
       const nextDay = new Date(date);
       nextDay.setDate(date.getDate() + 1);
 
-      const branchFilter = branchId ? { branchId } : {};
+      let orgBranchFilter: any = {};
+      if (branchId) {
+        orgBranchFilter.branchId = branchId;
+      } else if (organisationId) {
+        orgBranchFilter.organisationId = organisationId;
+      }
+      const filter = {
+        ...orgBranchFilter,
+        createdAt: {
+          gte: date,
+          lt: nextDay,
+        },
+      };
 
       const emailCount = await this.prisma.emailMessage.count({
-        where: {
-          ...branchFilter,
-          createdAt: {
-            gte: date,
-            lt: nextDay,
-          },
-        },
+        where: filter,
       });
 
       const smsCount = await this.prisma.smsMessage.count({
-        where: {
-          ...branchFilter,
-          createdAt: {
-            gte: date,
-            lt: nextDay,
-          },
-        },
+        where: filter,
       });
 
       result.push({
@@ -491,6 +521,7 @@ export class StatsService {
   private async getTotalMessagesSentToGroup(
     groupType: string,
     branchId?: string,
+    organisationId?: string,
   ): Promise<number> {
     // This is a placeholder implementation
     // In a real implementation, you would query the database to find messages sent to specific groups

@@ -2,18 +2,18 @@ import { Field, InputType, ID } from '@nestjs/graphql';
 import GraphQLJSON from 'graphql-type-json';
 import {
   IsArray,
-  IsEmail,
   IsOptional,
   IsString,
   IsUUID,
   ValidateIf,
 } from 'class-validator';
+import { BirthdayRangeEnum } from './member-filter.input';
 
 @InputType()
 export class SendEmailInput {
   @Field(() => [String])
   @IsArray()
-  @IsEmail({}, { each: true })
+  @IsUUID('all', { each: true })
   recipients: string[];
 
   @Field()
@@ -48,4 +48,24 @@ export class SendEmailInput {
   @IsOptional()
   @IsUUID()
   organisationId?: string;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  groupIds?: string[];
+
+  @Field(() => BirthdayRangeEnum, { nullable: true })
+  @IsOptional()
+  birthdayRange?: BirthdayRangeEnum;
+
+  @Field(() => Date, { nullable: true })
+  @IsOptional()
+  scheduledAt?: Date;
+
+  @Field(() => [String], {
+    nullable: true,
+    description:
+      'Advanced recipient filters such as "all-members", "volunteers", etc.',
+  })
+  @IsOptional()
+  filters?: string[];
 }

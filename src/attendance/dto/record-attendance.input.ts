@@ -19,10 +19,16 @@ export enum CheckInMethod {
 
 @InputType()
 export class RecordAttendanceInput {
-  @Field(() => ID)
-  @IsNotEmpty()
+  // Flexible attendance linking - can link to either session OR event
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
   @IsUUID()
-  sessionId: string;
+  sessionId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsUUID()
+  eventId?: string;
 
   @Field(() => GraphQLISODateTime, { nullable: true })
   @IsOptional()

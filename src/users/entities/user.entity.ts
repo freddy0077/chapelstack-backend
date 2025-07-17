@@ -33,7 +33,7 @@ export class User {
 
   @Field(() => Boolean)
   isActive: boolean;
-  
+
   @Field(() => [String], { nullable: true })
   roles?: string[];
 }

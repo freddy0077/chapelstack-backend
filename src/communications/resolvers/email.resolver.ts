@@ -24,6 +24,13 @@ export class EmailResolver {
     return this.emailService.getEmails(branchId, organisationId);
   }
 
+  @Query(() => EmailMessageDto)
+  async emailById(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<EmailMessageDto> {
+    return this.emailService.getEmailById(id);
+  }
+
   @Query(() => [EmailTemplateDto])
   async templates(
     @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,

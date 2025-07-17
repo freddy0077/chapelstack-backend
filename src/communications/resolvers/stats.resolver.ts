@@ -17,9 +17,10 @@ export class StatsResolver {
     @Args('filter', { nullable: true }) filter?: CommunicationStatsFilterInput,
   ): Promise<CommunicationStatsEntity> {
     return this.statsService.getCommunicationStats(
+      filter?.organisationId,
       filter?.branchId,
-      filter?.startDate ? new Date(filter.startDate) : undefined,
-      filter?.endDate ? new Date(filter.endDate) : undefined,
+      filter?.startDate,
+      filter?.endDate,
     );
   }
 
@@ -28,9 +29,10 @@ export class StatsResolver {
     @Args('filter', { nullable: true }) filter?: CommunicationStatsFilterInput,
   ): Promise<CommunicationChannelStats[]> {
     return this.statsService.getChannelStats(
+      filter?.organisationId,
       filter?.branchId,
-      filter?.startDate ? new Date(filter.startDate) : undefined,
-      filter?.endDate ? new Date(filter.endDate) : undefined,
+      filter?.startDate,
+      filter?.endDate,
       filter?.channels,
     );
   }
@@ -40,9 +42,10 @@ export class StatsResolver {
     @Args('filter', { nullable: true }) filter?: CommunicationStatsFilterInput,
   ): Promise<RecipientGroupStats[]> {
     return this.statsService.getRecipientGroupStats(
+      filter?.organisationId,
       filter?.branchId,
-      filter?.startDate ? new Date(filter.startDate) : undefined,
-      filter?.endDate ? new Date(filter.endDate) : undefined,
+      filter?.startDate,
+      filter?.endDate,
     );
   }
 
@@ -51,9 +54,10 @@ export class StatsResolver {
     @Args('filter', { nullable: true }) filter?: CommunicationStatsFilterInput,
   ): Promise<MessagePerformanceEntity> {
     return this.statsService.getMessagePerformanceMetrics(
+      filter?.organisationId,
       filter?.branchId,
-      filter?.startDate ? new Date(filter.startDate) : undefined,
-      filter?.endDate ? new Date(filter.endDate) : undefined,
+      filter?.startDate,
+      filter?.endDate,
     );
   }
 }

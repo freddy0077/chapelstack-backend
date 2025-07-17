@@ -61,6 +61,9 @@ export class SermonEntity {
   @Field()
   branchId: string;
 
+  @Field({ nullable: true })
+  organisationId?: string;
+
   @Field(() => ContentStatus)
   status: ContentStatus;
 

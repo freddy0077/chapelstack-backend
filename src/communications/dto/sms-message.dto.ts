@@ -1,5 +1,6 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { MessageStatus } from '@prisma/client';
+import { RecipientInfoDto } from './recipient-info.dto';
 
 @ObjectType()
 export class SmsMessageDto {
@@ -15,11 +16,17 @@ export class SmsMessageDto {
   @Field(() => [String])
   recipients: string[];
 
+  @Field(() => [RecipientInfoDto], { nullable: true })
+  recipientInfo?: RecipientInfoDto[];
+
   @Field(() => Date, { nullable: true })
   sentAt?: Date | null;
 
   @Field(() => String)
   status: MessageStatus;
+
+  @Field(() => String, { nullable: true })
+  organisationId?: string | null;
 
   @Field(() => String, { nullable: true })
   branchId?: string | null;

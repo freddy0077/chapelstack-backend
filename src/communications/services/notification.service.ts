@@ -71,17 +71,40 @@ export class NotificationService {
     organisationId?: string,
   ): Promise<NotificationDto[]> {
     try {
+      this.logger.log(
+        `getNotifications called with branchId=${branchId} (${typeof branchId}), organisationId=${organisationId} (${typeof organisationId})`,
+      );
+
       const where: Prisma.NotificationWhereInput = {};
-      if (branchId) {
-        where.branchId = branchId;
-      }
-      if (organisationId) {
+
+      // Only add filters if they are valid strings
+      if (
+        organisationId &&
+        typeof organisationId === 'string' &&
+        organisationId.trim() !== ''
+      ) {
         where.organisationId = organisationId;
+        this.logger.log(`Adding organisationId filter: ${organisationId}`);
       }
+
+      if (branchId && typeof branchId === 'string' && branchId.trim() !== '') {
+        where.branchId = branchId;
+        this.logger.log(`Adding branchId filter: ${branchId}`);
+      }
+
+      this.logger.log(
+        `Notification query where clause: ${JSON.stringify(where)}`,
+      );
+
       const notifications = await this.prisma.notification.findMany({
         where,
         orderBy: { createdAt: 'desc' },
       });
+
+      this.logger.log(
+        `Found ${notifications.length} notifications with filter: organisationId=${organisationId}, branchId=${branchId}`,
+      );
+
       return notifications.map((n) => ({
         ...n,
         branchId: n.branchId ?? undefined,

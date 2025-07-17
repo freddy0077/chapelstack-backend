@@ -156,20 +156,64 @@ export class AttendanceService {
   }
 
   async recordAttendance(data: RecordAttendanceInput) {
-    // Validate session exists
-    const session = await this.prisma.attendanceSession.findUnique({
-      where: { id: data.sessionId },
-    });
-
-    if (!session) {
-      throw new NotFoundException(
-        `Attendance session with ID ${data.sessionId} not found`,
+    // Validate that either sessionId or eventId is provided, but not both
+    if (!data.sessionId && !data.eventId) {
+      throw new BadRequestException(
+        'Either sessionId or eventId must be provided',
       );
     }
-    if (!session.organisationId) {
+
+    if (data.sessionId && data.eventId) {
       throw new BadRequestException(
-        `Attendance session with ID ${data.sessionId} does not have an associated organisationId`,
+        'Cannot provide both sessionId and eventId - choose one',
       );
+    }
+
+    let organisationId: string;
+    let branchId: string | null = null;
+    let sessionConnection: any = undefined;
+    let eventConnection: any = undefined;
+
+    // Handle session-based attendance
+    if (data.sessionId) {
+      const session = await this.prisma.attendanceSession.findUnique({
+        where: { id: data.sessionId },
+      });
+
+      if (!session) {
+        throw new NotFoundException(
+          `Attendance session with ID ${data.sessionId} not found`,
+        );
+      }
+      if (!session.organisationId) {
+        throw new BadRequestException(
+          `Attendance session with ID ${data.sessionId} does not have an associated organisationId`,
+        );
+      }
+
+      organisationId = session.organisationId;
+      branchId = session.branchId;
+      sessionConnection = { connect: { id: data.sessionId } };
+    }
+
+    // Handle event-based attendance
+    if (data.eventId) {
+      const event = await this.prisma.event.findUnique({
+        where: { id: data.eventId },
+      });
+
+      if (!event) {
+        throw new NotFoundException(`Event with ID ${data.eventId} not found`);
+      }
+      if (!event.organisationId) {
+        throw new BadRequestException(
+          `Event with ID ${data.eventId} does not have an associated organisationId`,
+        );
+      }
+
+      organisationId = event.organisationId;
+      branchId = event.branchId;
+      eventConnection = { connect: { id: data.eventId } };
     }
 
     // If memberId is provided, validate member exists
@@ -190,16 +234,16 @@ export class AttendanceService {
       );
     }
 
+    // Determine final branchId (prioritize data.branchId over session/event branchId)
+    const finalBranchId = data.branchId || branchId;
+
     return this.prisma.attendanceRecord.create({
       data: {
         checkInTime: data.checkInTime || new Date(),
         checkInMethod: data.checkInMethod,
         notes: data.notes,
-        session: {
-          connect: {
-            id: data.sessionId,
-          },
-        },
+        session: sessionConnection,
+        event: eventConnection,
         member: data.memberId
           ? {
               connect: {
@@ -210,18 +254,16 @@ export class AttendanceService {
         visitorName: data.visitorName,
         visitorEmail: data.visitorEmail,
         visitorPhone: data.visitorPhone,
-        branch:
-          data.branchId || (session.branchId && session.branchId !== null)
-            ? { connect: { id: data.branchId || (session.branchId as string) } }
-            : undefined,
+        branch: finalBranchId ? { connect: { id: finalBranchId } } : undefined,
         recordedBy: data.recordedById
           ? { connect: { id: data.recordedById } }
           : undefined,
-        organisation: { connect: { id: session.organisationId! } },
+        organisation: { connect: { id: organisationId! } },
       },
       include: {
         member: true,
         session: true,
+        event: true,
         recordedBy: true,
         branch: true,
       },
@@ -229,20 +271,64 @@ export class AttendanceService {
   }
 
   async recordBulkAttendance(data: RecordBulkAttendanceInput) {
-    // Validate session exists
-    const session = await this.prisma.attendanceSession.findUnique({
-      where: { id: data.sessionId },
-    });
-
-    if (!session) {
-      throw new NotFoundException(
-        `Attendance session with ID ${data.sessionId} not found`,
+    // Validate that either sessionId or eventId is provided, but not both
+    if (!data.sessionId && !data.eventId) {
+      throw new BadRequestException(
+        'Either sessionId or eventId must be provided',
       );
     }
-    if (!session.organisationId) {
+
+    if (data.sessionId && data.eventId) {
       throw new BadRequestException(
-        `Attendance session with ID ${data.sessionId} does not have an associated organisationId`,
+        'Cannot provide both sessionId and eventId - choose one',
       );
+    }
+
+    let organisationId: string;
+    let branchId: string | null = null;
+    let sessionConnection: any = undefined;
+    let eventConnection: any = undefined;
+
+    // Handle session-based attendance
+    if (data.sessionId) {
+      const session = await this.prisma.attendanceSession.findUnique({
+        where: { id: data.sessionId },
+      });
+
+      if (!session) {
+        throw new NotFoundException(
+          `Attendance session with ID ${data.sessionId} not found`,
+        );
+      }
+      if (!session.organisationId) {
+        throw new BadRequestException(
+          `Attendance session with ID ${data.sessionId} does not have an associated organisationId`,
+        );
+      }
+
+      organisationId = session.organisationId;
+      branchId = session.branchId;
+      sessionConnection = { connect: { id: data.sessionId } };
+    }
+
+    // Handle event-based attendance
+    if (data.eventId) {
+      const event = await this.prisma.event.findUnique({
+        where: { id: data.eventId },
+      });
+
+      if (!event) {
+        throw new NotFoundException(`Event with ID ${data.eventId} not found`);
+      }
+      if (!event.organisationId) {
+        throw new BadRequestException(
+          `Event with ID ${data.eventId} does not have an associated organisationId`,
+        );
+      }
+
+      organisationId = event.organisationId;
+      branchId = event.branchId;
+      eventConnection = { connect: { id: data.eventId } };
     }
 
     // Handle individual attendance records if provided
@@ -252,7 +338,8 @@ export class AttendanceService {
           this.recordAttendance({
             ...record,
             sessionId: data.sessionId,
-            branchId: data.branchId || (session.branchId as string | undefined),
+            eventId: data.eventId,
+            branchId: data.branchId || branchId || undefined,
           }),
         ),
       );
@@ -267,29 +354,27 @@ export class AttendanceService {
     // Handle headcount if provided
     if (data.headcount !== undefined && data.headcount > 0) {
       // Create a single record with the headcount
-      const headcountBranchId = data.branchId || session.branchId;
-      const headcountRecordedById = data.recordedById; // Assuming recordedById might be on RecordBulkAttendanceInput
+      const headcountBranchId = data.branchId || branchId;
+      const headcountRecordedById = data.recordedById;
 
       const summaryRecord = await this.prisma.attendanceRecord.create({
         data: {
           checkInTime: new Date(),
           checkInMethod: 'MANUAL',
           notes: `Headcount: ${data.headcount} attendees`,
-          session: {
-            connect: {
-              id: data.sessionId,
-            },
-          },
+          session: sessionConnection,
+          event: eventConnection,
           branch: headcountBranchId
             ? { connect: { id: headcountBranchId } }
             : undefined,
           recordedBy: headcountRecordedById
             ? { connect: { id: headcountRecordedById } }
             : undefined,
-          organisation: { connect: { id: session.organisationId! } },
+          organisation: { connect: { id: organisationId! } },
         },
         include: {
           session: true,
+          event: true,
           branch: true,
           recordedBy: true,
           // member will be null for headcount records, but including it for consistency
@@ -336,24 +421,34 @@ export class AttendanceService {
   }
 
   async findAttendanceRecords(
-    sessionId: string,
+    sessionId?: string,
     filter?: AttendanceFilterInput,
   ) {
-    // Validate session exists
-    const session = await this.prisma.attendanceSession.findUnique({
-      where: { id: sessionId },
-    });
+    // If sessionId is provided, validate session exists (for backward compatibility)
+    if (sessionId) {
+      const session = await this.prisma.attendanceSession.findUnique({
+        where: { id: sessionId },
+      });
 
-    if (!session) {
-      throw new NotFoundException(
-        `Attendance session with ID ${sessionId} not found`,
-      );
+      if (!session) {
+        throw new NotFoundException(
+          `Attendance session with ID ${sessionId} not found`,
+        );
+      }
     }
 
     // Build filter conditions
-    const where: any = {
-      sessionId,
-    };
+    const where: any = {};
+
+    // Handle sessionId filtering (from parameter or filter)
+    if (sessionId || filter?.sessionId) {
+      where.sessionId = sessionId || filter?.sessionId;
+    }
+
+    // Handle eventId filtering
+    if (filter?.eventId) {
+      where.eventId = filter.eventId;
+    }
 
     if (filter) {
       if (filter.memberId) {
@@ -393,6 +488,7 @@ export class AttendanceService {
       include: {
         member: true,
         session: true,
+        event: true,
         recordedBy: true,
         branch: true,
       },

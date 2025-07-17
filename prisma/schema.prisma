@@ -69,7 +69,7 @@ model User {
   organisationId            String?
   member                    Member?                   @relation("UserToMember")
   transactions              Transaction[]             @relation("UserTransactions")
-  passwordResetToken        String?   @db.VarChar(255)
+  passwordResetToken        String?                   @db.VarChar(255)
   passwordResetTokenExpiry  DateTime?
 
   @@index([organisationId])
@@ -131,10 +131,10 @@ model Branch {
   organisation          Organisation?       @relation(fields: [organisationId], references: [id])
   organisationId        String?
   transactions          Transaction[]       @relation("BranchTransactions")
-  
+
   // Transfer relations
-  sourceTransfers       TransferRequest[]   @relation("SourceBranchTransfers")
-  destinationTransfers  TransferRequest[]   @relation("DestinationBranchTransfers")
+  sourceTransfers      TransferRequest[] @relation("SourceBranchTransfers")
+  destinationTransfers TransferRequest[] @relation("DestinationBranchTransfers")
 
   // Financial relations
   funds             Fund[]
@@ -283,6 +283,7 @@ model EmailMessage {
   template       EmailTemplate? @relation(fields: [templateId], references: [id])
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  scheduledAt    DateTime?
 
   @@index([branchId])
   @@index([templateId])
@@ -302,6 +303,7 @@ model SmsMessage {
   branch         Branch?       @relation(fields: [branchId], references: [id])
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  scheduledAt    DateTime? // When the SMS should be sent
 
   @@index([branchId])
   @@index([organisationId])
@@ -325,6 +327,7 @@ model Notification {
   updatedAt      DateTime         @updatedAt
   Member         Member?          @relation(fields: [memberId], references: [id])
   memberId       String?
+  scheduledAt    DateTime?
 
   @@index([userId])
   @@index([branchId])
@@ -332,32 +335,32 @@ model Notification {
 }
 
 model BranchSetting {
-  id                      String    @id @default(uuid())
-  branchId                String
-  key                     String?
-  value                   String?
-  
+  id       String  @id @default(uuid())
+  branchId String
+  key      String?
+  value    String?
+
   // New settings fields
-  allowMemberRegistration Boolean?
-  allowMemberTransfers    Boolean?
+  allowMemberRegistration  Boolean?
+  allowMemberTransfers     Boolean?
   enableAttendanceTracking Boolean?
   enableFinancialReporting Boolean?
-  enableSacramentTracking Boolean?
+  enableSacramentTracking  Boolean?
   enableMinistryManagement Boolean?
-  enableEventManagement   Boolean?
-  enableSmallGroups       Boolean?
-  defaultLanguage         String?
-  timeZone                String?
-  dateFormat              String?
-  currencyCode            String?
+  enableEventManagement    Boolean?
+  enableSmallGroups        Boolean?
+  defaultLanguage          String?
+  timeZone                 String?
+  dateFormat               String?
+  currencyCode             String?
   enableEmailNotifications Boolean?
-  enableSmsNotifications  Boolean?
-  enablePushNotifications Boolean?
-  notificationEvents      String[]
-  
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-  branch                  Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  enableSmsNotifications   Boolean?
+  enablePushNotifications  Boolean?
+  notificationEvents       String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   @@index([branchId])
 }
@@ -499,9 +502,9 @@ model Member {
   sacramentalRecords  SacramentalRecord[]
   prayerRequests      PrayerRequest[]
   transactions        Transaction[]
-  
+
   // Transfer relation
-  transferRequests    TransferRequest[]
+  transferRequests TransferRequest[]
 
   // Financial relations
   contributions      Contribution[]
@@ -722,8 +725,12 @@ model AttendanceRecord {
   checkOutTime  DateTime?
   checkInMethod String            @default("MANUAL") // MANUAL, MOBILE, RFID, NFC
   notes         String?
-  sessionId     String
-  session       AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  // Flexible attendance linking - can link to either session OR event
+  sessionId     String?
+  session       AttendanceSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  eventId       String?
+  event         Event?            @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   // Either member or visitor info
   memberId     String?
@@ -743,6 +750,7 @@ model AttendanceRecord {
   updatedAt      DateTime     @updatedAt
 
   @@index([sessionId])
+  @@index([eventId])
   @@index([memberId])
   @@index([branchId])
   @@index([checkInTime])
@@ -1186,11 +1194,11 @@ model BudgetItem {
 // Content Management Models
 
 model Category {
-  id        String    @id @default(uuid())
-  name      String    @unique
+  id        String   @id @default(uuid())
+  name      String   @unique
   sermons   Sermon[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Sermon {
@@ -1208,7 +1216,7 @@ model Sermon {
   transcriptUrl  String? // Link to PDF or text file
   transcriptText String? // Or store directly
   categoryId     String?
-  category       Category?    @relation(fields: [categoryId], references: [id])
+  category       Category?     @relation(fields: [categoryId], references: [id])
   notesUrl       String?
   duration       Int? // In seconds
   branchId       String
@@ -1233,11 +1241,11 @@ model Sermon {
 }
 
 model Tag {
-  id        String    @id @default(uuid())
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  sermons   Sermon[]  @relation("SermonTags")
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sermons   Sermon[] @relation("SermonTags")
 
   @@index([name])
 }
@@ -1783,7 +1791,8 @@ model Event {
   updatedAt      DateTime      @updatedAt
 
   // Relationships
-  transactions   Transaction[]
+  transactions      Transaction[]
+  attendanceRecords AttendanceRecord[]
 }
 
 model PrayerRequest {
@@ -1848,7 +1857,7 @@ model Transaction {
 
 // Member transfer request model
 model TransferRequest {
-  id                    String         @id @default(uuid())
+  id                    String    @id @default(uuid())
   memberId              String
   memberName            String
   sourceBranchId        String
@@ -1856,20 +1865,20 @@ model TransferRequest {
   destinationBranchId   String
   destinationBranchName String
   requestDate           DateTime
-  status                String         @default("pending") // pending, approved, rejected, completed
+  status                String    @default("pending") // pending, approved, rejected, completed
   reason                String
-  transferData          String[]       // personal, sacraments, ministries, donation_history
+  transferData          String[] // personal, sacraments, ministries, donation_history
   approvedDate          DateTime?
   rejectedDate          DateTime?
   rejectionReason       String?
   completedDate         DateTime?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
   // Relations
-  member               Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  sourceBranch         Branch         @relation("SourceBranchTransfers", fields: [sourceBranchId], references: [id])
-  destinationBranch    Branch         @relation("DestinationBranchTransfers", fields: [destinationBranchId], references: [id])
+  member            Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  sourceBranch      Branch @relation("SourceBranchTransfers", fields: [sourceBranchId], references: [id])
+  destinationBranch Branch @relation("DestinationBranchTransfers", fields: [destinationBranchId], references: [id])
 
   @@index([memberId])
   @@index([sourceBranchId])

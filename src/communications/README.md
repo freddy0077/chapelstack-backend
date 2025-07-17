@@ -1,149 +1,121 @@
-# Communications Module
+# Messaging & Communication Module – Chapel Stack ChMS
 
 ## Overview
 
-The Communications Module provides a comprehensive set of tools for managing various types of communications within the church management system. It enables sending emails, SMS messages, managing notifications, and creating reusable templates for consistent messaging.
+The Messaging & Communication module enables multi-channel messaging (Email, SMS, In-App, Push Notifications) for church admins and staff. It supports targeted communication, campaign scheduling, automated reminders, two-way conversations, media attachments, and analytics.
 
-## Features
+---
 
-- **Email Management**
-  - Send personalized emails to individuals or groups
-  - Create, update, and manage email templates
-  - Support for HTML and plain text email formats
-  - Template variable substitution
+## Feature Breakdown
 
-- **SMS Messaging**
-  - Send text messages to individuals or groups
-  - Track message delivery status
-  - Branch-specific messaging
+### 1. Message Composition & Sending
+- Compose messages for Email, SMS, In-App, or Push.
+- Rich text editor for email, templated text for SMS.
+- Attach media: images, PDFs, audio clips.
+- Channel selection (multi-channel or single).
+- Preview before sending.
 
-- **Notification System**
-  - In-app notifications for users
-  - Different notification types (info, warning, success, error, event reminders)
-  - Mark as read/unread functionality
-  - Bulk notification management
+### 2. Targeting & Segmentation
+- Select recipients by:
+  - Roles (e.g., pastors, ushers, elders, members)
+  - Groups (youth, choir, women’s ministry, men’s fellowship, small groups)
+  - Activity (active, inactive, first-time visitors)
+  - Attendance history (e.g., missed services, event participation)
+- Save recipient lists as segments.
 
-- **Template Management**
-  - Reusable email templates
-  - Branch-specific and global templates
-  - Variable substitution for personalization
+### 3. Scheduling & Automation
+- Schedule one-time or recurring messages.
+- Automate messages for:
+  - Birthdays, anniversaries, missed services, volunteer reminders.
+  - Event/campaign triggers (revivals, conferences, fundraising).
+- Calendar view for scheduled/automated messages.
 
-## Implementation Details
+### 4. Two-Way Conversations
+- Inbox for admins/staff and members.
+- Threaded message view.
+- Reply, forward, mark as read/unread.
+- Notification system for new replies.
 
-### Architecture
+### 5. Analytics Dashboard
+- Open rates, delivery status, bounce reports per channel.
+- Click-through rates for emails/SMS with links.
+- Engagement stats by group/segment.
+- Export analytics to CSV.
 
-The Communications Module follows the NestJS architecture pattern with:
-- **DTOs**: Define data transfer objects for inputs and outputs
-- **Services**: Implement business logic for each communication type
-- **Resolvers**: Expose GraphQL endpoints for client applications
-- **Prisma Models**: Define database schema for communications entities
+---
 
-### Key Components
+## Technical Specifications
 
-1. **Email Service**: Handles email composition, template processing, and sending
-2. **SMS Service**: Manages SMS message creation and delivery
-3. **Notification Service**: Manages in-app notifications for users
-4. **Template Service**: Handles creation and management of reusable email templates
+### Backend
+- **Framework:** Node.js (NestJS), TypeScript
+- **Database:** PostgreSQL (messages, recipients, logs, analytics)
+- **Channels:**
+  - Email: SMTP/SendGrid/Mailgun integration
+  - SMS: Twilio or similar
+  - Push: Firebase Cloud Messaging (FCM)
+  - In-App: WebSocket or polling
+- **File Storage:** S3-compatible for attachments
+- **GraphQL API:** CRUD for messages, conversations, analytics
+- **Scheduler:** BullMQ/Agenda for scheduled/automated jobs
+- **Role-based access:** Integrated with existing RBAC/auth system
 
-### Database Models
+### Frontend
+- **Framework:** React (Next.js)
+- **UI Library:** Chapel Stack UI (Tailwind, Radix UI)
+- **Components:**
+  - Message composer (rich text, attachments)
+  - Recipient selector (roles, groups, filters)
+  - Scheduler/calendar
+  - Inbox & conversation view
+  - Analytics dashboard (charts, tables)
+- **Notifications:** Toasts, badges, in-app alerts
 
-- `EmailTemplate`: Reusable email templates with variable placeholders
-- `EmailMessage`: Records of sent/scheduled emails
-- `SmsMessage`: Records of sent/scheduled SMS messages
-- `Notification`: In-app notifications for users
+---
 
-## Usage Examples
+## UI/UX Flow
 
-### Sending an Email
+### 1. Dashboard
+- Quick stats: sent, scheduled, delivered, failed, open/click rates.
+- Shortcuts: Compose, Schedule, View Analytics.
 
-```typescript
-// Using the EmailService
-const emailService = new EmailService(prismaService, configService);
-const result = await emailService.sendEmail({
-  recipients: ['user@example.com'],
-  subject: 'Welcome to our church!',
-  bodyHtml: '<h1>Welcome!</h1><p>We're glad to have you join us.</p>',
-});
+### 2. Compose Message
+- Select channel(s)
+- Write message (with templates)
+- Attach files
+- Select recipients (roles, groups, filters)
+- Preview & send or schedule
 
-// Using GraphQL mutation
-mutation {
-  sendEmail(input: {
-    recipients: ["user@example.com"]
-    subject: "Welcome to our church!"
-    bodyHtml: "<h1>Welcome!</h1><p>We're glad to have you join us.</p>"
-  })
-}
-```
+### 3. Recipient Selection
+- Multi-select with search/filter
+- Save as segment for reuse
 
-### Using Email Templates
+### 4. Scheduling
+- Choose send time (immediate or future)
+- Set recurrence (daily, weekly, event-based)
+- View/edit scheduled messages in calendar
 
-```typescript
-// Create a template
-const template = await emailService.createEmailTemplate({
-  name: "Welcome Email",
-  subject: "Welcome, {{name}}!",
-  bodyHtml: "<h1>Hello {{name}}!</h1><p>Welcome to {{churchName}}.</p>",
-});
+### 5. Inbox & Conversations
+- List of conversations (searchable, filterable)
+- Threaded message view
+- Reply, forward, mark as read/unread
 
-// Send email using template
-await emailService.sendEmail({
-  recipients: ['user@example.com'],
-  templateId: template.id,
-  templateData: {
-    name: "John",
-    churchName: "Grace Community Church"
-  }
-});
-```
+### 6. Analytics
+- Channel-specific stats
+- Filter by date, group, campaign
+- Export options
 
-### Sending SMS Messages
+---
 
-```typescript
-// Using the SmsService
-const smsService = new SmsService(prismaService, configService);
-await smsService.sendSms({
-  recipients: ['+15551234567'],
-  message: 'Reminder: Church service tomorrow at 10am',
-});
+## Implementation Notes
 
-// Using GraphQL mutation
-mutation {
-  sendSms(input: {
-    recipients: ["+15551234567"]
-    message: "Reminder: Church service tomorrow at 10am"
-  })
-}
-```
-
-### Creating Notifications
-
-```typescript
-// Using the NotificationService
-const notificationService = new NotificationService(prismaService);
-await notificationService.createNotification({
-  userId: "user-id",
-  title: "New Announcement",
-  message: "There's a new announcement from the pastor",
-  type: NotificationType.INFO
-});
-
-// Using GraphQL mutation
-mutation {
-  createNotification(input: {
-    userId: "user-id"
-    title: "New Announcement"
-    message: "There's a new announcement from the pastor"
-    type: INFO
-  }) {
-    id
-    title
-  }
-}
-```
+- All message actions (send, schedule, reply, analytics) are permission-controlled via RBAC.
+- Media attachments are virus-scanned and size-limited.
+- Automated messages use templates with dynamic placeholders (e.g., {firstName}, {eventName}).
+- All user-facing errors and delivery failures are logged and surfaced in UI.
 
 ## Environment Configuration
 
-The Communications Module requires the following environment variables:
+The Messaging & Communication Module requires the following environment variables:
 
 ```
 # Email Configuration
@@ -154,18 +126,26 @@ SENDGRID_API_KEY=your_sendgrid_api_key
 SMS_SENDER_NUMBER=CHURCH
 TWILIO_ACCOUNT_SID=your_twilio_account_sid
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
+
+# Push Configuration
+FCM_API_KEY=your_fcm_api_key
+
+# File Storage
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+AWS_BUCKET_NAME=your_aws_bucket_name
 ```
 
 ## Testing
 
-The Communications Module includes comprehensive unit tests for all services and resolvers. Run the tests with:
+The Messaging & Communication Module includes comprehensive unit tests for all services and resolvers. Run the tests with:
 
 ```bash
 # Run all tests
 npm test
 
-# Run communications module tests specifically
-npm test -- communications
+# Run messaging module tests specifically
+npm test -- messaging
 ```
 
 ## Future Enhancements

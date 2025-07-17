@@ -12,7 +12,7 @@ import {
 export class SpeakersResolver {
   constructor(private readonly speakersService: SpeakersService) {}
 
-  @Mutation(() => SpeakerEntity)
+  @Mutation(() => SpeakerEntity, { name: 'createSpeaker' })
   async create(
     @Args('createSpeakerInput') createSpeakerInput: CreateSpeakerInput,
   ): Promise<SpeakerEntity> {
@@ -20,7 +20,7 @@ export class SpeakersResolver {
     return mapToSpeakerEntity(speaker);
   }
 
-  @Query(() => [SpeakerEntity])
+  @Query(() => [SpeakerEntity], { name: 'speakers' })
   async findAll(
     @Args('branchId', { nullable: true }) branchId?: string,
   ): Promise<SpeakerEntity[]> {
@@ -28,7 +28,7 @@ export class SpeakersResolver {
     return mapToSpeakerEntities(speakers);
   }
 
-  @Query(() => SpeakerEntity)
+  @Query(() => SpeakerEntity, { name: 'speaker' })
   async findOne(
     @Args('id', { type: () => ID }) id: string,
   ): Promise<SpeakerEntity> {
@@ -36,7 +36,7 @@ export class SpeakersResolver {
     return mapToSpeakerEntity(speaker);
   }
 
-  @Mutation(() => SpeakerEntity)
+  @Mutation(() => SpeakerEntity, { name: 'updateSpeaker' })
   async update(
     @Args('updateSpeakerInput') updateSpeakerInput: UpdateSpeakerInput,
   ): Promise<SpeakerEntity> {
@@ -44,7 +44,7 @@ export class SpeakersResolver {
     return mapToSpeakerEntity(speaker);
   }
 
-  @Mutation(() => SpeakerEntity)
+  @Mutation(() => SpeakerEntity, { name: 'removeSpeaker' })
   async remove(
     @Args('id', { type: () => ID }) id: string,
   ): Promise<SpeakerEntity> {

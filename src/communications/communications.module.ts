@@ -13,9 +13,14 @@ import { StatsResolver } from './resolvers/stats.resolver';
 import { AllMessagesResolver } from './resolvers/all-messages.resolver';
 import { MessageUnion } from './unions/message-union';
 import { ConfigModule } from '@nestjs/config';
+import { RecipientResolver } from './resolvers/recipient.resolver';
+import { RecipientService } from './services/recipient.service';
+import { HttpModule } from '@nestjs/axios';
+import { NaloSmsProvider } from './providers/nalo-sms.provider';
+import { EmailModule } from '../email/email.module';
 
 @Module({
-  imports: [PrismaModule, ConfigModule],
+  imports: [EmailModule, PrismaModule, ConfigModule, HttpModule],
   providers: [
     // Services
     EmailService,
@@ -23,6 +28,7 @@ import { ConfigModule } from '@nestjs/config';
     NotificationService,
     TemplateService,
     StatsService,
+    RecipientService,
 
     // Resolvers
     EmailResolver,
@@ -31,6 +37,9 @@ import { ConfigModule } from '@nestjs/config';
     TemplateResolver,
     StatsResolver,
     AllMessagesResolver,
+    RecipientResolver,
+
+    NaloSmsProvider,
   ],
   exports: [
     EmailService,
@@ -38,6 +47,7 @@ import { ConfigModule } from '@nestjs/config';
     NotificationService,
     TemplateService,
     StatsService,
+    RecipientService,
   ],
 })
 export class CommunicationsModule {}

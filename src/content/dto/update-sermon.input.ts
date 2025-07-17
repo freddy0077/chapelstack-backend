@@ -81,6 +81,11 @@ export class UpdateSermonInput {
 
   @Field({ nullable: true })
   @IsOptional()
+  @IsUUID()
+  organisationId?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
   @IsEnum(ContentStatus)
   status?: ContentStatus;
 

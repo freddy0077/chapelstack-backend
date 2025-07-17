@@ -9,6 +9,16 @@ export class AttendanceFilterInput {
   @IsUUID()
   memberId?: string;
 
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsUUID()
+  sessionId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsUUID()
+  eventId?: string;
+
   @Field(() => GraphQLISODateTime, { nullable: true })
   @IsOptional()
   @IsDate()
