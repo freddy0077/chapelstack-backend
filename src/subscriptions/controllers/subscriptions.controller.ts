@@ -49,7 +49,20 @@ export class SubscriptionsController {
   @Post('plans')
   @RequirePermissions({ action: 'create', subject: 'SubscriptionPlan' })
   async createPlan(@Body() input: CreatePlanDto) {
-    return this.subscriptionPlansService.createPlan(input);
+    // Convert CreatePlanDto to CreatePlanInput format
+    const planInput = {
+      name: input.name,
+      description: input.description,
+      amount: input.amount,
+      currency: input.currency || 'GHS',
+      interval: input.interval,
+      intervalCount: input.intervalCount || 1,
+      trialPeriodDays: input.trialPeriodDays || 0,
+      features: input.features || [],
+      isActive: input.isActive !== false,
+      organisationId: input.organisationId,
+    };
+    return this.subscriptionPlansService.createPlan(planInput);
   }
 
   @Put('plans/:id')

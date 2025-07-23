@@ -19,7 +19,12 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:seed": "prisma generate && ts-node prisma/seed.ts",
-    "prisma:seed": "prisma generate && ts-node prisma/seed.ts"
+    "db:seed:subscription-manager": "prisma generate && ts-node prisma/seed-subscription-manager.ts",
+    "db:seed:with-subscription-manager": "SEED_SUBSCRIPTION_MANAGER=true prisma generate && ts-node prisma/seed.ts",
+    "prisma:seed": "prisma generate && ts-node prisma/seed.ts",
+    "seed": "ts-node prisma/seed.ts",
+    "seed:subscription-manager": "ts-node prisma/seeders/subscription-manager.seeder.ts",
+    "seed:ghana-plans": "ts-node prisma/seeders/subscription-plans-ghana.seeder.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

@@ -7,9 +7,6 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaystackService } from './paystack.service';
 import { SubscriptionPlan, SubscriptionInterval } from '@prisma/client';
-import { CreatePlanDto } from '../dto/create-plan.dto';
-import { UpdatePlanDto } from '../dto/update-plan.dto';
-import { PlanFilterInput } from '../dto/plan-filter.input';
 import { CreatePlanInput } from '../dto/create-plan.input';
 import { UpdatePlanInput } from '../dto/update-plan.input';
 
@@ -23,24 +20,30 @@ export class SubscriptionPlansService {
   ) {}
 
   /**
-   * Create a new subscription plan
+   * Create a new subscription plan (GraphQL version)
    */
-  async createPlan(input: CreatePlanDto): Promise<SubscriptionPlan> {
+  async createPlan(input: CreatePlanInput): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
     try {
       this.logger.log(`Creating subscription plan: ${input.name}`);
 
-      // Create plan on Paystack first
-      const paystackPlan = await this.paystackService.createPlan({
-        name: input.name,
-        description: input.description,
-        amount: input.amount,
-        currency: input.currency || 'GHS',
-        interval: input.interval,
-        invoiceLimit: input.invoiceLimit,
-        sendInvoices: input.sendInvoices,
-        sendSms: input.sendSms,
-        organisationId: input.organisationId,
-      });
+      // Create plan on Paystack first if amount > 0
+      let paystackPlanCode: string | undefined;
+      if (input.amount > 0) {
+        try {
+          const paystackPlan = await this.paystackService.createPlan({
+            name: input.name,
+            description: input.description,
+            amount: input.amount,
+            currency: input.currency || 'GHS',
+            interval: input.interval,
+            organisationId: input.organisationId,
+          });
+          paystackPlanCode = paystackPlan.data?.plan_code;
+        } catch (error) {
+          this.logger.warn(`Failed to create Paystack plan: ${error.message}`);
+          // Continue without Paystack integration for free plans
+        }
+      }
 
       // Create plan in database
       const plan = await this.prisma.subscriptionPlan.create({
@@ -51,17 +54,18 @@ export class SubscriptionPlansService {
           currency: input.currency || 'GHS',
           interval: input.interval,
           intervalCount: input.intervalCount || 1,
-          trialPeriodDays: input.trialPeriodDays,
+          trialPeriodDays: input.trialPeriodDays || 0,
+          features: input.features || [],
           isActive: input.isActive !== false,
-          paystackPlanCode: paystackPlan.data.plan_code,
-          features: input.features,
-          metadata: {
-            ...(typeof input.metadata === 'object' && input.metadata !== null
-              ? input.metadata
-              : {}),
-            paystackData: paystackPlan.data,
-          },
+          paystackPlanCode,
           organisationId: input.organisationId,
+        },
+        include: {
+          _count: {
+            select: {
+              subscriptions: true,
+            },
+          },
         },
       });
 
@@ -77,12 +81,9 @@ export class SubscriptionPlansService {
   }
 
   /**
-   * Update a subscription plan
+   * Update a subscription plan (GraphQL version)
    */
-  async updatePlan(
-    id: string,
-    input: UpdatePlanDto,
-  ): Promise<SubscriptionPlan> {
+  async updatePlan(id: string, input: UpdatePlanInput): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
     try {
       this.logger.log(`Updating subscription plan: ${id}`);
 
@@ -91,56 +92,44 @@ export class SubscriptionPlansService {
       });
 
       if (!existingPlan) {
-        throw new NotFoundException('Subscription plan not found');
+        throw new NotFoundException(`Subscription plan with ID ${id} not found`);
       }
 
-      // Update plan on Paystack if plan code exists
-      if (existingPlan.paystackPlanCode) {
+      // Update plan on Paystack if it exists and amount changed
+      if (existingPlan.paystackPlanCode && input.amount && input.amount !== existingPlan.amount) {
         try {
           await this.paystackService.updatePlan(existingPlan.paystackPlanCode, {
-            name: input.name,
-            description: input.description,
+            name: input.name || existingPlan.name,
             amount: input.amount,
-            currency: input.currency,
-            interval: input.interval,
-            invoiceLimit: input.invoiceLimit,
-            sendInvoices: input.sendInvoices,
-            sendSms: input.sendSms,
+            currency: input.currency || existingPlan.currency,
+            interval: input.interval || existingPlan.interval,
           });
         } catch (error) {
-          this.logger.error(`Failed to update Paystack plan: ${error.message}`);
-          // Continue with local update even if Paystack update fails
+          this.logger.warn(`Failed to update Paystack plan: ${error.message}`);
         }
       }
 
       // Update plan in database
-      const updateData: any = {};
-
-      if (input.name !== undefined) updateData.name = input.name;
-      if (input.description !== undefined)
-        updateData.description = input.description;
-      if (input.amount !== undefined) updateData.amount = input.amount;
-      if (input.currency !== undefined) updateData.currency = input.currency;
-      if (input.interval !== undefined) updateData.interval = input.interval;
-      if (input.intervalCount !== undefined)
-        updateData.intervalCount = input.intervalCount;
-      if (input.trialPeriodDays !== undefined)
-        updateData.trialPeriodDays = input.trialPeriodDays;
-      if (input.isActive !== undefined) updateData.isActive = input.isActive;
-      if (input.features !== undefined) updateData.features = input.features;
-      if (input.metadata !== undefined) {
-        updateData.metadata = {
-          ...(typeof existingPlan.metadata === 'object' &&
-          existingPlan.metadata !== null
-            ? existingPlan.metadata
-            : {}),
-          ...input.metadata,
-        };
-      }
-
       const updatedPlan = await this.prisma.subscriptionPlan.update({
         where: { id },
-        data: updateData,
+        data: {
+          ...(input.name && { name: input.name }),
+          ...(input.description !== undefined && { description: input.description }),
+          ...(input.amount && { amount: input.amount }),
+          ...(input.currency && { currency: input.currency }),
+          ...(input.interval && { interval: input.interval }),
+          ...(input.intervalCount && { intervalCount: input.intervalCount }),
+          ...(input.trialPeriodDays !== undefined && { trialPeriodDays: input.trialPeriodDays }),
+          ...(input.features && { features: input.features }),
+          ...(input.isActive !== undefined && { isActive: input.isActive }),
+        },
+        include: {
+          _count: {
+            select: {
+              subscriptions: true,
+            },
+          },
+        },
       });
 
       this.logger.log(`Subscription plan updated successfully: ${id}`);
@@ -155,46 +144,51 @@ export class SubscriptionPlansService {
   }
 
   /**
-   * Delete a subscription plan
+   * Delete a subscription plan (GraphQL version)
    */
-  async deletePlan(id: string): Promise<boolean> {
+  async deletePlan(id: string): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
     try {
       this.logger.log(`Deleting subscription plan: ${id}`);
 
-      const plan = await this.prisma.subscriptionPlan.findUnique({
+      const existingPlan = await this.prisma.subscriptionPlan.findUnique({
         where: { id },
         include: {
-          subscriptions: {
-            where: {
-              status: {
-                in: ['ACTIVE', 'TRIALING', 'PAST_DUE'],
-              },
+          _count: {
+            select: {
+              subscriptions: true,
             },
           },
         },
       });
 
-      if (!plan) {
-        throw new NotFoundException('Subscription plan not found');
+      if (!existingPlan) {
+        throw new NotFoundException(`Subscription plan with ID ${id} not found`);
       }
 
       // Check if plan has active subscriptions
-      if (plan.subscriptions.length > 0) {
+      if (existingPlan._count.subscriptions > 0) {
         throw new BadRequestException(
-          'Cannot delete plan with active subscriptions',
+          'Cannot delete plan with active subscriptions. Please cancel all subscriptions first.',
         );
       }
 
-      // Soft delete by marking as inactive
-      await this.prisma.subscriptionPlan.update({
+      // Delete plan from Paystack if it exists
+      if (existingPlan.paystackPlanCode) {
+        try {
+          // Note: Paystack doesn't have a delete plan endpoint, so we'll just log this
+          this.logger.warn('Paystack plan deletion not implemented - plan may remain active on Paystack');
+        } catch (error) {
+          this.logger.warn(`Failed to delete Paystack plan: ${error.message}`);
+        }
+      }
+
+      // Delete plan from database
+      await this.prisma.subscriptionPlan.delete({
         where: { id },
-        data: {
-          isActive: false,
-        },
       });
 
       this.logger.log(`Subscription plan deleted successfully: ${id}`);
-      return true;
+      return existingPlan;
     } catch (error) {
       this.logger.error(
         `Failed to delete subscription plan: ${error.message}`,
@@ -207,21 +201,20 @@ export class SubscriptionPlansService {
   /**
    * Get subscription plan by ID
    */
-  async getPlan(id: string): Promise<SubscriptionPlan> {
+  async getPlan(id: string): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
     const plan = await this.prisma.subscriptionPlan.findUnique({
       where: { id },
       include: {
-        organisation: true,
-        subscriptions: {
-          include: {
-            customer: true,
+        _count: {
+          select: {
+            subscriptions: true,
           },
         },
       },
     });
 
     if (!plan) {
-      throw new NotFoundException('Subscription plan not found');
+      throw new NotFoundException(`Subscription plan with ID ${id} not found`);
     }
 
     return plan;
@@ -230,7 +223,7 @@ export class SubscriptionPlansService {
   /**
    * Get subscription plans with filtering
    */
-  async getPlans(filter: PlanFilterInput = {}): Promise<SubscriptionPlan[]> {
+  async getPlans(filter: any = {}): Promise<SubscriptionPlan[]> {
     const where: any = {};
 
     if (filter.organisationId) {
@@ -263,7 +256,6 @@ export class SubscriptionPlansService {
     return this.prisma.subscriptionPlan.findMany({
       where,
       include: {
-        organisation: true,
         _count: {
           select: {
             subscriptions: {
@@ -279,6 +271,40 @@ export class SubscriptionPlansService {
       orderBy: { createdAt: 'desc' },
       skip: filter.skip || 0,
       take: filter.take || 50,
+    });
+  }
+
+  /**
+   * Get popular plans
+   */
+  async getPopularPlans(
+    organisationId?: string,
+    limit: number = 5,
+  ): Promise<SubscriptionPlan[]> {
+    const where: any = { isActive: true };
+    if (organisationId) where.organisationId = organisationId;
+
+    return this.prisma.subscriptionPlan.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            subscriptions: {
+              where: {
+                status: {
+                  in: ['ACTIVE', 'TRIALING'],
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        subscriptions: {
+          _count: 'desc',
+        },
+      },
+      take: limit,
     });
   }
 
@@ -328,61 +354,32 @@ export class SubscriptionPlansService {
   }
 
   /**
-   * Get popular plans
-   */
-  async getPopularPlans(
-    organisationId?: string,
-    limit: number = 5,
-  ): Promise<SubscriptionPlan[]> {
-    const where: any = { isActive: true };
-    if (organisationId) where.organisationId = organisationId;
-
-    return this.prisma.subscriptionPlan.findMany({
-      where,
-      include: {
-        organisation: true,
-        _count: {
-          select: {
-            subscriptions: {
-              where: {
-                status: {
-                  in: ['ACTIVE', 'TRIALING'],
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        subscriptions: {
-          _count: 'desc',
-        },
-      },
-      take: limit,
-    });
-  }
-
-  /**
    * Sync plan with Paystack
    */
-  async syncPlanWithPaystack(id: string): Promise<SubscriptionPlan> {
+  async syncPlanWithPaystack(id: string): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
     try {
       this.logger.log(`Syncing plan with Paystack: ${id}`);
 
       const plan = await this.prisma.subscriptionPlan.findUnique({
         where: { id },
+        include: {
+          _count: {
+            select: {
+              subscriptions: true,
+            },
+          },
+        },
       });
 
       if (!plan) {
-        throw new NotFoundException('Subscription plan not found');
+        throw new NotFoundException(`Subscription plan with ID ${id} not found`);
       }
 
       if (!plan.paystackPlanCode) {
         throw new BadRequestException('Plan does not have Paystack plan code');
       }
 
-      // Fetch plan from Paystack (this would require implementing a get plan method in PaystackService)
-      // For now, we'll just update the metadata
+      // For now, we'll just update the metadata to indicate sync
       const updatedPlan = await this.prisma.subscriptionPlan.update({
         where: { id },
         data: {
@@ -393,6 +390,13 @@ export class SubscriptionPlansService {
             lastSyncedAt: new Date().toISOString(),
           },
         },
+        include: {
+          _count: {
+            select: {
+              subscriptions: true,
+            },
+          },
+        },
       });
 
       this.logger.log(`Plan synced with Paystack successfully: ${id}`);
@@ -400,189 +404,6 @@ export class SubscriptionPlansService {
     } catch (error) {
       this.logger.error(
         `Failed to sync plan with Paystack: ${error.message}`,
-        error.stack,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Create a new subscription plan (GraphQL version)
-   */
-  async createPlan(input: CreatePlanInput): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
-    try {
-      this.logger.log(`Creating subscription plan: ${input.name}`);
-
-      // Create plan on Paystack first if amount > 0
-      let paystackPlanCode: string | undefined;
-      if (input.amount > 0) {
-        try {
-          const paystackPlan = await this.paystackService.createPlan({
-            name: input.name,
-            description: input.description,
-            amount: input.amount,
-            currency: input.currency || 'GHS',
-            interval: input.interval,
-          });
-          paystackPlanCode = paystackPlan.plan_code;
-        } catch (error) {
-          this.logger.warn(`Failed to create Paystack plan: ${error.message}`);
-          // Continue without Paystack integration for free plans
-        }
-      }
-
-      // Create plan in database
-      const plan = await this.prisma.subscriptionPlan.create({
-        data: {
-          name: input.name,
-          description: input.description,
-          amount: input.amount,
-          currency: input.currency || 'GHS',
-          interval: input.interval,
-          intervalCount: input.intervalCount || 1,
-          trialPeriodDays: input.trialPeriodDays || 0,
-          features: input.features || [],
-          isActive: input.isActive !== false,
-          paystackPlanCode,
-        },
-        include: {
-          _count: {
-            select: {
-              subscriptions: true,
-            },
-          },
-        },
-      });
-
-      this.logger.log(`Subscription plan created successfully: ${plan.id}`);
-      return plan;
-    } catch (error) {
-      this.logger.error(
-        `Failed to create subscription plan: ${error.message}`,
-        error.stack,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Update a subscription plan (GraphQL version)
-   */
-  async updatePlan(id: string, input: UpdatePlanInput): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
-    try {
-      this.logger.log(`Updating subscription plan: ${id}`);
-
-      const existingPlan = await this.prisma.subscriptionPlan.findUnique({
-        where: { id },
-      });
-
-      if (!existingPlan) {
-        throw new NotFoundException('Subscription plan not found');
-      }
-
-      // Update plan on Paystack if it exists and amount/interval changed
-      if (existingPlan.paystackPlanCode && (input.amount !== undefined || input.interval !== undefined)) {
-        try {
-          // Note: Paystack doesn't allow updating plan amount/interval
-          // We would need to create a new plan and migrate subscriptions
-          this.logger.warn('Paystack plan update not implemented - plan changes may require manual intervention');
-        } catch (error) {
-          this.logger.warn(`Failed to update Paystack plan: ${error.message}`);
-        }
-      }
-
-      // Update plan in database
-      const updateData: any = {};
-      if (input.name !== undefined) updateData.name = input.name;
-      if (input.description !== undefined) updateData.description = input.description;
-      if (input.amount !== undefined) updateData.amount = input.amount;
-      if (input.currency !== undefined) updateData.currency = input.currency;
-      if (input.interval !== undefined) updateData.interval = input.interval;
-      if (input.intervalCount !== undefined) updateData.intervalCount = input.intervalCount;
-      if (input.trialPeriodDays !== undefined) updateData.trialPeriodDays = input.trialPeriodDays;
-      if (input.features !== undefined) updateData.features = input.features;
-      if (input.isActive !== undefined) updateData.isActive = input.isActive;
-
-      const plan = await this.prisma.subscriptionPlan.update({
-        where: { id },
-        data: updateData,
-        include: {
-          _count: {
-            select: {
-              subscriptions: true,
-            },
-          },
-        },
-      });
-
-      this.logger.log(`Subscription plan updated successfully: ${id}`);
-      return plan;
-    } catch (error) {
-      this.logger.error(
-        `Failed to update subscription plan: ${error.message}`,
-        error.stack,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Delete a subscription plan (GraphQL version)
-   */
-  async deletePlan(id: string): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
-    try {
-      this.logger.log(`Deleting subscription plan: ${id}`);
-
-      const existingPlan = await this.prisma.subscriptionPlan.findUnique({
-        where: { id },
-        include: {
-          _count: {
-            select: {
-              subscriptions: true,
-            },
-          },
-        },
-      });
-
-      if (!existingPlan) {
-        throw new NotFoundException('Subscription plan not found');
-      }
-
-      // Check if plan has active subscriptions
-      if (existingPlan._count.subscriptions > 0) {
-        throw new BadRequestException(
-          'Cannot delete plan with active subscriptions. Please deactivate the plan instead.'
-        );
-      }
-
-      // Delete plan from Paystack if it exists
-      if (existingPlan.paystackPlanCode) {
-        try {
-          // Note: Paystack doesn't have a delete plan endpoint
-          // We would typically deactivate it instead
-          this.logger.warn('Paystack plan deletion not implemented - plan may remain active on Paystack');
-        } catch (error) {
-          this.logger.warn(`Failed to delete Paystack plan: ${error.message}`);
-        }
-      }
-
-      // Delete plan from database
-      const deletedPlan = await this.prisma.subscriptionPlan.delete({
-        where: { id },
-        include: {
-          _count: {
-            select: {
-              subscriptions: true,
-            },
-          },
-        },
-      });
-
-      this.logger.log(`Subscription plan deleted successfully: ${id}`);
-      return deletedPlan;
-    } catch (error) {
-      this.logger.error(
-        `Failed to delete subscription plan: ${error.message}`,
         error.stack,
       );
       throw error;

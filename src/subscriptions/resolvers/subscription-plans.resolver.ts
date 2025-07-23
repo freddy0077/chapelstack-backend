@@ -91,12 +91,11 @@ export class SubscriptionPlansResolver {
     const plan = await this.subscriptionPlansService.createPlan(input);
     return {
       ...plan,
-      description: plan.description || undefined,
-      paystackPlanCode: plan.paystackPlanCode || undefined,
-      trialPeriodDays: plan.trialPeriodDays || undefined,
-      features: Array.isArray(plan.features)
-        ? (plan.features as string[])
-        : undefined,
+      description: plan.description ?? undefined,
+      trialPeriodDays: plan.trialPeriodDays ?? undefined,
+      paystackPlanCode: plan.paystackPlanCode ?? undefined,
+      features: Array.isArray(plan.features) ? plan.features as string[] : undefined,
+      activeSubscriptionsCount: plan._count?.subscriptions || 0,
     };
   }
 
@@ -109,6 +108,10 @@ export class SubscriptionPlansResolver {
     const plan = await this.subscriptionPlansService.updatePlan(id, input);
     return {
       ...plan,
+      description: plan.description ?? undefined,
+      trialPeriodDays: plan.trialPeriodDays ?? undefined,
+      paystackPlanCode: plan.paystackPlanCode ?? undefined,
+      features: Array.isArray(plan.features) ? plan.features as string[] : undefined,
       activeSubscriptionsCount: plan._count?.subscriptions || 0,
     };
   }
@@ -121,6 +124,10 @@ export class SubscriptionPlansResolver {
     const plan = await this.subscriptionPlansService.deletePlan(id);
     return {
       ...plan,
+      description: plan.description ?? undefined,
+      trialPeriodDays: plan.trialPeriodDays ?? undefined,
+      paystackPlanCode: plan.paystackPlanCode ?? undefined,
+      features: Array.isArray(plan.features) ? plan.features as string[] : undefined,
       activeSubscriptionsCount: plan._count?.subscriptions || 0,
     };
   }
