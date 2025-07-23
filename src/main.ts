@@ -16,6 +16,8 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
       'https://chapelstack.com',
       'http://chapelstack.com',
     ],

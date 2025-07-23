@@ -17,10 +17,14 @@ import { AttendanceFilterInput } from './dto/attendance-filter.input';
 import { GenerateQRTokenInput } from './dto/generate-qr-token.input';
 import { CardScanInput } from './dto/card-scan.input';
 import { randomBytes } from 'crypto';
+import { WorkflowsService } from '../workflows/services/workflows.service';
 
 @Injectable()
 export class AttendanceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly workflowsService: WorkflowsService,
+  ) {}
 
   async createAttendanceSession(data: CreateAttendanceSessionInput) {
     const { branchId, organisationId, ...restData } = data;
@@ -237,7 +241,7 @@ export class AttendanceService {
     // Determine final branchId (prioritize data.branchId over session/event branchId)
     const finalBranchId = data.branchId || branchId;
 
-    return this.prisma.attendanceRecord.create({
+    const attendanceRecord = await this.prisma.attendanceRecord.create({
       data: {
         checkInTime: data.checkInTime || new Date(),
         checkInMethod: data.checkInMethod,
@@ -268,6 +272,22 @@ export class AttendanceService {
         branch: true,
       },
     });
+
+    // Trigger workflow automation for attendance recorded
+    try {
+      const organisationId = attendanceRecord.member?.organisationId || '';
+      await this.workflowsService.handleAttendanceRecorded(
+        attendanceRecord.id,
+        organisationId,
+        finalBranchId || '',
+      );
+    } catch (error) {
+      console.warn(
+        `Failed to trigger attendance recorded workflow for attendance ${attendanceRecord.id}: ${error.message}`,
+      );
+    }
+
+    return attendanceRecord;
   }
 
   async recordBulkAttendance(data: RecordBulkAttendanceInput) {
@@ -339,7 +359,7 @@ export class AttendanceService {
             ...record,
             sessionId: data.sessionId,
             eventId: data.eventId,
-            branchId: data.branchId || branchId || undefined,
+            branchId: data.branchId || branchId || '',
           }),
         ),
       );
@@ -636,7 +656,7 @@ export class AttendanceService {
     }
 
     // Create new attendance record
-    return this.prisma.attendanceRecord.create({
+    const attendanceRecord = await this.prisma.attendanceRecord.create({
       data: {
         checkInTime: data.scanTime || new Date(),
         checkInMethod: data.scanMethod,
@@ -651,10 +671,9 @@ export class AttendanceService {
             id: member.id,
           },
         },
-        branch: data.branchId
-          ? { connect: { id: data.branchId } }
-          : session.branchId
-            ? { connect: { id: session.branchId } }
+        branch:
+          data.branchId || session.branchId || ''
+            ? { connect: { id: (data.branchId || session.branchId)! } }
             : undefined,
         recordedBy: data.recordedById
           ? { connect: { id: data.recordedById } }
@@ -668,5 +687,14 @@ export class AttendanceService {
         branch: true,
       },
     });
+
+    await this.workflowsService.handleAttendanceRecorded(
+      attendanceRecord.id,
+      member.id,
+      session.organisationId,
+      data.branchId || session.branchId || '',
+    );
+
+    return attendanceRecord;
   }
 }

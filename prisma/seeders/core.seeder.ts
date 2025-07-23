@@ -22,6 +22,7 @@ export async function seedCoreData(prisma: PrismaClient) {
   // 3. Roles (seed if not present)
   const defaultRoles = [
     { name: 'SUPER_ADMIN', description: 'Super Administrator' },
+    { name: 'SUBSCRIPTION_MANAGER', description: 'Subscription Manager' },
     { name: 'ADMIN', description: 'Administrator' },
     { name: 'FINANCE', description: 'Finance Role' },
     { name: 'PASTORAL', description: 'Pastoral Role' },

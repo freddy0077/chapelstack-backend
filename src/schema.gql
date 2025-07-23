@@ -702,6 +702,68 @@ input CardScanInput {
   sessionId: ID!
 }
 
+type CareRequest {
+  assignedPastorId: String
+  branchId: String
+  completionDate: DateTime
+  createdAt: DateTime!
+  createdBy: String!
+  description: String!
+  id: String!
+  memberId: String!
+  notes: String
+  organisationId: String!
+  priority: CareRequestPriority!
+  requestDate: DateTime!
+  requestType: CareRequestType!
+  requesterId: String!
+  status: CareRequestStatus!
+  title: String!
+  updatedAt: DateTime!
+}
+
+input CareRequestFilterInput {
+  assignedPastorId: String
+  branchId: String
+  endDate: String
+  memberId: String
+  organisationId: String!
+  priority: CareRequestPriority
+  requestType: CareRequestType
+  startDate: String
+  status: CareRequestStatus
+}
+
+enum CareRequestPriority {
+  EMERGENCY
+  HIGH
+  LOW
+  MEDIUM
+  URGENT
+}
+
+enum CareRequestStatus {
+  ASSIGNED
+  CANCELLED
+  CLOSED
+  COMPLETED
+  IN_PROGRESS
+  SUBMITTED
+}
+
+enum CareRequestType {
+  BEREAVEMENT
+  COUNSELING
+  CRISIS_SUPPORT
+  FAMILY_CRISIS
+  FINANCIAL_ASSISTANCE
+  GENERAL_SUPPORT
+  HOME_VISIT
+  HOSPITAL_VISIT
+  PRAYER_REQUEST
+  SPIRITUAL_GUIDANCE
+}
+
 type Category {
   createdAt: String!
   id: ID!
@@ -907,6 +969,61 @@ type ContributionType {
   organisationId: String
 }
 
+type CounselingSession {
+  actualDate: DateTime
+  branchId: String
+  counselorId: String!
+  createdAt: DateTime!
+  createdBy: String!
+  description: String
+  duration: Int!
+  followUpDate: DateTime
+  id: String!
+  isConfidential: Boolean!
+  memberId: String!
+  organisationId: String!
+  primaryMemberId: String!
+  scheduledDate: DateTime!
+  sessionType: CounselingSessionType!
+  status: CounselingSessionStatus!
+  title: String!
+  updatedAt: DateTime!
+}
+
+input CounselingSessionFilterInput {
+  branchId: String
+  counselorId: String
+  endDate: String
+  isConfidential: Boolean
+  memberId: String
+  organisationId: String!
+  sessionType: CounselingSessionType
+  startDate: String
+  status: CounselingSessionStatus
+}
+
+enum CounselingSessionStatus {
+  CANCELLED
+  COMPLETED
+  IN_PROGRESS
+  NO_SHOW
+  RESCHEDULED
+  SCHEDULED
+}
+
+enum CounselingSessionType {
+  ADDICTION
+  COUPLES
+  CRISIS
+  FAMILY
+  GENERAL
+  GRIEF
+  GROUP
+  INDIVIDUAL
+  MARRIAGE
+  SPIRITUAL
+}
+
 type CpuUsage {
   system: Float!
   user: Float!
@@ -999,6 +1116,20 @@ input CreateBudgetInput {
   totalAmount: Float!
 }
 
+input CreateCareRequestInput {
+  assignedPastorId: String
+  branchId: String
+  description: String!
+  memberId: String!
+  notes: String
+  organisationId: String!
+  priority: CareRequestPriority! = MEDIUM
+  requestDate: String!
+  requestType: CareRequestType!
+  status: CareRequestStatus! = SUBMITTED
+  title: String!
+}
+
 input CreateCategoryInput {
   name: String!
 }
@@ -1047,6 +1178,33 @@ input CreateContributionInput {
   organisationId: String
   paymentMethodId: String!
   pledgeId: String
+}
+
+input CreateCounselingSessionInput {
+  branchId: String
+  counselorId: String!
+  description: String
+  duration: Float
+  followUpDate: String
+  homework: String
+  isConfidential: Boolean!
+  isRecurring: Boolean
+  location: String
+  memberId: String!
+  nextSteps: String
+  notes: String
+  organisationId: String!
+  privateNotes: String
+  progressNotes: String
+  recurringPattern: String
+  scheduledDate: String!
+  sessionNotes: String
+  sessionNumber: Float
+  sessionType: CounselingSessionType!
+  status: CounselingSessionStatus! = SCHEDULED
+  title: String!
+  topic: String
+  totalSessions: Float
 }
 
 input CreateDataExportInput {
@@ -1127,6 +1285,20 @@ input CreateFamilyRelationshipInput {
   memberId: ID!
   relatedMemberId: ID!
   relationshipType: FamilyRelationshipType!
+}
+
+input CreateFollowUpReminderInput {
+  assignedToId: String!
+  branchId: String
+  description: String
+  dueDate: String!
+  followUpType: FollowUpType!
+  memberId: String!
+  notes: String
+  organisationId: String!
+  reminderDate: String
+  status: FollowUpStatus! = PENDING
+  title: String!
 }
 
 input CreateFormFieldInput {
@@ -1302,10 +1474,48 @@ input CreateOrganisationInput {
   zipCode: String
 }
 
+input CreateOrganizationSubscriptionInput {
+  authorizationCode: String
+  metadata: JSON
+  startDate: String
+}
+
+input CreatePastoralVisitInput {
+  branchId: String
+  description: String
+  followUpDate: String
+  location: String
+  memberId: String!
+  notes: String
+  organisationId: String!
+  pastorId: String!
+  scheduledDate: String!
+  status: PastoralVisitStatus! = SCHEDULED
+  title: String!
+  visitType: PastoralVisitType!
+}
+
 input CreatePermissionInput {
   action: String!
   description: String
   subject: String!
+}
+
+input CreatePlanDto {
+  amount: Float!
+  currency: String! = "NGN"
+  description: String
+  features: [String!]
+  interval: SubscriptionInterval! = MONTHLY
+  intervalCount: Int! = 1
+  invoiceLimit: Int
+  isActive: Boolean! = true
+  metadata: JSON
+  name: String!
+  organisationId: String!
+  sendInvoices: Boolean! = true
+  sendSms: Boolean! = false
+  trialPeriodDays: Int
 }
 
 input CreatePledgeInput {
@@ -1424,6 +1634,14 @@ input CreateSpiritualMilestoneInput {
   type: MilestoneType!
 }
 
+input CreateSubscriptionInput {
+  authorizationCode: String
+  customerId: String!
+  metadata: JSON
+  planId: String!
+  startDate: String
+}
+
 input CreateTransactionInput {
   amount: Float!
   branchId: String
@@ -1474,6 +1692,17 @@ input CreateVolunteerInput {
   memberId: String!
   role: String!
   trainingCompleted: Boolean = false
+}
+
+input CreateWorkflowTemplateInput {
+  actions: [WorkflowActionInput!]!
+  branchId: String
+  description: String
+  name: String!
+  organisationId: String!
+  triggerConfig: String
+  triggerType: WorkflowTriggerType!
+  type: WorkflowType!
 }
 
 type CreatedUserResult {
@@ -1589,6 +1818,11 @@ input DateRangeInput {
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+input DisableOrganizationInput {
+  organizationId: String!
+  reason: String!
+}
 
 """Email custom scalar type"""
 scalar Email
@@ -1780,6 +2014,52 @@ type FinancialOverview {
 type FirstTimeVisitorsStat {
   first_time_visitors: Float!
   period: String!
+}
+
+type FollowUpReminder {
+  actionRequired: String
+  assignedToId: String
+  branchId: String
+  completedDate: DateTime
+  createdAt: DateTime!
+  createdBy: String!
+  description: String
+  dueDate: DateTime!
+  followUpType: FollowUpType!
+  id: String!
+  memberId: String
+  notes: String
+  organisationId: String!
+  reminderDate: DateTime
+  status: FollowUpStatus!
+  title: String!
+  updatedAt: DateTime!
+}
+
+input FollowUpReminderFilterInput {
+  assignedToId: String
+  branchId: String
+  endDate: String
+  followUpType: FollowUpType
+  memberId: String
+  organisationId: String!
+  startDate: String
+  status: FollowUpStatus
+}
+
+enum FollowUpStatus {
+  CANCELLED
+  COMPLETED
+  OVERDUE
+  PENDING
+}
+
+enum FollowUpType {
+  CARE_REQUEST
+  COUNSELING_SESSION
+  EVENT_FOLLOW_UP
+  MEMBER_CONTACT
+  PASTORAL_VISIT
 }
 
 input ForgotPasswordInput {
@@ -2157,6 +2437,12 @@ type Member {
   updatedAt: DateTime!
 }
 
+type MemberAgeGroup {
+  count: Int!
+  percentage: Float!
+  range: String!
+}
+
 type MemberDashboard {
   firstName: String!
   groups: [DashboardGroup!]!
@@ -2168,6 +2454,13 @@ type MemberDashboard {
   profileImageUrl: String
   stats: DashboardStat!
   upcomingEvents: [DashboardEvent!]!
+}
+
+type MemberDemographic {
+  category: String!
+  count: Int!
+  percentage: Float!
+  value: String!
 }
 
 type MemberDemographicsData {
@@ -2183,6 +2476,17 @@ type MemberDemographicsData {
   totalMembers: Float!
 }
 
+type MemberEngagement {
+  attendanceCount: Int!
+  attendanceRate: Float!
+  email: String
+  engagementScore: Float!
+  eventParticipation: Int!
+  lastAttendance: String
+  memberId: String!
+  name: String!
+}
+
 input MemberFilterInput {
   branchId: String
   gender: String
@@ -2194,6 +2498,21 @@ input MemberFilterInput {
   status: String
 }
 
+type MemberGeographic {
+  averageAge: Float
+  location: String!
+  memberCount: Int!
+  percentage: Float!
+  primaryGender: String
+}
+
+type MemberPastoralHistory {
+  careRequests: [CareRequest!]!
+  reminders: [FollowUpReminder!]!
+  sessions: [CounselingSession!]!
+  visits: [PastoralVisit!]!
+}
+
 type MemberProfile {
   firstName: String!
   id: ID!
@@ -2202,11 +2521,108 @@ type MemberProfile {
   status: String
 }
 
+type MemberReport {
+  charts: [MemberReportChart!]
+  data: [MemberReportData!]!
+  demographics: [MemberDemographic!]
+  downloadUrl: String
+  engagement: [MemberEngagement!]
+  generatedAt: String!
+  geographic: [MemberGeographic!]
+  id: String!
+  summary: MemberReportSummary!
+}
+
+type MemberReportChart {
+  colors: [String!]!
+  data: String!
+  labels: [String!]!
+  title: String!
+  type: String!
+}
+
+type MemberReportData {
+  activeMembers: Int!
+  conversionRate: Float
+  growthRate: Float
+  inactiveMembers: Int!
+  newMembers: Int!
+  period: String!
+  retentionRate: Float
+  totalMembers: Int!
+  visitors: Int!
+}
+
+enum MemberReportFormat {
+  CSV
+  EXCEL
+  JSON
+  PDF
+}
+
+enum MemberReportGroupBy {
+  DAY
+  MONTH
+  QUARTER
+  WEEK
+  YEAR
+}
+
+input MemberReportInput {
+  branchId: String
+  endDate: String!
+  format: MemberReportFormat
+  groupBy: MemberReportGroupBy
+  includeDemographics: Boolean = true
+  includeEngagement: Boolean = true
+  includeInactive: Boolean = true
+  includePersonalInfo: Boolean = false
+  includeVisitors: Boolean = true
+  organisationId: String
+  startDate: String!
+  type: MemberReportType!
+}
+
+type MemberReportSummary {
+  activeMembers: Int!
+  averageAge: Float!
+  conversionRate: Float!
+  endDate: String!
+  femaleMembers: Int!
+  firstTimeVisitors: Int!
+  growthRate: Float!
+  inactiveMembers: Int!
+  maleMembers: Int!
+  newMembers: Int!
+  retentionRate: Float!
+  returningVisitors: Int!
+  startDate: String!
+  title: String!
+  totalMembers: Int!
+  visitors: Int!
+}
+
+enum MemberReportType {
+  DEMOGRAPHICS
+  DETAILED
+  ENGAGEMENT
+  GEOGRAPHIC
+  GROWTH_TRENDS
+  RETENTION
+  SUMMARY
+}
+
 type MemberStatistics {
   activeMembers: Int!
+  ageGroups: [MemberAgeGroup!]!
+  averageAge: Float!
+  conversionRate: Float!
+  genderDistribution: GenderDistribution!
+  growthRate: Float!
   inactiveMembers: Int!
   lastMonth: MemberStatisticsPeriod
   newMembersInPeriod: Int!
+  retentionRate: Float!
   totalMembers: Int!
   visitorsInPeriod: Int!
 }
@@ -2356,6 +2772,7 @@ type Mutation {
   addUserToBranch(branchId: String!, role: String!, userId: String!): User!
   archiveForm(id: String!): Form!
   assignBranchRoleToUser(assignedBy: ID, branchId: ID!, roleId: ID!, userId: ID!): UserBranch!
+  assignCareRequest(assignedPastorId: String!, id: String!): CareRequest!
   assignGroupLeader(groupId: ID!, memberId: ID!): GroupMember!
   assignPermissionToRole(permissionId: ID!, roleId: ID!): Role!
   assignRfidCardToMember(assignRfidCardInput: AssignRfidCardInput!): Member!
@@ -2363,9 +2780,12 @@ type Mutation {
   assignUserRole(branchId: String!, role: String!, userId: String!): User!
   assignVolunteerToEvent(input: CreateVolunteerAssignmentInput!): VolunteerEventAssignment!
   cancelDataOperation(id: ID!): DataOperation!
+  cancelSubscription(id: ID!, reason: String): Subscription!
+  cancelWorkflowExecution(executionId: String!): Boolean!
   checkInChild(input: CheckInInput!): CheckInRecord!
   checkOut(input: AttendanceCheckOutInput!): AttendanceRecord!
   checkOutChild(input: ChildCheckOutInput!): CheckInRecord!
+  completeFollowUpReminder(id: String!, notes: String): FollowUpReminder!
   completeOnboardingStep(input: CompleteOnboardingStepInput!): OnboardingProgress!
   configureInitialSettings(branchId: ID!, input: InitialSettingsInput!): Boolean!
   createAnnouncement(input: CreateAnnouncementInput!): Announcement!
@@ -2376,12 +2796,14 @@ type Mutation {
   createBranchAdmin(input: CreateBranchAdminInput!): UserBranch!
   createBranchSetting(input: CreateSettingInput!): Setting!
   createBudget(createBudgetInput: CreateBudgetInput!): Budget!
+  createCareRequest(input: CreateCareRequestInput!): CareRequest!
   createCategory(createCategoryInput: CreateCategoryInput!): Category!
   createChild(input: CreateChildInput!): Child!
   createChildGuardianRelation(input: CreateChildGuardianRelationInput!): ChildGuardianRelation!
   createChildrenEvent(input: CreateChildrenEventInput!): ChildrenEvent!
   createChildrenMinistryVolunteer(input: CreateVolunteerInput!): ChildrenMinistryVolunteer!
   createContribution(createContributionInput: CreateContributionInput!): Contribution!
+  createCounselingSession(input: CreateCounselingSessionInput!): CounselingSession!
   createDataExport(input: CreateDataExportInput!): DataOperation!
   createDataImport(input: CreateDataImportInput!): DataOperation!
   createEmailTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
@@ -2390,6 +2812,10 @@ type Mutation {
   createExpenseCategory(createExpenseCategoryInput: CreateExpenseCategoryInput!): ExpenseCategory!
   createFamily(createFamilyInput: CreateFamilyInput!): Family!
   createFamilyRelationship(createFamilyRelationshipInput: CreateFamilyRelationshipInput!): FamilyRelationship!
+  createFollowUpFromCareRequest(assignedToId: String!, dueDate: String!, requestId: String!): FollowUpReminder!
+  createFollowUpFromSession(assignedToId: String!, dueDate: String!, sessionId: String!): FollowUpReminder!
+  createFollowUpFromVisit(assignedToId: String!, dueDate: String!, visitId: String!): FollowUpReminder!
+  createFollowUpReminder(input: CreateFollowUpReminderInput!): FollowUpReminder!
   createForm(input: CreateFormInput!): Form!
   createFormField(input: CreateFormFieldInput!): FormField!
   createFormFields(inputs: [CreateFormFieldInput!]!): [FormField!]!
@@ -2401,9 +2827,12 @@ type Mutation {
   createMinistry(input: CreateMinistryInput!): Ministry!
   createNotification(input: CreateNotificationInput!): NotificationDto!
   createOrganisation(input: CreateOrganisationInput!): Organisation!
+  createOrganizationSubscription(input: CreateOrganizationSubscriptionInput!, organizationId: ID!, planId: ID!): Subscription!
+  createPastoralVisit(input: CreatePastoralVisitInput!): PastoralVisit!
   createPermission(input: CreatePermissionInput!): Permission!
   createPledge(createPledgeInput: CreatePledgeInput!): Pledge!
   createPrayerRequest(data: CreatePrayerRequestInput!): PrayerRequest!
+  createPredefinedWorkflows(branchId: String, organisationId: String): [WorkflowTemplate!]!
   createRole(input: CreateRoleInput!): Role!
   createRoleWithPermissions(input: CreateRoleWithPermissionsInput!): Role!
   createSacramentalRecord(input: CreateSacramentalRecordInput!): SacramentalRecord!
@@ -2412,26 +2841,37 @@ type Mutation {
   createSmallGroup(input: CreateSmallGroupInput!): SmallGroup!
   createSpeaker(createSpeakerInput: CreateSpeakerInput!): Speaker!
   createSpiritualMilestone(createSpiritualMilestoneInput: CreateSpiritualMilestoneInput!): SpiritualMilestone!
+  createSubscription(input: CreateSubscriptionInput!): Subscription!
+  createSubscriptionPlan(input: CreatePlanDto!): SubscriptionPlan!
   createSuperAdminUser(branchId: ID, email: String!, firstName: String!, lastName: String!, organisationId: ID!, password: String!): ID!
   createTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
   createTransaction(createTransactionInput: CreateTransactionInput!): Transaction!
   createTransferRequest(input: CreateTransferRequestInput!): TransferRequest!
   createUsersWithRole(input: CreateUsersWithRoleInput!): [CreatedUserResult!]!
   createVendor(createVendorInput: CreateVendorInput!): Vendor!
+  createWorkflowTemplate(branchId: String, input: CreateWorkflowTemplateInput!, organisationId: String!): WorkflowTemplate!
   deleteAnnouncement(id: ID!): Announcement!
   deleteAttendanceSession(id: ID!): AttendanceSession!
+  deleteCareRequest(id: String!): Boolean!
   deleteCategory(id: ID!): Category!
+  deleteCounselingSession(id: String!): Boolean!
   deleteEmailTemplate(id: ID!): Boolean!
   deleteFile(id: String!): Boolean!
+  deleteFollowUpReminder(id: String!): Boolean!
   deleteLicense(id: ID!): Boolean!
   deleteMinistry(id: ID!): Boolean!
   deleteNotification(notificationId: ID!): Boolean!
   deleteOrganisation(id: ID!): Boolean!
+  deletePastoralVisit(id: String!): Boolean!
   deletePermission(id: ID!): Permission!
   deleteRole(id: ID!): Role!
   deleteSacramentalRecord(id: ID!): SacramentalRecord!
   deleteSmallGroup(id: ID!): Boolean!
+  deleteSubscriptionPlan(id: ID!): Boolean!
   deleteTemplate(id: ID!): Boolean!
+  deleteWorkflowTemplate(branchId: String, id: String!, organisationId: String!): Boolean!
+  disableOrganization(input: DisableOrganizationInput!): OrganizationWithSubscription!
+  enableOrganization(id: String!): OrganizationWithSubscription!
   forgotPassword(input: ForgotPasswordInput!): SuccessMessage!
   generateAbsenceAlerts(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
   generateQRToken(input: GenerateQRTokenInput!): QRCodeToken!
@@ -2491,29 +2931,36 @@ type Mutation {
   resetOnboarding(branchId: ID!): OnboardingProgress!
   resetPassword(newPassword: String!, token: String!): SuccessMessage!
   restoreBackup(input: RestoreBackupInput!): Backup!
+  retryWorkflowExecution(executionId: String!): WorkflowExecution!
   saveUserDashboardPreference(branchId: ID!, dashboardType: DashboardType!, layoutConfig: JSON!, organisationId: ID): UserDashboardPreference!
   scheduleAbsenceCheck(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
   sendEmail(input: SendEmailInput!): Boolean!
   sendSms(input: SendSmsInput!): Boolean!
   submitForm(input: CreateFormSubmissionInput!): FormSubmission!
+  syncSubscriptionPlanWithPaystack(id: ID!): SubscriptionPlan!
   transferMember(fromBranchId: String!, id: String!, reason: String, toBranchId: String!): Member!
+  triggerSubscriptionLifecycleCheck: SubscriptionLifecycleResult!
+  triggerWorkflow(input: TriggerWorkflowInput!): WorkflowExecution!
   update(updateSermonInput: UpdateSermonInput!): Sermon!
   updateAnnouncement(id: ID!, input: UpdateAnnouncementInput!): Announcement!
   updateAttendanceSession(input: UpdateAttendanceSessionInput!): AttendanceSession!
   updateBranch(id: ID!, updateBranchInput: UpdateBranchInput!): Branch!
   updateBranchSettings(branchId: ID!, input: UpdateBranchSettingsInput!): BranchSettings!
   updateBudget(updateBudgetInput: UpdateBudgetInput!): Budget!
+  updateCareRequest(input: UpdateCareRequestInput!): CareRequest!
   updateCategory(updateCategoryInput: UpdateCategoryInput!): Category!
   updateChild(input: UpdateChildInput!): Child!
   updateChildrenEvent(input: UpdateChildrenEventInput!): ChildrenEvent!
   updateChildrenMinistryVolunteer(input: UpdateVolunteerInput!): ChildrenMinistryVolunteer!
   updateContribution(updateContributionInput: UpdateContributionInput!): Contribution!
+  updateCounselingSession(input: UpdateCounselingSessionInput!): CounselingSession!
   updateEmailTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
   updateEvent(input: UpdateEventInput!): Event!
   updateExpense(updateExpenseInput: UpdateExpenseInput!): Expense!
   updateExpenseCategory(updateExpenseCategoryInput: UpdateExpenseCategoryInput!): ExpenseCategory!
   updateFamily(id: String!, updateFamilyInput: UpdateFamilyInput!): Family!
   updateFamilyRelationship(id: String!, updateFamilyRelationshipInput: UpdateFamilyRelationshipInput!): FamilyRelationship!
+  updateFollowUpReminder(input: UpdateFollowUpReminderInput!): FollowUpReminder!
   updateForm(input: UpdateFormInput!): Form!
   updateFormField(input: UpdateFormFieldInput!): FormField!
   updateFund(updateFundInput: UpdateFundInput!): Fund!
@@ -2525,6 +2972,7 @@ type Mutation {
   updateMemberStatus(id: String!, reason: String, status: MemberStatus!): Member!
   updateMinistry(id: ID!, input: UpdateMinistryInput!): Ministry!
   updateOrganisation(input: UpdateOrganisationInput!): Organisation!
+  updatePastoralVisit(input: UpdatePastoralVisitInput!): PastoralVisit!
   updatePermission(id: ID!, input: UpdatePermissionInput!): Permission!
   updatePledge(updatePledgeInput: UpdatePledgeInput!): Pledge!
   updatePrayerRequest(data: UpdatePrayerRequestInput!, id: ID!): PrayerRequest!
@@ -2536,14 +2984,18 @@ type Mutation {
   updateSmallGroup(id: ID!, input: UpdateSmallGroupInput!): SmallGroup!
   updateSpeaker(updateSpeakerInput: UpdateSpeakerInput!): Speaker!
   updateSpiritualMilestone(id: String!, updateSpiritualMilestoneInput: UpdateSpiritualMilestoneInput!): SpiritualMilestone!
+  updateSubscription(id: ID!, input: UpdateSubscriptionInput!): Subscription!
+  updateSubscriptionPlan(id: ID!, input: UpdatePlanDto!): SubscriptionPlan!
   updateTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
   updateTransaction(input: UpdateTransactionInput!): Transaction!
   updateTransferRequest(input: UpdateTransferRequestInput!): TransferRequest!
   updateUserActiveStatus(id: ID!, isActive: Boolean!): AuthUser!
   updateVendor(updateVendorInput: UpdateVendorInput!): Vendor!
+  updateWorkflowTemplate(branchId: String, id: String!, input: UpdateWorkflowTemplateInput!, organisationId: String!): WorkflowTemplate!
   uploadMemberImage(file: Upload!, memberId: String!): String!
   uploadOrganisationBrandingFile(file: Upload!, organisationId: ID!): String!
   uploadSacramentalCertificate(file: Upload!, recordId: ID!): SacramentalRecord!
+  verifyPaymentAndCreateSubscription(input: VerifyPaymentInput!): Subscription!
 }
 
 type MyGroupsWidget {
@@ -2676,6 +3128,59 @@ type OrganisationOverview {
   total: Float!
 }
 
+type OrganizationCounts {
+  branches: Int!
+  members: Int!
+  users: Int!
+}
+
+input OrganizationFilterInput {
+  limit: Int = 50
+  offset: Int = 0
+  search: String
+  status: String
+  subscriptionStatus: String
+}
+
+type OrganizationStats {
+  active: Int!
+  cancelled: Int!
+  inactive: Int!
+  suspended: Int!
+  total: Int!
+  trial: Int!
+}
+
+type OrganizationSubscriptionInfo {
+  amount: Int!
+  currentPeriodEnd: DateTime!
+  currentPeriodStart: DateTime!
+  id: ID!
+  planName: String!
+  status: String!
+}
+
+type OrganizationSubscriptionStatus {
+  daysUntilExpiry: Int
+  hasActiveSubscription: Boolean!
+  isInGracePeriod: Boolean
+  subscription: Subscription
+}
+
+type OrganizationWithSubscription {
+  _count: OrganizationCounts!
+  createdAt: DateTime!
+  email: String
+  id: ID!
+  name: String!
+  status: String!
+  subscription: OrganizationSubscriptionInfo
+  suspendedAt: DateTime
+  suspendedBy: String
+  suspensionReason: String
+  updatedAt: DateTime!
+}
+
 """Available output formats for reports"""
 enum OutputFormat {
   CSV
@@ -2722,6 +3227,118 @@ input PaginationInput {
   take: Int = 10
 }
 
+type PastorWorkload {
+  assignedCareRequests: [CareRequest!]!
+  assignedReminders: [FollowUpReminder!]!
+  stats: PastorWorkloadStats!
+  upcomingSessions: [CounselingSession!]!
+  upcomingVisits: [PastoralVisit!]!
+}
+
+type PastorWorkloadStats {
+  completionRate: Float
+  totalCareRequests: Float!
+  totalReminders: Float!
+  totalSessions: Float!
+  totalVisits: Float!
+}
+
+type PastoralCareActivity {
+  date: DateTime!
+  description: String
+  id: String!
+  memberName: String
+  pastorName: String
+  title: String!
+  type: String!
+}
+
+type PastoralCareDashboard {
+  dueTodayReminders: [FollowUpReminder!]!
+  overdueReminders: [FollowUpReminder!]!
+  stats: PastoralCareStats!
+  upcomingSessions: [CounselingSession!]!
+  upcomingVisits: [PastoralVisit!]!
+  urgentCareRequests: [CareRequest!]!
+}
+
+type PastoralCareStats {
+  completedSessions: Int!
+  completedVisits: Int!
+  openCareRequests: Int!
+  overdueReminders: Int!
+  pendingReminders: Int!
+  resolvedCareRequests: Int!
+  totalCareRequests: Int!
+  totalReminders: Int!
+  totalSessions: Int!
+  totalVisits: Int!
+  upcomingSessions: Int!
+  upcomingVisits: Int!
+}
+
+type PastoralVisit {
+  actualDate: DateTime
+  branchId: String
+  createdAt: DateTime!
+  createdBy: String!
+  description: String
+  followUpDate: DateTime
+  id: String!
+  location: String
+  memberId: String!
+  notes: String
+  organisationId: String!
+  pastorId: String!
+  scheduledDate: DateTime!
+  status: PastoralVisitStatus!
+  title: String!
+  updatedAt: DateTime!
+  visitType: PastoralVisitType!
+}
+
+input PastoralVisitFilterInput {
+  branchId: String
+  endDate: String
+  memberId: String
+  organisationId: String!
+  pastorId: String
+  startDate: String
+  status: PastoralVisitStatus
+  visitType: PastoralVisitType
+}
+
+enum PastoralVisitStatus {
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  RESCHEDULED
+  SCHEDULED
+}
+
+enum PastoralVisitType {
+  BEREAVEMENT_VISIT
+  COUNSELING_SESSION
+  EMERGENCY_VISIT
+  FOLLOW_UP_VISIT
+  HOME_VISIT
+  HOSPITAL_VISIT
+  OFFICE_MEETING
+  PHONE_CALL
+  PRAYER_VISIT
+  VIDEO_CALL
+}
+
+input PaymentFilterInput {
+  dateFrom: String
+  dateTo: String
+  organisationId: String
+  skip: Int = 0
+  status: PaymentStatus
+  subscriptionId: String
+  take: Int = 50
+}
+
 type PaymentMethod {
   branchId: String
   description: String
@@ -2729,6 +3346,15 @@ type PaymentMethod {
   isActive: Boolean!
   name: String!
   organisationId: String
+}
+
+"""Payment status (PENDING, SUCCESS, FAILED, etc.)"""
+enum PaymentStatus {
+  CANCELLED
+  FAILED
+  PENDING
+  REFUNDED
+  SUCCESSFUL
 }
 
 type Permission {
@@ -2743,6 +3369,17 @@ type Permission {
 
 """Phone number custom scalar type (E.164 format)"""
 scalar PhoneNumber
+
+input PlanFilterInput {
+  interval: SubscriptionInterval
+  isActive: Boolean
+  maxAmount: Float
+  minAmount: Float
+  organisationId: String
+  searchTerm: String
+  skip: Int = 0
+  take: Int = 50
+}
 
 type Pledge {
   amount: Float!
@@ -2809,6 +3446,7 @@ type Query {
   allAttendanceRecords(filter: AttendanceFilterInput): [AttendanceRecord!]!
   allMessages(filter: AllMessagesFilterInput): [MessageUnion!]!
   announcements(branchId: ID): [Announcement!]!
+  assigneeFollowUpReminders(assignedToId: String!, status: String): [FollowUpReminder!]!
   attendanceRecords(filter: AttendanceFilterInput, sessionId: ID): [AttendanceRecord!]!
   attendanceSession(id: ID!): AttendanceSession!
   attendanceSessions(branchId: ID, organisationId: ID): [AttendanceSession!]!
@@ -2827,6 +3465,9 @@ type Query {
   branches(filterInput: BranchFilterInput, paginationInput: PaginationInput): PaginatedBranches!
   budget(id: String!): Budget!
   budgets(organisationId: String): [Budget!]!
+  careRequest(id: String!): CareRequest!
+  careRequests(filter: CareRequestFilterInput!, skip: Int! = 0, take: Int! = 50): [CareRequest!]!
+  careRequestsCount(filter: CareRequestFilterInput!): Int!
   categories: [Category!]!
   category(id: ID!): Category
   checkInHistory(branchId: String!, childId: String, dateFrom: DateTime, dateTo: DateTime, eventId: String): [CheckInRecord!]!
@@ -2843,10 +3484,14 @@ type Query {
   contribution(id: String!): Contribution!
   contributionTypes(branchId: String, organisationId: String): [ContributionType!]!
   contributions(organisationId: String): [Contribution!]!
+  counselingSession(id: String!): CounselingSession!
+  counselingSessions(filter: CounselingSessionFilterInput!, skip: Int! = 0, take: Int! = 50): [CounselingSession!]!
+  counselingSessionsCount(filter: CounselingSessionFilterInput!): Int!
   currentChildrenEvents(branchId: String!): [ChildrenEvent!]!
   dashboardData(branchId: ID, dashboardType: DashboardType!, organisationId: ID): DashboardData!
   dataOperation(id: ID!): DataOperation!
   dataOperations(filter: DataOperationFilterInput): [DataOperation!]!
+  dueTodayFollowUpReminders: [FollowUpReminder!]!
   emailById(id: ID!): EmailMessageDto!
   emails(branchId: ID, organisationId: ID): [EmailMessageDto!]!
   event(id: ID!): Event!
@@ -2872,6 +3517,9 @@ type Query {
   findByType(branchId: String, type: String!): [MediaItem!]!
   findOne(id: ID!): Sermon!
   findRecent(branchId: String, limit: Float): [Sermon!]!
+  followUpReminder(id: String!): FollowUpReminder!
+  followUpReminders(filter: FollowUpReminderFilterInput!, skip: Int! = 0, take: Int! = 50): [FollowUpReminder!]!
+  followUpRemindersCount(filter: FollowUpReminderFilterInput!): Int!
   form(id: String!): Form!
   formField(id: String!): FormField!
   formFields(formId: String!): [FormField!]!
@@ -2884,8 +3532,10 @@ type Query {
   generateFundsImportTemplate: String!
   generateLicenseKey: String!
   generateMemberImportTemplate: String!
+  generateMemberReport(input: MemberReportInput!): MemberReport!
   generateReport(input: ReportRequestInput!): ReportOutput!
   getActiveSeries(branchId: String): [Series!]!
+  getSubscriptions(filter: SubscriptionFilterInput): [Subscription!]!
   groupMember(id: ID!): GroupMember!
   groupMembers(filters: GroupMemberFilterInput): [GroupMember!]!
   guardian(id: ID!): Guardian!
@@ -2900,8 +3550,10 @@ type Query {
   member(id: String!): Member!
   memberAttendanceHistory(memberId: ID!): [AttendanceRecord!]!
   memberByRfidCard(rfidCardId: String!): Member
+  memberCounselingSessions(includeConfidential: Boolean! = false, memberId: String!): [CounselingSession!]!
   memberDashboard(memberId: String!): MemberDashboard!
   memberDemographicsReport(branchId: ID, dateRange: DateRangeInput, organisationId: ID): MemberDemographicsData!
+  memberPastoralHistory(memberId: String!): MemberPastoralHistory!
   memberSearch(query: String!): [Member!]!
   memberStatistics(branchId: String, organisationId: String): MemberStatistics!
   members(branchId: String, hasRfidCard: Boolean, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
@@ -2909,15 +3561,31 @@ type Query {
   messagePerformanceMetrics(filter: CommunicationStatsFilterInput): MessagePerformanceEntity!
   ministries(filters: MinistryFilterInput): [Ministry!]!
   ministry(id: ID!): Ministry!
+  myCareRequests(status: String): [CareRequest!]!
+  myFollowUpReminders(status: String): [FollowUpReminder!]!
   notifications(branchId: ID, organisationId: ID): [NotificationDto!]!
   onboardingProgress(branchId: ID!): OnboardingProgress!
   organisation(id: ID!): Organisation
   organisations: [Organisation!]!
+  organizationStats: OrganizationStats!
+  organizationSubscriptionDetails(id: String!): OrganizationWithSubscription!
+  organizationSubscriptionStatus(organizationId: String!): OrganizationSubscriptionStatus!
+  overdueCareRequests: [CareRequest!]!
+  overdueFollowUpReminders: [FollowUpReminder!]!
   pastChildrenEvents(branchId: String!): [ChildrenEvent!]!
+  pastorCareRequests(pastorId: String!, status: String): [CareRequest!]!
+  pastorWorkload(pastorId: String!): PastorWorkload!
+  pastoralCareDashboard: PastoralCareDashboard!
+  pastoralCareRecentActivity(days: Int! = 7): [PastoralCareActivity!]!
+  pastoralCareStats: PastoralCareStats!
+  pastoralVisit(id: String!): PastoralVisit!
+  pastoralVisits(filter: PastoralVisitFilterInput!, skip: Int! = 0, take: Int! = 50): [PastoralVisit!]!
+  pastoralVisitsCount(filter: PastoralVisitFilterInput!): Int!
   paymentMethods(organisationId: String): [PaymentMethod!]!
   permissionsGroupedBySubject: [[Permission!]!]!
   pledge(id: String!): Pledge!
   pledges(organisationId: String): [Pledge!]!
+  popularSubscriptionPlans(limit: Float! = 5, organisationId: ID): [SubscriptionPlan!]!
   prayerRequest(id: ID!): PrayerRequest!
   prayerRequests(branchId: String, organisationId: String, status: PrayerRequestStatusEnum): [PrayerRequest!]!
   publicForm(slug: String!): Form!
@@ -2942,6 +3610,12 @@ type Query {
   spiritualMilestones(skip: Int = 0, take: Int = 10): [SpiritualMilestone!]!
   spiritualMilestonesByMember(memberId: String!): [SpiritualMilestone!]!
   spiritualMilestonesCount: Int!
+  subscription(id: ID!): Subscription!
+  subscriptionLifecycleStats: SubscriptionLifecycleStats!
+  subscriptionOrganizations(filter: OrganizationFilterInput): [OrganizationWithSubscription!]!
+  subscriptionPayments(filter: PaymentFilterInput): [SubscriptionPayment!]!
+  subscriptionPlan(id: ID!): SubscriptionPlan!
+  subscriptionPlans(filter: PlanFilterInput): [SubscriptionPlan!]!
   superAdminDashboardData(organisationId: ID): SuperAdminDashboardData!
   systemHealth: SystemHealth!
   template(id: ID!): EmailTemplateDto!
@@ -2952,6 +3626,8 @@ type Query {
   transferRequest(id: ID!): TransferRequest!
   transferRequests(filterInput: TransferRequestFilterInput, paginationInput: PaginationInput): PaginatedTransferRequests!
   upcomingChildrenEvents(branchId: String!): [ChildrenEvent!]!
+  upcomingCounselingSessions(counselorId: String, days: Int! = 7): [CounselingSession!]!
+  upcomingPastoralVisits(days: Int! = 7): [PastoralVisit!]!
   upcomingSacramentAnniversaries(branchId: ID, limit: Int): [SacramentAnniversaryOutput!]!
   userDashboardPreference(branchId: ID!, dashboardType: DashboardType!, organisationId: ID): UserDashboardPreference
   userNotifications(includeRead: Boolean = false, userId: ID!): [NotificationDto!]!
@@ -2960,6 +3636,11 @@ type Query {
   vendor(id: String!): Vendor!
   vendors(organisationId: String): [Vendor!]!
   volunteerSchedule(endDate: DateTime, id: ID!, startDate: DateTime): [VolunteerScheduleItem!]!
+  workflowExecution(branchId: String, id: String!, organisationId: String!): WorkflowExecution!
+  workflowExecutions(branchId: String, limit: Float! = 50, organisationId: String!, workflowId: String): [WorkflowExecution!]!
+  workflowStats(branchId: String, organisationId: String!): WorkflowStats!
+  workflowTemplate(branchId: String, id: String!, organisationId: String!): WorkflowTemplate!
+  workflowTemplates(branchId: String, filter: WorkflowFilterInput, organisationId: String!): [WorkflowTemplate!]!
 }
 
 type QuickLinkItem {
@@ -3344,6 +4025,122 @@ enum SubmissionStatus {
   REJECTED
 }
 
+type Subscription {
+  cancelAtPeriodEnd: Boolean!
+  cancelReason: String
+  cancelledAt: DateTime
+  createdAt: DateTime!
+  currentPeriodEnd: DateTime!
+  currentPeriodStart: DateTime!
+  customer: Organisation
+  customerId: String!
+  failedPaymentCount: Int!
+  id: ID!
+  lastPaymentDate: DateTime
+  metadata: JSON
+  nextBillingDate: DateTime
+  organisation: Organisation
+  organisationId: String!
+  payments: [SubscriptionPayment!]
+  paystackCustomerCode: String
+  paystackSubscriptionCode: String
+  plan: SubscriptionPlan
+  planId: String!
+  status: SubscriptionStatus!
+  trialEnd: DateTime
+  trialStart: DateTime
+  updatedAt: DateTime!
+}
+
+input SubscriptionFilterInput {
+  customerId: String
+  dateFrom: String
+  dateTo: String
+  organisationId: String
+  planId: String
+  skip: Int = 0
+  status: SubscriptionStatus
+  take: Int = 50
+}
+
+"""Subscription billing interval (DAILY, WEEKLY, MONTHLY, etc.)"""
+enum SubscriptionInterval {
+  DAILY
+  MONTHLY
+  QUARTERLY
+  WEEKLY
+  YEARLY
+}
+
+type SubscriptionLifecycleResult {
+  cancelledCount: Int!
+  expiredCount: Int!
+  warningsCount: Int!
+}
+
+type SubscriptionLifecycleStats {
+  activeSubscriptions: Int!
+  cancelledSubscriptions: Int!
+  expiringIn7Days: Int!
+  expiringIn30Days: Int!
+  pastDueSubscriptions: Int!
+  totalSubscriptions: Int!
+  trialSubscriptions: Int!
+}
+
+type SubscriptionPayment {
+  amount: Float!
+  authorizationCode: String
+  createdAt: DateTime!
+  currency: String!
+  failedAt: DateTime
+  failureReason: String
+  id: ID!
+  invoiceNumber: String
+  metadata: JSON
+  paidAt: DateTime
+  paystackReference: String
+  paystackTransactionId: String
+  periodEnd: DateTime!
+  periodStart: DateTime!
+  status: PaymentStatus!
+  subscription: Subscription
+  subscriptionId: String!
+  updatedAt: DateTime!
+}
+
+type SubscriptionPlan {
+  activeSubscriptionsCount: Int
+  amount: Float!
+  createdAt: DateTime!
+  currency: String!
+  description: String
+  features: [String!]
+  id: ID!
+  interval: SubscriptionInterval!
+  intervalCount: Int!
+  isActive: Boolean!
+  metadata: JSON
+  name: String!
+  organisation: Organisation
+  organisationId: String!
+  paystackPlanCode: String
+  subscriptions: [Subscription!]
+  trialPeriodDays: Int
+  updatedAt: DateTime!
+}
+
+"""Subscription status (ACTIVE, INACTIVE, CANCELLED, etc.)"""
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  PAST_DUE
+  PAUSED
+  TRIALING
+}
+
 type SuccessMessage {
   message: String!
 }
@@ -3513,6 +4310,14 @@ enum TransferStatus {
   REJECTED
 }
 
+input TriggerWorkflowInput {
+  targetData: String
+  targetEventId: String
+  targetMemberId: String
+  triggerData: String
+  workflowId: String!
+}
+
 type UniqueMembersStat {
   period: String!
   unique_members: Float!
@@ -3596,6 +4401,18 @@ input UpdateBudgetInput {
   totalAmount: Float
 }
 
+input UpdateCareRequestInput {
+  assignedPastorId: String
+  completionDate: String
+  description: String
+  id: String!
+  memberId: String
+  notes: String
+  priority: CareRequestPriority
+  requestType: CareRequestType
+  status: CareRequestStatus
+}
+
 input UpdateCategoryInput {
   id: String!
   name: String
@@ -3642,6 +4459,34 @@ input UpdateContributionInput {
   organisationId: String
   paymentMethodId: String
   pledgeId: String
+}
+
+input UpdateCounselingSessionInput {
+  branchId: String
+  counselorId: String
+  description: String
+  duration: Float
+  followUpDate: String
+  homework: String
+  id: String!
+  isConfidential: Boolean
+  isRecurring: Boolean
+  location: String
+  memberId: String
+  nextSteps: String
+  notes: String
+  organisationId: String
+  privateNotes: String
+  progressNotes: String
+  recurringPattern: String
+  scheduledDate: String
+  sessionNotes: String
+  sessionNumber: Float
+  sessionType: CounselingSessionType
+  status: CounselingSessionStatus
+  title: String
+  topic: String
+  totalSessions: Float
 }
 
 input UpdateEmailTemplateInput {
@@ -3713,6 +4558,19 @@ input UpdateFamilyRelationshipInput {
   memberId: ID
   relatedMemberId: ID
   relationshipType: FamilyRelationshipType
+}
+
+input UpdateFollowUpReminderInput {
+  assignedToId: String
+  description: String
+  dueDate: String
+  followUpType: FollowUpType
+  id: String!
+  memberId: String
+  notes: String
+  reminderDate: String
+  status: FollowUpStatus
+  title: String
 }
 
 input UpdateFormFieldInput {
@@ -3871,10 +4729,40 @@ input UpdateOrganisationInput {
   zipCode: String
 }
 
+input UpdatePastoralVisitInput {
+  description: String
+  followUpDate: String
+  id: String!
+  location: String
+  memberId: String
+  notes: String
+  pastorId: String
+  scheduledDate: String
+  status: PastoralVisitStatus
+  title: String
+  visitType: PastoralVisitType
+}
+
 input UpdatePermissionInput {
   action: String
   description: String
   subject: String
+}
+
+input UpdatePlanDto {
+  amount: Float
+  currency: String
+  description: String
+  features: [String!]
+  interval: SubscriptionInterval
+  intervalCount: Int
+  invoiceLimit: Int
+  isActive: Boolean
+  metadata: JSON
+  name: String
+  sendInvoices: Boolean
+  sendSms: Boolean
+  trialPeriodDays: Int
 }
 
 input UpdatePledgeInput {
@@ -3995,6 +4883,13 @@ input UpdateSpiritualMilestoneInput {
   type: MilestoneType
 }
 
+input UpdateSubscriptionInput {
+  cancelAtPeriodEnd: Boolean
+  cancelReason: String
+  metadata: JSON
+  status: SubscriptionStatus
+}
+
 input UpdateTransactionInput {
   amount: Float
   branchId: String
@@ -4035,6 +4930,14 @@ input UpdateVolunteerInput {
   memberId: String
   role: String
   trainingCompleted: Boolean = false
+}
+
+input UpdateWorkflowTemplateInput {
+  actions: [WorkflowActionInput!]
+  description: String
+  name: String
+  status: WorkflowStatus
+  triggerConfig: String
 }
 
 """The `Upload` scalar type represents a file upload."""
@@ -4129,6 +5032,14 @@ type Vendor {
   organisationId: String
 }
 
+input VerifyPaymentInput {
+  contactEmail: String
+  contactName: String
+  organizationId: String!
+  planId: String!
+  reference: String!
+}
+
 type VisitorsStat {
   period: String!
   visitors: Float!
@@ -4166,4 +5077,139 @@ enum WidgetType {
   RECENT_SACRAMENTS
   TASKS
   UPCOMING_EVENTS
+}
+
+type WorkflowAction {
+  actionConfig: String!
+  actionType: WorkflowActionType!
+  conditions: String
+  createdAt: DateTime!
+  delayMinutes: Float
+  id: ID!
+  stepNumber: Float!
+  updatedAt: DateTime!
+  workflowId: String!
+}
+
+type WorkflowActionExecution {
+  action: WorkflowAction
+  actionId: String!
+  completedAt: DateTime
+  createdAt: DateTime!
+  errorMessage: String
+  executionId: String!
+  id: ID!
+  result: String
+  startedAt: DateTime
+  status: WorkflowExecutionStatus!
+  updatedAt: DateTime!
+}
+
+input WorkflowActionInput {
+  actionConfig: String!
+  actionType: String!
+  conditions: String
+  delayMinutes: Float
+}
+
+enum WorkflowActionType {
+  CREATE_TASK
+  SEND_EMAIL
+  SEND_NOTIFICATION
+  SEND_SMS
+  UPDATE_MEMBER_STATUS
+  WAIT_DELAY
+}
+
+type WorkflowExecution {
+  actionExecutions: [WorkflowActionExecution!]
+  branchId: String
+  completedAt: DateTime
+  createdAt: DateTime!
+  duration: Float
+  errorMessage: String
+  id: ID!
+  organisationId: String!
+  startedAt: DateTime
+  status: WorkflowExecutionStatus!
+  targetData: String
+  targetEventId: String
+  targetMemberId: String
+  triggerData: String
+  triggeredBy: String
+  updatedAt: DateTime!
+  workflow: WorkflowTemplate
+  workflowId: String!
+}
+
+enum WorkflowExecutionStatus {
+  CANCELLED
+  COMPLETED
+  FAILED
+  PENDING
+  RUNNING
+}
+
+input WorkflowFilterInput {
+  branchId: String
+  organisationId: String
+  searchTerm: String
+  status: WorkflowStatus
+  type: WorkflowType
+}
+
+type WorkflowStats {
+  activeWorkflows: Float!
+  averageExecutionTime: Float!
+  executionsThisMonth: Float!
+  executionsThisWeek: Float!
+  executionsToday: Float!
+  failedExecutions: Float!
+  successfulExecutions: Float!
+  totalExecutions: Float!
+  totalWorkflows: Float!
+}
+
+enum WorkflowStatus {
+  ACTIVE
+  DELETED
+  INACTIVE
+  PAUSED
+}
+
+type WorkflowTemplate {
+  actions: [WorkflowAction!]!
+  branchId: String
+  createdAt: DateTime!
+  createdBy: String!
+  description: String
+  executionCount: Float
+  executions: [WorkflowExecution!]
+  id: ID!
+  name: String!
+  organisationId: String!
+  status: WorkflowStatus!
+  successRate: Float
+  triggerConfig: String
+  triggerType: WorkflowTriggerType!
+  type: WorkflowType!
+  updatedAt: DateTime!
+}
+
+enum WorkflowTriggerType {
+  ATTENDANCE_RECORDED
+  CUSTOM_DATE
+  DONATION_RECEIVED
+  EVENT_APPROACHING
+  EVENT_CREATED
+  MEMBERSHIP_EXPIRING
+  MEMBER_CREATED
+  MEMBER_UPDATED
+}
+
+enum WorkflowType {
+  DONATION_ACKNOWLEDGMENT
+  EVENT_REMINDER
+  FOLLOW_UP
+  MEMBERSHIP_RENEWAL
 }

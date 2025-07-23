@@ -10,15 +10,17 @@ import { join } from 'path';
 import { Parser as Json2CsvParser } from 'json2csv';
 import * as ExcelJS from 'exceljs';
 import { ConfigService } from '@nestjs/config';
+import { WorkflowsService } from '../workflows/services/workflows.service';
 
 @Injectable()
 export class TransactionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly workflowsService: WorkflowsService,
   ) {}
 
-  create(data: CreateTransactionInput) {
+  async create(data: CreateTransactionInput) {
     console.log('gddgedggded', data);
     // Defensive: ensure type is a valid TransactionType enum value
     if (!data.type || !Object.values(TransactionType).includes(data.type)) {
@@ -40,7 +42,7 @@ export class TransactionService {
       metadata,
     } = data;
 
-    return this.prisma.transaction.create({
+    const transaction = await this.prisma.transaction.create({
       data: {
         type,
         amount: new Prisma.Decimal(amount),
@@ -58,6 +60,23 @@ export class TransactionService {
         ...(eventId && { event: { connect: { id: eventId } } }),
       },
     });
+
+    // Trigger workflow automation for CONTRIBUTION transactions
+    if (type === TransactionType.CONTRIBUTION) {
+      try {
+        await this.workflowsService.handleDonationReceived(
+          transaction.id,
+          organisationId,
+          branchId,
+        );
+      } catch (error) {
+        console.warn(
+          `Failed to trigger donation received workflow for transaction ${transaction.id}: ${error.message}`,
+        );
+      }
+    }
+
+    return transaction;
   }
 
   async findAll(params: {

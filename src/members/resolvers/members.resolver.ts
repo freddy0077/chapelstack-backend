@@ -1,6 +1,9 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { MembersService } from '../services/members.service';
+import { MemberReportsService } from '../services/member-reports.service';
 import { Member } from '../entities/member.entity';
+import { MemberReport } from '../entities/member-report.entity';
+import { MemberReportInput } from '../dto/member-report.input';
 import { AssignRfidCardInput } from '../dto/assign-rfid-card.input';
 import { CreateMemberInput } from '../dto/create-member.input';
 import { UpdateMemberInput } from '../dto/update-member.input';
@@ -23,6 +26,7 @@ import { FileUpload, GraphQLUpload } from 'graphql-upload';
 export class MembersResolver {
   constructor(
     private readonly membersService: MembersService,
+    private readonly memberReportsService: MemberReportsService,
     private readonly prisma: PrismaService,
     private readonly s3UploadService: S3UploadService,
   ) {}
@@ -293,5 +297,18 @@ export class MembersResolver {
     @Args('memberId', { type: () => String }, ParseUUIDPipe) memberId: string,
   ): Promise<MemberDashboard> {
     return this.membersService.getMemberDashboard(memberId);
+  }
+
+  @Query(() => MemberReport)
+  @UseGuards(GqlAuthGuard)
+  async generateMemberReport(
+    @Args('input') input: MemberReportInput,
+    @CurrentUser() user: User,
+  ): Promise<MemberReport> {
+    // Apply organization/branch filtering based on user roles
+    // Note: User entity doesn't have branchId/organisationId, so we'll let the service handle filtering
+    // based on the input parameters provided by the frontend
+
+    return this.memberReportsService.generateMemberReport(input);
   }
 }

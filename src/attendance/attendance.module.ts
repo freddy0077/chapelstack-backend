@@ -7,9 +7,10 @@ import { AttendanceReportsService } from './attendance-reports.service';
 import { FileGenerationService } from './file-generation.service';
 import { ReportsController } from './reports.controller';
 import { PrismaModule } from '../prisma/prisma.module';
+import { WorkflowsModule } from '../workflows/workflows.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, WorkflowsModule],
   controllers: [ReportsController],
   providers: [
     AttendanceResolver,

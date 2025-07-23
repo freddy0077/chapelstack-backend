@@ -151,6 +151,63 @@ export class AuthService {
       throw new UnauthorizedException('User account is inactive.');
     }
 
+    // Check organization subscription status before allowing login
+    // Skip subscription validation for SUBSCRIPTION_MANAGER role
+    const isSubscriptionManager = user.roles.some(
+      (role) => role.name === 'SUBSCRIPTION_MANAGER',
+    );
+
+    if (!isSubscriptionManager && user.organisationId) {
+      // Get organization subscription status
+      const subscription = await this.prisma.subscription.findFirst({
+        where: {
+          organisationId: user.organisationId,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          plan: true,
+        },
+      });
+
+      if (subscription) {
+        const now = new Date();
+        const currentPeriodEnd = new Date(subscription.currentPeriodEnd);
+        const trialEnd = subscription.trialEnd
+          ? new Date(subscription.trialEnd)
+          : null;
+
+        // Check if subscription is expired
+        const isSubscriptionExpired = now > currentPeriodEnd;
+        const isTrialExpired = trialEnd && now > trialEnd;
+
+        // Block login for expired subscriptions (no grace period)
+        if (
+          subscription.status === 'CANCELLED' ||
+          (subscription.status === 'TRIALING' && isTrialExpired) ||
+          (subscription.status === 'ACTIVE' && isSubscriptionExpired) ||
+          subscription.status === 'PAST_DUE'
+        ) {
+          const subscriptionStatusMessage =
+            subscription.status === 'CANCELLED'
+              ? "Your organization's subscription has been cancelled."
+              : subscription.status === 'TRIALING' && isTrialExpired
+                ? "Your organization's trial period has expired."
+                : "Your organization's subscription has expired.";
+
+          throw new UnauthorizedException(
+            `${subscriptionStatusMessage} Please contact your administrator to renew the subscription.`,
+          );
+        }
+      } else {
+        // No subscription found - block access
+        throw new UnauthorizedException(
+          'Your organization does not have an active subscription. Please contact your administrator.',
+        );
+      }
+    }
+
     const accessToken = this._generateAccessToken(user);
     const refreshToken = await this._createAndStoreRefreshToken(user.id);
 

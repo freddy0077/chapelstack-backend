@@ -15,7 +15,8 @@ export class FileGenerationService {
   private readonly backendBaseUrl: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.backendBaseUrl = this.configService.get<string>('BASE_URL') || 'http://localhost:3003';
+    this.backendBaseUrl =
+      this.configService.get<string>('BASE_URL') || 'http://localhost:3003';
     // Ensure uploads directory exists
     if (!fs.existsSync(this.uploadsDir)) {
       fs.mkdirSync(this.uploadsDir, { recursive: true });

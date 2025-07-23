@@ -8,7 +8,7 @@ import { Prisma } from '@prisma/client';
 export class ContributionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createContributionInput: CreateContributionInput) {
+  async create(createContributionInput: CreateContributionInput) {
     const {
       contributionTypeId,
       fundId,
@@ -39,7 +39,9 @@ export class ContributionsService {
       data.member = { connect: { id: memberId } };
     }
 
-    return this.prisma.contribution.create({ data });
+    const contribution = await this.prisma.contribution.create({ data });
+
+    return contribution;
   }
 
   findAll(organisationId?: string) {

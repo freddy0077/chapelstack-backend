@@ -14,8 +14,11 @@ import { AssignRfidCardInput } from '../dto/assign-rfid-card.input';
 import {
   MemberStatistics,
   MemberStatisticsPeriod,
+  MemberAgeGroup,
 } from '../dto/member-statistics.output';
+import { GenderDistribution } from '../../reporting/entities/member-demographics-data.entity';
 import { MemberDashboard } from '../dto/member-dashboard.dto';
+import { WorkflowsService } from '../../workflows/services/workflows.service';
 
 @Injectable()
 export class MembersService {
@@ -42,6 +45,7 @@ export class MembersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService,
+    private readonly workflowsService: WorkflowsService,
   ) {}
 
   async createMember(data: {
@@ -81,6 +85,19 @@ export class MembersService {
         description: `Created member: ${member.firstName} ${member.lastName} via user creation flow.`,
         userId: data.userId,
       });
+
+      // Trigger workflow automation for new member
+      try {
+        await this.workflowsService.handleMemberCreated(
+          member.id,
+          member.organisationId || '',
+          member.branchId || undefined,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to trigger member created workflow for member ${member.id}: ${error.message}`,
+        );
+      }
 
       return member as unknown as Member;
     } catch (error) {
@@ -244,6 +261,19 @@ export class MembersService {
         ipAddress,
         userAgent,
       });
+
+      // Trigger workflow automation for new member
+      try {
+        await this.workflowsService.handleMemberCreated(
+          member.id,
+          member.organisationId || '',
+          member.branchId || undefined,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to trigger member created workflow for member ${member.id}: ${error.message}`,
+        );
+      }
 
       return member as unknown as Member;
     } catch (error) {
@@ -524,6 +554,19 @@ export class MembersService {
         userAgent,
       });
 
+      // Trigger workflow automation for member update
+      try {
+        await this.workflowsService.handleMemberUpdated(
+          updatedMember.id,
+          updatedMember.organisationId || '',
+          updatedMember.branchId || undefined,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to trigger member updated workflow for member ${updatedMember.id}: ${error.message}`,
+        );
+      }
+
       return updatedMember as unknown as Member;
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -531,272 +574,6 @@ export class MembersService {
       }
       this.logger.error(
         `Error updating member: ${(error as Error).message}`,
-        (error as Error).stack,
-      );
-      throw error;
-    }
-  }
-
-  async remove(
-    id: string,
-    userId?: string,
-    ipAddress?: string,
-    userAgent?: string,
-  ): Promise<boolean> {
-    try {
-      // Check if member exists
-      const member = await this.prisma.member.findUnique({
-        where: { id },
-      });
-
-      if (!member) {
-        throw new NotFoundException(`Member with ID ${id} not found`);
-      }
-
-      // Delete member
-      await this.prisma.member.delete({
-        where: { id },
-      });
-
-      // Log the action
-      await this.auditLogService.create({
-        action: 'DELETE',
-        entityType: 'Member',
-        entityId: id,
-        description: `Deleted member: ${member.firstName} ${member.lastName}`,
-        userId,
-        ipAddress,
-        userAgent,
-      });
-
-      return true;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        `Error deleting member: ${(error as Error).message}`,
-        (error as Error).stack,
-      );
-      throw error;
-    }
-  }
-
-  async addMemberToBranch(
-    memberId: string,
-    branchId: string,
-    userId?: string,
-    ipAddress?: string,
-    userAgent?: string,
-  ): Promise<Member> {
-    try {
-      // Check if member exists
-      const member = await this.prisma.member.findUnique({
-        where: { id: memberId },
-      });
-
-      if (!member) {
-        throw new NotFoundException(`Member with ID ${memberId} not found`);
-      }
-
-      // Check if branch exists
-      const branch = await this.prisma.branch.findUnique({
-        where: { id: branchId },
-      });
-
-      if (!branch) {
-        throw new NotFoundException(`Branch with ID ${branchId} not found`);
-      }
-
-      // Update member with branch
-      const updatedMember = await this.prisma.member.update({
-        where: { id: memberId },
-        data: {
-          branchId: branchId,
-        },
-        include: {
-          branch: true,
-          spouse: true,
-          parent: true,
-          children: true,
-          spiritualMilestones: true,
-          families: true,
-          prayerRequests: true,
-          contributions: true,
-        },
-      });
-
-      // Log the action
-      await this.auditLogService.create({
-        action: 'ADD_TO_BRANCH',
-        entityType: 'Member',
-        entityId: memberId,
-        description: `Added member ${member.firstName} ${member.lastName} to branch ${branch.name}`,
-        userId,
-        ipAddress,
-        userAgent,
-        branchId,
-      });
-
-      return updatedMember as unknown as Member;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        `Error adding member to branch: ${(error as Error).message}`,
-        (error as Error).stack,
-      );
-      throw error;
-    }
-  }
-
-  async removeMemberFromBranch(
-    memberId: string,
-    branchId: string,
-    userId?: string,
-    ipAddress?: string,
-    userAgent?: string,
-  ): Promise<Member> {
-    try {
-      // Check if member exists
-      const member = await this.prisma.member.findUnique({
-        where: { id: memberId },
-      });
-
-      if (!member) {
-        throw new NotFoundException(`Member with ID ${memberId} not found`);
-      }
-
-      // Check if branch exists
-      const branch = await this.prisma.branch.findUnique({
-        where: { id: branchId },
-      });
-
-      if (!branch) {
-        throw new NotFoundException(`Branch with ID ${branchId} not found`);
-      }
-
-      // Remove branch from member
-      const updatedMember = await this.prisma.member.update({
-        where: { id: memberId },
-        data: {
-          branchId: null,
-        },
-        include: {
-          branch: true,
-          spouse: true,
-          parent: true,
-          children: true,
-          spiritualMilestones: true,
-          families: true,
-          prayerRequests: true,
-          contributions: true,
-        },
-      });
-
-      // Log the action
-      await this.auditLogService.create({
-        action: 'REMOVE_FROM_BRANCH',
-        entityType: 'Member',
-        entityId: memberId,
-        description: `Removed member ${member.firstName} ${member.lastName} from branch ${branch.name}`,
-        userId,
-        ipAddress,
-        userAgent,
-        branchId,
-      });
-
-      return updatedMember as unknown as Member;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        `Error removing member from branch: ${(error as Error).message}`,
-        (error as Error).stack,
-      );
-      throw error;
-    }
-  }
-
-  async transferMember(
-    memberId: string,
-    fromBranchId: string,
-    toBranchId: string,
-    reason?: string,
-    userId?: string,
-    ipAddress?: string,
-    userAgent?: string,
-  ): Promise<Member> {
-    try {
-      // Check if member exists
-      const member = await this.prisma.member.findUnique({
-        where: { id: memberId },
-      });
-
-      if (!member) {
-        throw new NotFoundException(`Member with ID ${memberId} not found`);
-      }
-
-      // Check if source branch exists
-      const fromBranch = await this.prisma.branch.findUnique({
-        where: { id: fromBranchId },
-      });
-
-      if (!fromBranch) {
-        throw new NotFoundException(
-          `Source branch with ID ${fromBranchId} not found`,
-        );
-      }
-
-      // Check if destination branch exists
-      const toBranch = await this.prisma.branch.findUnique({
-        where: { id: toBranchId },
-      });
-
-      if (!toBranch) {
-        throw new NotFoundException(
-          `Destination branch with ID ${toBranchId} not found`,
-        );
-      }
-
-      // Transfer member
-      const updatedMember = await this.prisma.member.update({
-        where: { id: memberId },
-        data: {
-          branchId: toBranchId,
-        },
-        include: {
-          branch: true,
-          spouse: true,
-          parent: true,
-          children: true,
-          spiritualMilestones: true,
-          families: true,
-          prayerRequests: true,
-          contributions: true,
-        },
-      });
-
-      // Log the action
-      await this.auditLogService.create({
-        action: 'TRANSFER',
-        entityType: 'Member',
-        entityId: memberId,
-        description: `Transferred member ${member.firstName} ${member.lastName} from branch ${fromBranch.name} to ${toBranch.name}`,
-        userId,
-        ipAddress,
-        userAgent,
-      });
-
-      return updatedMember as unknown as Member;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        `Error transferring member: ${(error as Error).message}`,
         (error as Error).stack,
       );
       throw error;
@@ -851,6 +628,19 @@ export class MembersService {
         ipAddress,
         userAgent,
       });
+
+      // Trigger workflow automation for member status update
+      try {
+        await this.workflowsService.handleMemberUpdated(
+          updatedMember.id,
+          updatedMember.organisationId || '',
+          updatedMember.branchId || undefined,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to trigger member status updated workflow for member ${updatedMember.id}: ${error.message}`,
+        );
+      }
 
       return updatedMember as unknown as Member;
     } catch (error) {
@@ -1146,15 +936,16 @@ export class MembersService {
       };
     };
 
-    const now = new Date();
+    // Current month
+    const currentDate = new Date();
     const currentMonthStartDate = new Date(
-      now.getFullYear(),
-      now.getMonth(),
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
       1,
     );
     const currentMonthEndDate = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
       0,
       23,
       59,
@@ -1162,7 +953,12 @@ export class MembersService {
       999,
     );
 
-    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    // Previous month
+    const prevMonthDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() - 1,
+      1,
+    );
     const prevMonthStartDate = new Date(
       prevMonthDate.getFullYear(),
       prevMonthDate.getMonth(),
@@ -1189,15 +985,158 @@ export class MembersService {
       prevMonthEndDate,
     );
 
-    const [currentMonthStats, lastMonthStats] = await Promise.all([
+    // Calculate additional statistics
+    const genderStatsPromise = this.getGenderDistribution(baseWhere);
+    const averageAgePromise = this.calculateAverageAge(baseWhere);
+    const ageGroupsPromise = this.getAgeGroups(baseWhere);
+
+    const [
+      currentMonthStats,
+      lastMonthStats,
+      genderStats,
+      averageAge,
+      ageGroups,
+    ] = await Promise.all([
       currentMonthStatsPromise,
       lastMonthStatsPromise,
+      genderStatsPromise,
+      averageAgePromise,
+      ageGroupsPromise,
     ]);
+
+    // Calculate growth rate
+    const growthRate =
+      lastMonthStats.totalMembers > 0
+        ? ((currentMonthStats.totalMembers - lastMonthStats.totalMembers) /
+            lastMonthStats.totalMembers) *
+          100
+        : 0;
+
+    // Calculate retention rate (simplified - active members / total members)
+    const retentionRate =
+      currentMonthStats.totalMembers > 0
+        ? (currentMonthStats.activeMembers / currentMonthStats.totalMembers) *
+          100
+        : 0;
+
+    // Calculate conversion rate (new members / visitors)
+    const conversionRate =
+      currentMonthStats.visitorsInPeriod > 0
+        ? (currentMonthStats.newMembersInPeriod /
+            currentMonthStats.visitorsInPeriod) *
+          100
+        : 0;
 
     return {
       ...currentMonthStats,
+      growthRate,
+      retentionRate,
+      conversionRate,
+      averageAge,
+      genderDistribution: genderStats,
+      ageGroups,
       lastMonth: lastMonthStats,
     };
+  }
+
+  private async getGenderDistribution(
+    whereClause: Prisma.MemberWhereInput,
+  ): Promise<GenderDistribution> {
+    const [maleCount, femaleCount, otherCount] = await Promise.all([
+      this.count({ ...whereClause, gender: 'MALE' }),
+      this.count({ ...whereClause, gender: 'FEMALE' }),
+      this.count({ ...whereClause, gender: 'OTHER' }),
+    ]);
+
+    const total = maleCount + femaleCount + otherCount;
+
+    return {
+      maleCount,
+      femaleCount,
+      otherCount,
+      malePercentage: total > 0 ? (maleCount / total) * 100 : 0,
+      femalePercentage: total > 0 ? (femaleCount / total) * 100 : 0,
+      otherPercentage: total > 0 ? (otherCount / total) * 100 : 0,
+    };
+  }
+
+  private async calculateAverageAge(
+    whereClause: Prisma.MemberWhereInput,
+  ): Promise<number> {
+    const members = await this.prisma.member.findMany({
+      where: {
+        ...whereClause,
+        dateOfBirth: {
+          not: null,
+        },
+      },
+      select: {
+        dateOfBirth: true,
+      },
+    });
+
+    if (members.length === 0) return 0;
+
+    const totalAge = members.reduce((sum, member) => {
+      if (member.dateOfBirth) {
+        const age =
+          new Date().getFullYear() - new Date(member.dateOfBirth).getFullYear();
+        return sum + age;
+      }
+      return sum;
+    }, 0);
+
+    return totalAge / members.length;
+  }
+
+  private async getAgeGroups(
+    whereClause: Prisma.MemberWhereInput,
+  ): Promise<MemberAgeGroup[]> {
+    const members = await this.prisma.member.findMany({
+      where: {
+        ...whereClause,
+        dateOfBirth: {
+          not: null,
+        },
+      },
+      select: {
+        dateOfBirth: true,
+      },
+    });
+
+    const ageGroups = {
+      '18-25': 0,
+      '26-35': 0,
+      '36-50': 0,
+      '51+': 0,
+    };
+
+    members.forEach((member) => {
+      if (member.dateOfBirth) {
+        const age =
+          new Date().getFullYear() - new Date(member.dateOfBirth).getFullYear();
+        if (age >= 18 && age <= 25) {
+          ageGroups['18-25']++;
+        } else if (age >= 26 && age <= 35) {
+          ageGroups['26-35']++;
+        } else if (age >= 36 && age <= 50) {
+          ageGroups['36-50']++;
+        } else if (age >= 51) {
+          ageGroups['51+']++;
+        }
+      }
+    });
+
+    const total = Object.values(ageGroups).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
+
+    return Object.entries(ageGroups).map(([range, count]) => ({
+      range,
+      count,
+      percentage: total > 0 ? (count / total) * 100 : 0,
+    }));
   }
 
   async getMemberDashboard(memberId: string): Promise<MemberDashboard> {
@@ -1282,5 +1221,271 @@ export class MembersService {
         confirmationDate: member.confirmationDate ?? undefined,
       },
     };
+  }
+
+  async remove(
+    id: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    try {
+      // Check if member exists
+      const member = await this.prisma.member.findUnique({
+        where: { id },
+      });
+
+      if (!member) {
+        throw new NotFoundException(`Member with ID ${id} not found`);
+      }
+
+      // Delete member
+      await this.prisma.member.delete({
+        where: { id },
+      });
+
+      // Log the action
+      await this.auditLogService.create({
+        action: 'DELETE',
+        entityType: 'Member',
+        entityId: id,
+        description: `Deleted member: ${member.firstName} ${member.lastName}`,
+        userId,
+        ipAddress,
+        userAgent,
+      });
+
+      return true;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error deleting member: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  async transferMember(
+    memberId: string,
+    fromBranchId: string,
+    toBranchId: string,
+    reason?: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<Member> {
+    try {
+      // Check if member exists
+      const member = await this.prisma.member.findUnique({
+        where: { id: memberId },
+      });
+
+      if (!member) {
+        throw new NotFoundException(`Member with ID ${memberId} not found`);
+      }
+
+      // Check if source branch exists
+      const fromBranch = await this.prisma.branch.findUnique({
+        where: { id: fromBranchId },
+      });
+
+      if (!fromBranch) {
+        throw new NotFoundException(
+          `Source branch with ID ${fromBranchId} not found`,
+        );
+      }
+
+      // Check if destination branch exists
+      const toBranch = await this.prisma.branch.findUnique({
+        where: { id: toBranchId },
+      });
+
+      if (!toBranch) {
+        throw new NotFoundException(
+          `Destination branch with ID ${toBranchId} not found`,
+        );
+      }
+
+      // Transfer member
+      const updatedMember = await this.prisma.member.update({
+        where: { id: memberId },
+        data: {
+          branchId: toBranchId,
+        },
+        include: {
+          branch: true,
+          spouse: true,
+          parent: true,
+          children: true,
+          spiritualMilestones: true,
+          families: true,
+          prayerRequests: true,
+          contributions: true,
+        },
+      });
+
+      // Log the action
+      await this.auditLogService.create({
+        action: 'TRANSFER',
+        entityType: 'Member',
+        entityId: memberId,
+        description: `Transferred member ${member.firstName} ${member.lastName} from branch ${fromBranch.name} to ${toBranch.name}`,
+        userId,
+        ipAddress,
+        userAgent,
+      });
+
+      return updatedMember as unknown as Member;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error transferring member: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  async addMemberToBranch(
+    memberId: string,
+    branchId: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<Member> {
+    try {
+      // Check if member exists
+      const member = await this.prisma.member.findUnique({
+        where: { id: memberId },
+      });
+
+      if (!member) {
+        throw new NotFoundException(`Member with ID ${memberId} not found`);
+      }
+
+      // Check if branch exists
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: branchId },
+      });
+
+      if (!branch) {
+        throw new NotFoundException(`Branch with ID ${branchId} not found`);
+      }
+
+      // Update member with branch
+      const updatedMember = await this.prisma.member.update({
+        where: { id: memberId },
+        data: {
+          branchId: branchId,
+        },
+        include: {
+          branch: true,
+          spouse: true,
+          parent: true,
+          children: true,
+          spiritualMilestones: true,
+          families: true,
+          prayerRequests: true,
+          contributions: true,
+        },
+      });
+
+      // Log the action
+      await this.auditLogService.create({
+        action: 'ADD_TO_BRANCH',
+        entityType: 'Member',
+        entityId: memberId,
+        description: `Added member ${member.firstName} ${member.lastName} to branch ${branch.name}`,
+        userId,
+        ipAddress,
+        userAgent,
+        branchId,
+      });
+
+      return updatedMember as unknown as Member;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error adding member to branch: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  async removeMemberFromBranch(
+    memberId: string,
+    branchId: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<Member> {
+    try {
+      // Check if member exists
+      const member = await this.prisma.member.findUnique({
+        where: { id: memberId },
+      });
+
+      if (!member) {
+        throw new NotFoundException(`Member with ID ${memberId} not found`);
+      }
+
+      // Check if branch exists
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: branchId },
+      });
+
+      if (!branch) {
+        throw new NotFoundException(`Branch with ID ${branchId} not found`);
+      }
+
+      // Remove branch from member
+      const updatedMember = await this.prisma.member.update({
+        where: { id: memberId },
+        data: {
+          branchId: null,
+        },
+        include: {
+          branch: true,
+          spouse: true,
+          parent: true,
+          children: true,
+          spiritualMilestones: true,
+          families: true,
+          prayerRequests: true,
+          contributions: true,
+        },
+      });
+
+      // Log the action
+      await this.auditLogService.create({
+        action: 'REMOVE_FROM_BRANCH',
+        entityType: 'Member',
+        entityId: memberId,
+        description: `Removed member ${member.firstName} ${member.lastName} from branch ${branch.name}`,
+        userId,
+        ipAddress,
+        userAgent,
+        branchId,
+      });
+
+      return updatedMember as unknown as Member;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error removing member from branch: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
   }
 }

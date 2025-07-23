@@ -1,5 +1,6 @@
 import { Module, Logger } from '@nestjs/common';
 Logger.overrideLogger(['log', 'error', 'warn', 'debug', 'verbose']);
+import { BullModule } from '@nestjs/bull';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -42,6 +43,9 @@ import { ContributionTypesModule } from './contribution-types/contribution-types
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { TransactionModule } from './finance/transaction.module';
 import { TransfersModule } from './transfers/transfers.module';
+import { WorkflowsModule } from './workflows/workflows.module';
+import { PastoralCareModule } from './pastoral-care/pastoral-care.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 import { registerEnumType } from '@nestjs/graphql';
 
@@ -51,6 +55,12 @@ registerEnumType(AttendanceStatsPeriod, {
 
 @Module({
   imports: [
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      },
+    }),
     OnboardingModule,
     ConfigModule.forRoot({ isGlobal: true }),
     BaseModule,
@@ -98,6 +108,9 @@ registerEnumType(AttendanceStatsPeriod, {
     PaymentMethodsModule,
     TransactionModule,
     TransfersModule,
+    WorkflowsModule,
+    PastoralCareModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppResolver],

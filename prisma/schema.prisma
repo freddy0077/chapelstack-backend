@@ -71,6 +71,23 @@ model User {
   transactions              Transaction[]             @relation("UserTransactions")
   passwordResetToken        String?                   @db.VarChar(255)
   passwordResetTokenExpiry  DateTime?
+  
+  // Workflow relations
+  createdWorkflowTemplates  WorkflowTemplate[]
+  triggeredWorkflowExecutions WorkflowExecution[]
+  
+  // Pastoral Care Management relations
+  pastoralVisitsAsPastor    PastoralVisit[]           @relation("PastoralVisitPastor")
+  pastoralVisitsCreated     PastoralVisit[]           @relation("PastoralVisitCreator")
+  counselingSessionsAsCounselor CounselingSession[]   @relation("CounselingSessionCounselor")
+  counselingSessionsCreated CounselingSession[]       @relation("CounselingSessionCreator")
+  careRequestsAssigned      CareRequest[]             @relation("CareRequestAssignedPastor")
+  careRequestsCreated       CareRequest[]             @relation("CareRequestCreator")
+  followUpRemindersAssigned FollowUpReminder[]        @relation("FollowUpReminderAssignedTo")
+  followUpRemindersCreated  FollowUpReminder[]        @relation("FollowUpReminderCreator")
+  
+  // Organization suspension relation
+  suspendedOrganizations    Organisation[]            @relation("OrganizationSuspendedBy")
 
   @@index([organisationId])
 }
@@ -172,6 +189,19 @@ model Branch {
   scheduledReports         ScheduledReport[]
   userDashboardPreferences UserDashboardPreference[]
   attendanceRecords        AttendanceRecord[]        @relation("BranchAttendanceRecords")
+  
+  // Workflow relations
+  workflowTemplates        WorkflowTemplate[]
+  workflowExecutions       WorkflowExecution[]
+  workflowTriggers         WorkflowTrigger[]
+  
+  // Pastoral Care Management relations
+  pastoralVisits           PastoralVisit[]
+  counselingSessions       CounselingSession[]
+  careRequests             CareRequest[]
+  followUpReminders        FollowUpReminder[]
+  
+  @@index([organisationId])
 }
 
 model UserBranch {
@@ -484,8 +514,11 @@ model Member {
   spouseId           String?       @unique
   branch             Branch?       @relation(fields: [branchId], references: [id])
   userId             String?       @unique
-  user               User?         @relation("UserToMember", fields: [userId], references: [id])
+  user               User?         @relation(fields: [userId], references: [id], name: "UserToMember")
 
+  // Workflow relations
+  workflowExecutions WorkflowExecution[]
+  
   // Children's Ministry relations
   guardianProfile     Guardian?
   volunteerProfile    ChildrenMinistryVolunteer?
@@ -502,17 +535,26 @@ model Member {
   sacramentalRecords  SacramentalRecord[]
   prayerRequests      PrayerRequest[]
   transactions        Transaction[]
-
+  
   // Transfer relation
   transferRequests TransferRequest[]
-
+  
   // Financial relations
   contributions      Contribution[]
   pledges            Pledge[]
   attendanceRecords  AttendanceRecord[]
   notifications      Notification[]
   MemberNotification MemberNotification[]
-
+  
+  // Pastoral Care Management relations
+  pastoralVisits     PastoralVisit[]
+  counselingSessions CounselingSession[]
+  careRequests       CareRequest[]
+  followUpReminders  FollowUpReminder[]
+  
+  // Subscription Management relations
+  paystackCustomer   PaystackCustomer?
+  
   @@index([branchId])
   @@index([status])
   @@index([membershipDate])
@@ -1728,6 +1770,14 @@ model Organisation {
   socialHandle               String?
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime                    @updatedAt
+  
+  // Organization status management
+  status                     OrganisationStatus          @default(ACTIVE)
+  suspensionReason           String?
+  suspendedAt                DateTime?
+  suspendedBy                String?
+  suspendedByUser            User?                       @relation("OrganizationSuspendedBy", fields: [suspendedBy], references: [id])
+  
   branches                   Branch[]
   users                      User[]
   members                    Member[]
@@ -1767,7 +1817,24 @@ model Organisation {
   notifications              Notification[]
   attendanceRecords          AttendanceRecord[]
   transactions               Transaction[]               @relation("OrganisationTransactions")
-
+  
+  // Workflow relations
+  workflowTemplates          WorkflowTemplate[]
+  workflowExecutions         WorkflowExecution[]
+  workflowTriggers           WorkflowTrigger[]
+  
+  // Pastoral Care Management relations
+  pastoralVisits             PastoralVisit[]
+  counselingSessions         CounselingSession[]
+  careRequests               CareRequest[]
+  followUpReminders          FollowUpReminder[]
+  
+  // Subscription Management relations
+  subscriptionPlans          SubscriptionPlan[]
+  subscriptions              Subscription[]              @relation("SubscriptionOrganisation")
+  subscriptionsAsCustomer    Subscription[]              @relation("SubscriptionCustomer")
+  webhookEvents              WebhookEvent[]
+  
   @@index([email])
 }
 
@@ -1793,6 +1860,12 @@ model Event {
   // Relationships
   transactions      Transaction[]
   attendanceRecords AttendanceRecord[]
+  
+  // Workflow relations
+  workflowExecutions WorkflowExecution[]
+
+  @@index([branchId])
+  @@index([organisationId])
 }
 
 model PrayerRequest {
@@ -1853,6 +1926,15 @@ model Transaction {
   user         User?        @relation("UserTransactions", fields: [userId], references: [id])
   member       Member?      @relation(fields: [memberId], references: [id])
   event        Event?       @relation(fields: [eventId], references: [id])
+
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([fundId])
+  @@index([userId])
+  @@index([memberId])
+  @@index([eventId])
+  @@index([type])
+  @@index([date])
 }
 
 // Member transfer request model
@@ -1885,4 +1967,709 @@ model TransferRequest {
   @@index([destinationBranchId])
   @@index([status])
   @@index([requestDate])
+}
+
+// Workflow Automation Models
+enum WorkflowType {
+  FOLLOW_UP
+  EVENT_REMINDER
+  MEMBERSHIP_RENEWAL
+  DONATION_ACKNOWLEDGMENT
+}
+
+enum WorkflowStatus {
+  ACTIVE
+  INACTIVE
+  PAUSED
+  DELETED
+}
+
+enum WorkflowTriggerType {
+  MEMBER_CREATED
+  MEMBER_UPDATED
+  EVENT_CREATED
+  EVENT_APPROACHING
+  DONATION_RECEIVED
+  MEMBERSHIP_EXPIRING
+  ATTENDANCE_RECORDED
+  CUSTOM_DATE
+}
+
+enum WorkflowActionType {
+  SEND_EMAIL
+  SEND_SMS
+  SEND_NOTIFICATION
+  UPDATE_MEMBER_STATUS
+  CREATE_TASK
+  WAIT_DELAY
+}
+
+enum WorkflowExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model WorkflowTemplate {
+  id              String        @id @default(uuid())
+  name            String
+  description     String?
+  type            WorkflowType
+  status          WorkflowStatus @default(ACTIVE)
+  triggerType     WorkflowTriggerType
+  triggerConfig   Json?         // Configuration for trigger conditions
+  
+  // Organization and Branch scoping
+  organisationId  String
+  branchId        String?
+  
+  // Workflow steps/actions
+  actions         WorkflowAction[]
+  
+  // Execution tracking
+  executions      WorkflowExecution[]
+  
+  // Trigger tracking
+  triggers        WorkflowTrigger[]
+  
+  // Metadata
+  createdBy       String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // Relations
+  organisation    Organisation  @relation(fields: [organisationId], references: [id])
+  branch          Branch?       @relation(fields: [branchId], references: [id])
+  creator         User          @relation(fields: [createdBy], references: [id])
+  
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([type])
+  @@index([status])
+  @@index([triggerType])
+}
+
+model WorkflowAction {
+  id              String              @id @default(uuid())
+  workflowId      String
+  stepNumber      Int
+  actionType      WorkflowActionType
+  actionConfig    Json                // Configuration for the action
+  delayMinutes    Int?                // Delay before executing this action
+  
+  // Conditions for execution
+  conditions      Json?               // Conditions that must be met
+  
+  // Relations
+  workflow        WorkflowTemplate    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  executions      WorkflowActionExecution[]
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@index([workflowId])
+  @@index([stepNumber])
+}
+
+model WorkflowExecution {
+  id              String                    @id @default(uuid())
+  workflowId      String
+  status          WorkflowExecutionStatus   @default(PENDING)
+  
+  // Trigger context
+  triggeredBy     String?                   // User ID who triggered (if manual)
+  triggerData     Json?                     // Data that triggered the workflow
+  
+  // Target context
+  targetMemberId  String?                   // Member this workflow is running for
+  targetEventId   String?                   // Event this workflow is related to
+  targetData      Json?                     // Additional target data
+  
+  // Execution tracking
+  startedAt       DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  
+  // Organization and Branch scoping
+  organisationId  String
+  branchId        String?
+  
+  // Relations
+  workflow        WorkflowTemplate          @relation(fields: [workflowId], references: [id])
+  organisation    Organisation              @relation(fields: [organisationId], references: [id])
+  branch          Branch?                   @relation(fields: [branchId], references: [id])
+  targetMember    Member?                   @relation(fields: [targetMemberId], references: [id])
+  targetEvent     Event?                    @relation(fields: [targetEventId], references: [id])
+  triggeredByUser User?                     @relation(fields: [triggeredBy], references: [id])
+  
+  // Action executions
+  actionExecutions WorkflowActionExecution[]
+  
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  @@index([workflowId])
+  @@index([status])
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([targetMemberId])
+  @@index([targetEventId])
+  @@index([startedAt])
+}
+
+model WorkflowActionExecution {
+  id              String                    @id @default(uuid())
+  executionId     String
+  actionId        String
+  status          WorkflowExecutionStatus   @default(PENDING)
+  
+  // Execution details
+  startedAt       DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  result          Json?                     // Result data from action execution
+  
+  // Relations
+  execution       WorkflowExecution         @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  action          WorkflowAction            @relation(fields: [actionId], references: [id])
+  
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  @@index([executionId])
+  @@index([actionId])
+  @@index([status])
+}
+
+model WorkflowTrigger {
+  id              String              @id @default(uuid())
+  workflowId      String
+  triggerType     WorkflowTriggerType
+  triggerConfig   Json                // Configuration for when to trigger
+  
+  // Scheduling for time-based triggers
+  cronExpression  String?             // For recurring triggers
+  nextRunAt       DateTime?           // Next scheduled run
+  
+  // Status
+  isActive        Boolean             @default(true)
+  lastTriggeredAt DateTime?
+  
+  // Organization and Branch
+  organisationId  String
+  branchId        String?
+  
+  // Relations
+  workflow        WorkflowTemplate    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  organisation    Organisation        @relation(fields: [organisationId], references: [id])
+  branch          Branch?             @relation(fields: [branchId], references: [id])
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@index([workflowId])
+  @@index([triggerType])
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([nextRunAt])
+  @@index([isActive])
+}
+
+// ===================================
+// PASTORAL CARE MANAGEMENT MODELS
+// ===================================
+
+// Enums for Pastoral Care
+enum PastoralVisitType {
+  HOME_VISIT
+  HOSPITAL_VISIT
+  OFFICE_MEETING
+  PHONE_CALL
+  VIDEO_CALL
+  EMERGENCY_VISIT
+  FOLLOW_UP_VISIT
+  BEREAVEMENT_VISIT
+  COUNSELING_SESSION
+  PRAYER_VISIT
+}
+
+enum PastoralVisitStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+  NO_SHOW
+}
+
+enum CounselingSessionType {
+  INDIVIDUAL
+  COUPLES
+  FAMILY
+  GROUP
+  CRISIS
+  GRIEF
+  MARRIAGE
+  ADDICTION
+  SPIRITUAL
+  GENERAL
+}
+
+enum CounselingSessionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+  NO_SHOW
+}
+
+enum CareRequestType {
+  PRAYER_REQUEST
+  HOSPITAL_VISIT
+  HOME_VISIT
+  COUNSELING
+  CRISIS_SUPPORT
+  BEREAVEMENT
+  FINANCIAL_ASSISTANCE
+  SPIRITUAL_GUIDANCE
+  FAMILY_CRISIS
+  GENERAL_SUPPORT
+}
+
+enum CareRequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+  EMERGENCY
+}
+
+enum CareRequestStatus {
+  SUBMITTED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
+  CANCELLED
+}
+
+enum FollowUpType {
+  PASTORAL_VISIT
+  COUNSELING_SESSION
+  CARE_REQUEST
+  MEMBER_CONTACT
+  EVENT_FOLLOW_UP
+}
+
+enum FollowUpStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+// Pastoral Visit Tracking
+model PastoralVisit {
+  id              String              @id @default(uuid())
+  
+  // Basic Information
+  title           String
+  description     String?
+  visitType       PastoralVisitType
+  status          PastoralVisitStatus @default(SCHEDULED)
+  
+  // Scheduling
+  scheduledDate   DateTime
+  actualDate      DateTime?
+  duration        Int?                // Duration in minutes
+  location        String?
+  
+  // Participants
+  memberId        String
+  pastorId        String              // User ID of the pastor
+  additionalAttendees String?         // JSON array of additional attendee IDs
+  
+  // Visit Details
+  notes           String?
+  privateNotes    String?             // Only visible to pastoral staff
+  actionItems     String?             // JSON array of follow-up actions
+  followUpNeeded  Boolean             @default(false)
+  followUpDate    DateTime?
+  
+  // Organization and Branch
+  organisationId  String
+  branchId        String?
+  
+  // Metadata
+  createdBy       String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  // Relations
+  member          Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pastor          User                @relation("PastoralVisitPastor", fields: [pastorId], references: [id])
+  organisation    Organisation        @relation(fields: [organisationId], references: [id])
+  branch          Branch?             @relation(fields: [branchId], references: [id])
+  creator         User                @relation("PastoralVisitCreator", fields: [createdBy], references: [id])
+  
+  // Follow-up reminders
+  followUpReminders FollowUpReminder[]
+  
+  @@index([memberId])
+  @@index([pastorId])
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([status])
+  @@index([visitType])
+  @@index([scheduledDate])
+}
+
+// Counseling Session Management
+model CounselingSession {
+  id              String                  @id @default(uuid())
+  
+  // Basic Information
+  title           String
+  description     String?
+  sessionType     CounselingSessionType
+  status          CounselingSessionStatus @default(SCHEDULED)
+  
+  // Scheduling
+  scheduledDate   DateTime
+  actualDate      DateTime?
+  duration        Int?                    // Duration in minutes
+  location        String?
+  isRecurring     Boolean                 @default(false)
+  recurringPattern String?                // JSON for recurring schedule
+  
+  // Participants
+  primaryMemberId String                  // Primary member being counseled
+  counselorId     String                  // User ID of the counselor
+  additionalMembers String?               // JSON array of additional member IDs (for couples/family)
+  
+  // Session Details
+  sessionNotes    String?
+  privateNotes    String?                 // Only visible to counseling staff
+  homework        String?                 // Assignments or homework for member
+  nextSteps       String?                 // Next steps or goals
+  
+  // Progress Tracking
+  sessionNumber   Int                     @default(1)
+  totalSessions   Int?                    // Planned total sessions
+  progressNotes   String?
+  
+  // Organization and Branch
+  organisationId  String
+  branchId        String?
+  
+  // Metadata
+  createdBy       String
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  
+  // Relations
+  primaryMember   Member                  @relation(fields: [primaryMemberId], references: [id])
+  counselor       User                    @relation("CounselingSessionCounselor", fields: [counselorId], references: [id])
+  organisation    Organisation            @relation(fields: [organisationId], references: [id])
+  branch          Branch?                 @relation(fields: [branchId], references: [id])
+  creator         User                    @relation("CounselingSessionCreator", fields: [createdBy], references: [id])
+  
+  // Follow-up reminders
+  followUpReminders FollowUpReminder[]
+  
+  @@index([primaryMemberId])
+  @@index([counselorId])
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([status])
+  @@index([sessionType])
+  @@index([scheduledDate])
+}
+
+// Care Request Workflow
+model CareRequest {
+  id              String              @id @default(uuid())
+  
+  // Basic Information
+  title           String
+  description     String
+  requestType     CareRequestType
+  priority        CareRequestPriority @default(MEDIUM)
+  status          CareRequestStatus   @default(SUBMITTED)
+  
+  // Request Details
+  urgentNotes     String?             // Special notes for urgent requests
+  contactInfo     String?             // Alternative contact information
+  preferredContactMethod String?      // Phone, email, in-person, etc.
+  
+  // Assignment
+  requesterId     String?             // Member who made the request (can be null for anonymous)
+  assignedPastorId String?            // Assigned pastoral staff
+  assignedDate    DateTime?
+  
+  // Timeline
+  requestDate     DateTime            @default(now())
+  responseDate    DateTime?           // When first response was made
+  completionDate  DateTime?
+  
+  // Response and Resolution
+  responseNotes   String?
+  resolutionNotes String?
+  actionsTaken    String?             // JSON array of actions taken
+  
+  // Organization and Branch
+  organisationId  String
+  branchId        String?
+  
+  // Metadata
+  createdBy       String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  // Relations
+  requester       Member?             @relation(fields: [requesterId], references: [id])
+  assignedPastor  User?               @relation("CareRequestAssignedPastor", fields: [assignedPastorId], references: [id])
+  organisation    Organisation        @relation(fields: [organisationId], references: [id])
+  branch          Branch?             @relation(fields: [branchId], references: [id])
+  creator         User                @relation("CareRequestCreator", fields: [createdBy], references: [id])
+  
+  // Follow-up reminders
+  followUpReminders FollowUpReminder[]
+  
+  @@index([requesterId])
+  @@index([assignedPastorId])
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([status])
+  @@index([priority])
+  @@index([requestType])
+  @@index([requestDate])
+}
+
+// Follow-up Reminder System
+model FollowUpReminder {
+  id              String              @id @default(uuid())
+  
+  // Basic Information
+  title           String
+  description     String?
+  followUpType    FollowUpType
+  status          FollowUpStatus      @default(PENDING)
+  
+  // Scheduling
+  dueDate         DateTime
+  completedDate   DateTime?
+  reminderDate    DateTime?           // When to send reminder notification
+  
+  // Related Records (polymorphic relationships)
+  pastoralVisitId String?
+  counselingSessionId String?
+  careRequestId   String?
+  memberId        String?             // Direct member follow-up
+  
+  // Assignment
+  assignedToId    String              // User ID of assigned pastoral staff
+  
+  // Follow-up Details
+  notes           String?
+  completionNotes String?
+  actionRequired  String?             // What action needs to be taken
+  
+  // Organization and Branch
+  organisationId  String
+  branchId        String?
+  
+  // Metadata
+  createdBy       String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  // Relations
+  pastoralVisit   PastoralVisit?      @relation(fields: [pastoralVisitId], references: [id])
+  counselingSession CounselingSession? @relation(fields: [counselingSessionId], references: [id])
+  careRequest     CareRequest?        @relation(fields: [careRequestId], references: [id])
+  member          Member?             @relation(fields: [memberId], references: [id])
+  assignedTo      User                @relation("FollowUpReminderAssignedTo", fields: [assignedToId], references: [id])
+  organisation    Organisation        @relation(fields: [organisationId], references: [id])
+  branch          Branch?             @relation(fields: [branchId], references: [id])
+  creator         User                @relation("FollowUpReminderCreator", fields: [createdBy], references: [id])
+  
+  @@index([assignedToId])
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([status])
+  @@index([followUpType])
+  @@index([dueDate])
+  @@index([pastoralVisitId])
+  @@index([counselingSessionId])
+  @@index([careRequestId])
+  @@index([memberId])
+}
+
+// Subscription Management Enums
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  TRIALING
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  PAUSED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum SubscriptionInterval {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+// Subscription Plans
+model SubscriptionPlan {
+  id                String              @id @default(uuid())
+  name              String
+  description       String?
+  amount            Float
+  currency          String              @default("NGN")
+  interval          SubscriptionInterval @default(MONTHLY)
+  intervalCount     Int                 @default(1)
+  trialPeriodDays   Int?
+  isActive          Boolean             @default(true)
+  paystackPlanCode  String?             @unique
+  features          Json?               // JSON array of features
+  metadata          Json?               // Additional metadata
+  organisationId    String
+  organisation      Organisation        @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  subscriptions     Subscription[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([organisationId])
+  @@index([isActive])
+  @@index([paystackPlanCode])
+}
+
+// Customer Subscriptions
+model Subscription {
+  id                    String              @id @default(uuid())
+  customerId            String
+  customer              Organisation        @relation("SubscriptionCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  planId                String
+  plan                  SubscriptionPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  status                SubscriptionStatus  @default(ACTIVE)
+  paystackSubscriptionCode String?          @unique
+  paystackCustomerCode  String?
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  trialStart            DateTime?
+  trialEnd              DateTime?
+  cancelledAt           DateTime?
+  cancelAtPeriodEnd     Boolean            @default(false)
+  cancelReason          String?
+  nextBillingDate       DateTime?
+  lastPaymentDate       DateTime?
+  failedPaymentCount    Int                @default(0)
+  metadata              Json?              // Additional metadata
+  organisationId        String
+  organisation          Organisation       @relation("SubscriptionOrganisation", fields: [organisationId], references: [id], onDelete: Cascade)
+  payments              SubscriptionPayment[]
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([customerId])
+  @@index([planId])
+  @@index([status])
+  @@index([organisationId])
+  @@index([paystackSubscriptionCode])
+  @@index([currentPeriodEnd])
+  @@index([nextBillingDate])
+}
+
+// Subscription Payment Records
+model SubscriptionPayment {
+  id                String        @id @default(uuid())
+  subscriptionId    String
+  subscription      Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  amount            Float
+  currency          String        @default("NGN")
+  status            PaymentStatus @default(PENDING)
+  paystackReference String?       @unique
+  paystackTransactionId String?   @unique
+  authorizationCode String?
+  paidAt            DateTime?
+  failedAt          DateTime?
+  periodStart       DateTime
+  periodEnd         DateTime
+  invoiceNumber     String?
+  failureReason     String?
+  metadata          Json?         // Additional payment metadata
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([paystackReference])
+  @@index([paidAt])
+  @@index([periodStart])
+  @@index([periodEnd])
+}
+
+// Paystack Customers (for caching customer data)
+model PaystackCustomer {
+  id                String    @id @default(uuid())
+  memberId          String    @unique
+  member            Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  paystackCustomerCode String @unique
+  email             String
+  firstName         String?
+  lastName          String?
+  phone             String?
+  metadata          Json?     // Additional customer metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([memberId])
+  @@index([paystackCustomerCode])
+  @@index([email])
+}
+
+// Webhook Events Log
+model WebhookEvent {
+  id            String    @id @default(uuid())
+  eventType     String    // subscription.create, invoice.payment_failed, etc.
+  paystackId    String?   // Paystack event ID
+  data          Json      // Event payload
+  processed     Boolean   @default(false)
+  processedAt   DateTime?
+  errorMessage  String?
+  retryCount    Int       @default(0)
+  organisationId String?
+  organisation  Organisation? @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([eventType])
+  @@index([processed])
+  @@index([paystackId])
+  @@index([organisationId])
+  @@index([createdAt])
+}
+
+enum OrganisationStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+  CANCELLED
+  INACTIVE
 }

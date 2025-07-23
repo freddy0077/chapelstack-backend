@@ -3,10 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventInput } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
 import { Event as PrismaEvent, Prisma } from '@prisma/client';
+import { WorkflowsService } from '../workflows/services/workflows.service';
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly workflowsService: WorkflowsService,
+  ) {}
 
   async create(input: CreateEventInput): Promise<PrismaEvent> {
     console.log('EventsService.create received input:', input);
@@ -36,7 +40,22 @@ export class EventsService {
 
     try {
       // Create the event
-      return await this.prisma.event.create({ data });
+      const event = await this.prisma.event.create({ data });
+
+      // Trigger workflow automation for new event
+      try {
+        await this.workflowsService.handleEventCreated(
+          event.id,
+          event.organisationId || '',
+          event.branchId || undefined,
+        );
+      } catch (error) {
+        console.warn(
+          `Failed to trigger event created workflow for event ${event.id}: ${error.message}`,
+        );
+      }
+
+      return event;
     } catch (error) {
       console.error('Prisma create error:', error);
       throw error;
