@@ -5,7 +5,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PaystackService } from './paystack.service';
 import { SubscriptionPlan, SubscriptionInterval } from '@prisma/client';
 import { CreatePlanInput } from '../dto/create-plan.input';
 import { UpdatePlanInput } from '../dto/update-plan.input';
@@ -16,7 +15,6 @@ export class SubscriptionPlansService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly paystackService: PaystackService,
   ) {}
 
   /**
@@ -26,26 +24,7 @@ export class SubscriptionPlansService {
     try {
       this.logger.log(`Creating subscription plan: ${input.name}`);
 
-      // Create plan on Paystack first if amount > 0
-      let paystackPlanCode: string | undefined;
-      if (input.amount > 0) {
-        try {
-          const paystackPlan = await this.paystackService.createPlan({
-            name: input.name,
-            description: input.description,
-            amount: input.amount,
-            currency: input.currency || 'GHS',
-            interval: input.interval,
-            organisationId: input.organisationId,
-          });
-          paystackPlanCode = paystackPlan.data?.plan_code;
-        } catch (error) {
-          this.logger.warn(`Failed to create Paystack plan: ${error.message}`);
-          // Continue without Paystack integration for free plans
-        }
-      }
-
-      // Create plan in database
+      // Create plan in database (no Paystack plan creation needed)
       const plan = await this.prisma.subscriptionPlan.create({
         data: {
           name: input.name,
@@ -57,8 +36,7 @@ export class SubscriptionPlansService {
           trialPeriodDays: input.trialPeriodDays || 0,
           features: input.features || [],
           isActive: input.isActive !== false,
-          paystackPlanCode,
-          organisationId: input.organisationId,
+          // Remove paystackPlanCode as we're using Accept Payments API
         },
         include: {
           _count: {
@@ -95,21 +73,7 @@ export class SubscriptionPlansService {
         throw new NotFoundException(`Subscription plan with ID ${id} not found`);
       }
 
-      // Update plan on Paystack if it exists and amount changed
-      if (existingPlan.paystackPlanCode && input.amount && input.amount !== existingPlan.amount) {
-        try {
-          await this.paystackService.updatePlan(existingPlan.paystackPlanCode, {
-            name: input.name || existingPlan.name,
-            amount: input.amount,
-            currency: input.currency || existingPlan.currency,
-            interval: input.interval || existingPlan.interval,
-          });
-        } catch (error) {
-          this.logger.warn(`Failed to update Paystack plan: ${error.message}`);
-        }
-      }
-
-      // Update plan in database
+      // Update plan in database (no Paystack plan update needed)
       const updatedPlan = await this.prisma.subscriptionPlan.update({
         where: { id },
         data: {
@@ -172,17 +136,7 @@ export class SubscriptionPlansService {
         );
       }
 
-      // Delete plan from Paystack if it exists
-      if (existingPlan.paystackPlanCode) {
-        try {
-          // Note: Paystack doesn't have a delete plan endpoint, so we'll just log this
-          this.logger.warn('Paystack plan deletion not implemented - plan may remain active on Paystack');
-        } catch (error) {
-          this.logger.warn(`Failed to delete Paystack plan: ${error.message}`);
-        }
-      }
-
-      // Delete plan from database
+      // Delete plan from database (no Paystack plan deletion needed)
       await this.prisma.subscriptionPlan.delete({
         where: { id },
       });

@@ -46,6 +46,7 @@ import { TransfersModule } from './transfers/transfers.module';
 import { WorkflowsModule } from './workflows/workflows.module';
 import { PastoralCareModule } from './pastoral-care/pastoral-care.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { registerEnumType } from '@nestjs/graphql';
 
@@ -61,6 +62,7 @@ registerEnumType(AttendanceStatsPeriod, {
         port: parseInt(process.env.REDIS_PORT || '6379', 10),
       },
     }),
+    ScheduleModule.forRoot(), // Global scheduler configuration
     OnboardingModule,
     ConfigModule.forRoot({ isGlobal: true }),
     BaseModule,

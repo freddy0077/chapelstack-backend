@@ -115,15 +115,34 @@ export class AuthService {
   // signIn method will be modified to return AuthPayload including refreshToken
   async signIn(
     signInDto: SignInDto,
-  ): Promise<AuthPayload & { refreshToken: string }> {
+  ): Promise<AuthPayload & { refreshToken: string; accessTokenExpiresAt: number; refreshTokenExpiresAt: number }> {
     // Modified return type
     const { email, password: passwordInput } = signInDto;
 
     // Include roles and userBranches with branch and role information
     const user = await this.prisma.user.findUnique({
       where: { email },
-      include: {
-        roles: true,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        isActive: true,
+        isEmailVerified: true,
+        lastLoginAt: true,
+        createdAt: true,
+        updatedAt: true,
+        organisationId: true,
+        passwordHash: true,
+        roles: {
+          select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
         userBranches: {
           include: {
             branch: true,
@@ -133,6 +152,12 @@ export class AuthService {
         member: true,
       },
     });
+
+    console.log('🔍 Backend signIn - Raw user data from database:');
+    console.log('🔍 Raw user:', user);
+    console.log('🔍 Raw user.organisationId:', user?.organisationId);
+    console.log('🔍 Raw user.organisationId type:', typeof user?.organisationId);
+    console.log('🔍 Raw user.userBranches:', user?.userBranches);
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials.');
@@ -153,11 +178,17 @@ export class AuthService {
 
     // Check organization subscription status before allowing login
     // Skip subscription validation for SUBSCRIPTION_MANAGER role
+    console.log('🔍 Checking user roles for subscription exemption...');
+    console.log('User roles:', user.roles.map(r => r.name));
+    
     const isSubscriptionManager = user.roles.some(
       (role) => role.name === 'SUBSCRIPTION_MANAGER',
     );
+    
+    console.log('Is subscription manager:', isSubscriptionManager);
 
     if (!isSubscriptionManager && user.organisationId) {
+      console.log('⚠️ User is not a subscription manager, checking subscription status...');
       // Get organization subscription status
       const subscription = await this.prisma.subscription.findFirst({
         where: {
@@ -211,6 +242,17 @@ export class AuthService {
     const accessToken = this._generateAccessToken(user);
     const refreshToken = await this._createAndStoreRefreshToken(user.id);
 
+    // Calculate token expiry timestamps for frontend
+    const accessTokenExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN', '15m');
+    const refreshTokenExpiresInDays = parseInt(
+      this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRATION_DAYS', '7'),
+    );
+    
+    // Convert expiry times to timestamps
+    const now = Date.now();
+    const accessTokenExpiresAt = now + this._parseExpiryTime(accessTokenExpiresIn);
+    const refreshTokenExpiresAt = now + (refreshTokenExpiresInDays * 24 * 60 * 60 * 1000);
+
     // Update lastLoginAt
     await this.prisma.user.update({
       where: { id: user.id },
@@ -219,9 +261,24 @@ export class AuthService {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...userData } = user;
-    return {
+
+    console.log('🔍 Backend signIn - Final user data being returned:');
+    console.log('🔍 User ID:', userData.id);
+    console.log('🔍 User email:', userData.email);
+    console.log('🔍 User organisationId:', userData.organisationId);
+    console.log('🔍 User organisationId type:', typeof userData.organisationId);
+    console.log('🔍 User roles:', userData.roles?.map(r => r.name));
+    console.log('🔍 User userBranches count:', userData.userBranches?.length);
+    if (userData.userBranches && userData.userBranches.length > 0) {
+      console.log('🔍 First userBranch:', userData.userBranches[0]);
+      console.log('🔍 First branch:', userData.userBranches[0]?.branch);
+    }
+
+    const authPayload = {
       accessToken,
       refreshToken,
+      accessTokenExpiresAt,
+      refreshTokenExpiresAt,
       user: {
         id: userData.id,
         email: userData.email,
@@ -253,6 +310,13 @@ export class AuthService {
           : undefined,
       },
     };
+
+    console.log('🔍 Backend signIn - AuthPayload being returned:');
+    console.log('🔍 AuthPayload user:', authPayload.user);
+    console.log('🔍 AuthPayload user.organisationId:', authPayload.user.organisationId);
+    console.log('🔍 AuthPayload user.organisationId type:', typeof authPayload.user.organisationId);
+
+    return authPayload;
   }
 
   async refreshToken(
@@ -303,7 +367,14 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        roles: true,
+        roles: {
+          select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
         userBranches: {
           include: {
             branch: true,
@@ -326,6 +397,7 @@ export class AuthService {
         lastLoginAt: userData.lastLoginAt ?? undefined,
         createdAt: userData.createdAt,
         updatedAt: userData.updatedAt,
+        organisationId: userData.organisationId ?? undefined,
         roles: userData.roles,
         userBranches: Array.isArray(userData.userBranches)
           ? userData.userBranches.map((ub: any) => ({
@@ -472,5 +544,26 @@ export class AuthService {
       },
     });
     return { message: 'Password has been reset successfully.' };
+  }
+
+  private _parseExpiryTime(expiryTime: string): number {
+    const match = expiryTime.match(/^(\d+)([smhd])$/);
+    if (!match) {
+      throw new Error(`Invalid expiry time format: ${expiryTime}`);
+    }
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+    switch (unit) {
+      case 's':
+        return value * 1000;
+      case 'm':
+        return value * 60 * 1000;
+      case 'h':
+        return value * 60 * 60 * 1000;
+      case 'd':
+        return value * 24 * 60 * 60 * 1000;
+      default:
+        throw new Error(`Invalid expiry time unit: ${unit}`);
+    }
   }
 }

@@ -401,7 +401,9 @@ input AuditLogFilterInput {
 
 type AuthPayload {
   accessToken: String!
+  accessTokenExpiresAt: Float!
   refreshToken: String!
+  refreshTokenExpiresAt: Float!
   user: UserProfile!
 }
 
@@ -1238,8 +1240,13 @@ input CreateEventInput {
   category: String
   description: String
   endDate: DateTime
+  isRecurring: Boolean = false
   location: String
   organisationId: String
+  recurrenceDaysOfWeek: [String!]
+  recurrenceEndDate: DateTime
+  recurrenceInterval: Float = 1
+  recurrenceType: RecurrenceType
   startDate: DateTime!
   title: String!
 }
@@ -1501,21 +1508,16 @@ input CreatePermissionInput {
   subject: String!
 }
 
-input CreatePlanDto {
+input CreatePlanInput {
   amount: Float!
-  currency: String! = "NGN"
+  currency: String! = "GHS"
   description: String
   features: [String!]
   interval: SubscriptionInterval! = MONTHLY
   intervalCount: Int! = 1
-  invoiceLimit: Int
   isActive: Boolean! = true
-  metadata: JSON
   name: String!
-  organisationId: String!
-  sendInvoices: Boolean! = true
-  sendSms: Boolean! = false
-  trialPeriodDays: Int
+  trialPeriodDays: Int! = 0
 }
 
 input CreatePledgeInput {
@@ -2833,6 +2835,7 @@ type Mutation {
   createPledge(createPledgeInput: CreatePledgeInput!): Pledge!
   createPrayerRequest(data: CreatePrayerRequestInput!): PrayerRequest!
   createPredefinedWorkflows(branchId: String, organisationId: String): [WorkflowTemplate!]!
+  createRecurringEvent(input: CreateEventInput!): [Event!]!
   createRole(input: CreateRoleInput!): Role!
   createRoleWithPermissions(input: CreateRoleWithPermissionsInput!): Role!
   createSacramentalRecord(input: CreateSacramentalRecordInput!): SacramentalRecord!
@@ -2842,7 +2845,7 @@ type Mutation {
   createSpeaker(createSpeakerInput: CreateSpeakerInput!): Speaker!
   createSpiritualMilestone(createSpiritualMilestoneInput: CreateSpiritualMilestoneInput!): SpiritualMilestone!
   createSubscription(input: CreateSubscriptionInput!): Subscription!
-  createSubscriptionPlan(input: CreatePlanDto!): SubscriptionPlan!
+  createSubscriptionPlan(input: CreatePlanInput!): SubscriptionPlan!
   createSuperAdminUser(branchId: ID, email: String!, firstName: String!, lastName: String!, organisationId: ID!, password: String!): ID!
   createTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
   createTransaction(createTransactionInput: CreateTransactionInput!): Transaction!
@@ -2867,7 +2870,7 @@ type Mutation {
   deleteRole(id: ID!): Role!
   deleteSacramentalRecord(id: ID!): SacramentalRecord!
   deleteSmallGroup(id: ID!): Boolean!
-  deleteSubscriptionPlan(id: ID!): Boolean!
+  deleteSubscriptionPlan(id: ID!): SubscriptionPlan!
   deleteTemplate(id: ID!): Boolean!
   deleteWorkflowTemplate(branchId: String, id: String!, organisationId: String!): Boolean!
   disableOrganization(input: DisableOrganizationInput!): OrganizationWithSubscription!
@@ -2985,7 +2988,7 @@ type Mutation {
   updateSpeaker(updateSpeakerInput: UpdateSpeakerInput!): Speaker!
   updateSpiritualMilestone(id: String!, updateSpiritualMilestoneInput: UpdateSpiritualMilestoneInput!): SpiritualMilestone!
   updateSubscription(id: ID!, input: UpdateSubscriptionInput!): Subscription!
-  updateSubscriptionPlan(id: ID!, input: UpdatePlanDto!): SubscriptionPlan!
+  updateSubscriptionPlan(id: ID!, input: UpdatePlanInput!): SubscriptionPlan!
   updateTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
   updateTransaction(input: UpdateTransactionInput!): Transaction!
   updateTransferRequest(input: UpdateTransferRequestInput!): TransferRequest!
@@ -3705,6 +3708,14 @@ input RecordBulkAttendanceInput {
   sessionId: ID
 }
 
+"""Type of event recurrence"""
+enum RecurrenceType {
+  DAILY
+  MONTHLY
+  WEEKLY
+  YEARLY
+}
+
 input RefreshTokenInput {
   refreshToken: String!
 }
@@ -4123,7 +4134,7 @@ type SubscriptionPlan {
   metadata: JSON
   name: String!
   organisation: Organisation
-  organisationId: String!
+  organisationId: String
   paystackPlanCode: String
   subscriptions: [Subscription!]
   trialPeriodDays: Int
@@ -4507,8 +4518,13 @@ input UpdateEventInput {
   description: String
   endDate: DateTime
   id: ID!
+  isRecurring: Boolean = false
   location: String
   organisationId: String
+  recurrenceDaysOfWeek: [String!]
+  recurrenceEndDate: DateTime
+  recurrenceInterval: Float = 1
+  recurrenceType: RecurrenceType
   startDate: DateTime
   title: String
 }
@@ -4749,19 +4765,15 @@ input UpdatePermissionInput {
   subject: String
 }
 
-input UpdatePlanDto {
+input UpdatePlanInput {
   amount: Float
   currency: String
   description: String
   features: [String!]
   interval: SubscriptionInterval
   intervalCount: Int
-  invoiceLimit: Int
   isActive: Boolean
-  metadata: JSON
   name: String
-  sendInvoices: Boolean
-  sendSms: Boolean
   trialPeriodDays: Int
 }
 

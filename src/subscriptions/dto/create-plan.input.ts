@@ -49,10 +49,4 @@ export class CreatePlanInput {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
-
-  @Field()
-  @IsString()
-  @IsNotEmpty()
-  @IsUUID()
-  organisationId: string;
 }

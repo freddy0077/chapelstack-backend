@@ -1,3 +1,6 @@
+// Import crypto polyfill FIRST to fix @nestjs/schedule crypto error
+import './crypto-polyfill';
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';

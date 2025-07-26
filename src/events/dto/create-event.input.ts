@@ -1,13 +1,31 @@
-import { InputType, Field } from '@nestjs/graphql';
+import { InputType, Field, registerEnumType } from '@nestjs/graphql';
 import { GraphQLISODateTime } from '@nestjs/graphql';
 import {
   IsNotEmpty,
   IsString,
   IsOptional,
-  IsDate,
   IsUUID,
+  IsDate,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  Min,
+  IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+// Register RecurrenceType enum for GraphQL
+export enum RecurrenceType {
+  DAILY = 'DAILY',
+  WEEKLY = 'WEEKLY',
+  MONTHLY = 'MONTHLY',
+  YEARLY = 'YEARLY',
+}
+
+registerEnumType(RecurrenceType, {
+  name: 'RecurrenceType',
+  description: 'Type of event recurrence',
+});
 
 @InputType()
 export class CreateEventInput {
@@ -52,4 +70,32 @@ export class CreateEventInput {
   @IsOptional()
   @IsUUID()
   organisationId?: string;
+
+  // Recurring event fields
+  @Field({ nullable: true, defaultValue: false })
+  @IsOptional()
+  @IsBoolean()
+  isRecurring?: boolean;
+
+  @Field(() => RecurrenceType, { nullable: true })
+  @IsOptional()
+  @IsEnum(RecurrenceType)
+  recurrenceType?: RecurrenceType;
+
+  @Field({ nullable: true, defaultValue: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  recurrenceInterval?: number;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  recurrenceEndDate?: Date;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  recurrenceDaysOfWeek?: string[];
 }

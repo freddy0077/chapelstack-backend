@@ -74,6 +74,12 @@ export class AuthPayload {
   @Field(() => String)
   refreshToken: string;
 
+  @Field(() => Number)
+  accessTokenExpiresAt: number;
+
+  @Field(() => Number)
+  refreshTokenExpiresAt: number;
+
   @Field(() => UserType)
   user: UserType;
 }

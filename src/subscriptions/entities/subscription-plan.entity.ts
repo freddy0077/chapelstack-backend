@@ -55,8 +55,8 @@ export class SubscriptionPlan {
   @Field(() => GraphQLJSON, { nullable: true })
   metadata?: any;
 
-  @Field()
-  organisationId: string;
+  @Field({ nullable: true })
+  organisationId?: string;
 
   @Field(() => Organisation, { nullable: true })
   organisation?: Organisation;

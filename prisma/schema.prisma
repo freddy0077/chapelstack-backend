@@ -2549,8 +2549,8 @@ model SubscriptionPlan {
   paystackPlanCode  String?             @unique
   features          Json?               // JSON array of features
   metadata          Json?               // Additional metadata
-  organisationId    String
-  organisation      Organisation        @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId    String?
+  organisation      Organisation?       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   subscriptions     Subscription[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt

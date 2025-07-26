@@ -40,14 +40,20 @@ export class AuthResolver {
 
   @Mutation(() => AuthPayload, { name: 'login' })
   async login(@Args('input') signInDto: SignInDto): Promise<AuthPayload> {
-    // The AuthService.signIn method returns an object compatible with AuthPayload.
-    // { accessToken: string, user: Omit<User, 'passwordHash'> }
-    const authData = await this.authService.signIn(signInDto);
-    return {
-      accessToken: authData.accessToken,
-      refreshToken: authData.refreshToken,
-      user: authData.user,
-    };
+    console.log(' AuthResolver login - Input:', signInDto.email);
+    
+    const result = await this.authService.signIn(signInDto);
+    
+    console.log(' AuthResolver login - Result from AuthService:');
+    console.log(' Result user:', result.user);
+    console.log(' Result user.organisationId:', result.user?.organisationId);
+    console.log(' Result user.organisationId type:', typeof result.user?.organisationId);
+    console.log(' Result user.userBranches:', result.user?.userBranches);
+    
+    console.log(' AuthResolver login - Final GraphQL response being sent:');
+    console.log(' GraphQL response:', JSON.stringify(result, null, 2));
+    
+    return result;
   }
 
   @Mutation(() => SuccessMessageDto, { name: 'logout' })

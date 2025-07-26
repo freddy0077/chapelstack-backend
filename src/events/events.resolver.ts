@@ -83,6 +83,81 @@ export class EventsResolver {
     return this.toGraphQLEvent(createdEvent);
   }
 
+  @Mutation(() => [Event])
+  async createRecurringEvent(
+    @Args(
+      'input',
+      { type: () => CreateEventInput },
+      new ValidationPipe({
+        transform: true,
+        transformOptions: { enableImplicitConversion: true },
+        forbidNonWhitelisted: true,
+      }),
+    )
+    input: CreateEventInput,
+  ): Promise<Event[]> {
+    console.log('🔥 EventsResolver.createRecurringEvent START');
+    console.log('📥 Input received:', JSON.stringify(input, null, 2));
+
+    // Ensure we have a valid input with required fields
+    if (!input || !input.title) {
+      console.error('❌ Input validation failed: Missing title');
+      throw new Error('Event title is required');
+    }
+
+    if (!input.isRecurring) {
+      console.log('📝 Creating single event (isRecurring = false)');
+      // If not recurring, create single event
+      const createdEvent = await this.eventsService.create(input);
+      const result = [this.toGraphQLEvent(createdEvent)];
+      console.log('✅ Single event created:', result);
+      return result;
+    }
+
+    // Validate recurring event fields
+    if (!input.recurrenceType || !input.recurrenceEndDate) {
+      console.error('❌ Recurring validation failed: Missing recurrenceType or recurrenceEndDate');
+      throw new Error('Recurrence type and end date are required for recurring events');
+    }
+
+    console.log('🔄 Creating recurring events...');
+    console.log('📅 Recurrence details:', {
+      type: input.recurrenceType,
+      interval: input.recurrenceInterval,
+      endDate: input.recurrenceEndDate,
+      daysOfWeek: input.recurrenceDaysOfWeek
+    });
+
+    // Ensure dates are properly converted to Date objects
+    if (input.startDate && typeof input.startDate === 'string') {
+      console.log('🔧 Converting startDate from string to Date');
+      input.startDate = new Date(input.startDate);
+    }
+
+    if (input.endDate && typeof input.endDate === 'string') {
+      console.log('🔧 Converting endDate from string to Date');
+      input.endDate = new Date(input.endDate);
+    }
+
+    if (input.recurrenceEndDate && typeof input.recurrenceEndDate === 'string') {
+      console.log('🔧 Converting recurrenceEndDate from string to Date');
+      input.recurrenceEndDate = new Date(input.recurrenceEndDate);
+    }
+
+    try {
+      console.log('🚀 Calling eventsService.createRecurringEvents...');
+      const createdEvents = await this.eventsService.createRecurringEvents(input);
+      console.log(`✅ Created ${createdEvents.length} recurring events`);
+      
+      const result = createdEvents.map(event => this.toGraphQLEvent(event));
+      console.log('📤 Returning GraphQL events:', result.length);
+      return result;
+    } catch (error) {
+      console.error('💥 Error in createRecurringEvents:', error);
+      throw error;
+    }
+  }
+
   @Query(() => [Event], { name: 'events' })
   async findAll(
     @Args('branchId', { nullable: true }) branchId?: string,
