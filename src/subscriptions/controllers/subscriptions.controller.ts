@@ -60,7 +60,6 @@ export class SubscriptionsController {
       trialPeriodDays: input.trialPeriodDays || 0,
       features: input.features || [],
       isActive: input.isActive !== false,
-      organisationId: input.organisationId,
     };
     return this.subscriptionPlansService.createPlan(planInput);
   }

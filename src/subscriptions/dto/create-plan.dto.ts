@@ -77,8 +77,4 @@ export class CreatePlanDto {
   @Field(() => GraphQLJSON, { nullable: true })
   @IsOptional()
   metadata?: Record<string, any>;
-
-  @Field()
-  @IsString()
-  organisationId: string;
 }
