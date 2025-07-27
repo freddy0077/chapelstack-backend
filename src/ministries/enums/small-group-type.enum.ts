@@ -1,0 +1,42 @@
+import { registerEnumType } from '@nestjs/graphql';
+
+/**
+ * Enum for small group types
+ */
+export enum SmallGroupType {
+  BIBLE_STUDY = 'BIBLE_STUDY',
+  PRAYER = 'PRAYER',
+  CELL = 'CELL',
+  DISCIPLESHIP = 'DISCIPLESHIP',
+  FELLOWSHIP = 'FELLOWSHIP',
+  MINISTRY = 'MINISTRY',
+  COMMITTEE = 'COMMITTEE',
+  SUPPORT = 'SUPPORT',
+  INTEREST_BASED = 'INTEREST_BASED',
+  YOUTH = 'YOUTH',
+  MENS = 'MENS',
+  WOMENS = 'WOMENS',
+  SENIORS = 'SENIORS',
+  COUPLES = 'COUPLES',
+  SINGLES = 'SINGLES',
+  WORSHIP = 'WORSHIP',
+  EVANGELISM = 'EVANGELISM',
+  MISSIONS = 'MISSIONS',
+  CHILDREN = 'CHILDREN',
+  EDUCATION = 'EDUCATION',
+  COUNSELING = 'COUNSELING',
+  COMMUNITY_SERVICE = 'COMMUNITY_SERVICE',
+  LEADERSHIP = 'LEADERSHIP',
+  FINANCE = 'FINANCE',
+  FACILITIES = 'FACILITIES',
+  MEDIA = 'MEDIA',
+  HOSPITALITY = 'HOSPITALITY',
+  SECURITY = 'SECURITY',
+  SPECIAL_EVENTS = 'SPECIAL_EVENTS',
+  OTHER = 'OTHER',
+}
+
+registerEnumType(SmallGroupType, {
+  name: 'SmallGroupType',
+  description: 'Types available for small groups and ministries',
+});

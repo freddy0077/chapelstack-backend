@@ -8,22 +8,8 @@ import {
   IsUUID,
   Min,
 } from 'class-validator';
-
-export enum SmallGroupType {
-  BIBLE_STUDY = 'BIBLE_STUDY',
-  PRAYER = 'PRAYER',
-  INTEREST_BASED = 'INTEREST_BASED',
-  DISCIPLESHIP = 'DISCIPLESHIP',
-  SUPPORT = 'SUPPORT',
-  FELLOWSHIP = 'FELLOWSHIP',
-  OTHER = 'OTHER',
-}
-
-export enum SmallGroupStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  FULL = 'FULL',
-}
+import { SmallGroupType } from '../enums/small-group-type.enum';
+import { SmallGroupStatus } from '../enums/small-group-status.enum';
 
 @InputType()
 export class CreateSmallGroupInput {

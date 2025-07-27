@@ -11,6 +11,11 @@ import { MinistryIntegrationsService } from './services/ministry-integrations.se
 import { MinistryMembersService } from './services/ministry-members.service';
 import { MinistryMembersResolver } from './resolvers/ministry-members.resolver';
 
+// Import enums to ensure GraphQL registration
+import './enums/small-group-type.enum';
+import './enums/small-group-status.enum';
+import './enums/group-member-role.enum';
+
 @Module({
   imports: [PrismaModule],
   providers: [
