@@ -240,7 +240,6 @@ export async function seedGhanaSubscriptionPlans() {
       const existingPlan = await prisma.subscriptionPlan.findFirst({
         where: {
           name: planData.name,
-          organisationId: organization.id,
         },
       });
 
@@ -277,7 +276,6 @@ export async function seedGhanaSubscriptionPlans() {
             paystackPlanCode: planData.paystackPlanCode,
             features: planData.features,
             metadata: planData.metadata,
-            organisationId: organization.id,
             createdAt: new Date(),
             updatedAt: new Date(),
           },

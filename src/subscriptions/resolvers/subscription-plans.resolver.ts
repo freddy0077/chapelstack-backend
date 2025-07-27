@@ -38,7 +38,6 @@ export class SubscriptionPlansResolver {
       description: plan.description || undefined,
       paystackPlanCode: plan.paystackPlanCode || undefined,
       trialPeriodDays: plan.trialPeriodDays || undefined,
-      organisationId: plan.organisationId || undefined,
       features: Array.isArray(plan.features)
         ? (plan.features as string[])
         : undefined,
@@ -56,7 +55,6 @@ export class SubscriptionPlansResolver {
       description: plan.description || undefined,
       paystackPlanCode: plan.paystackPlanCode || undefined,
       trialPeriodDays: plan.trialPeriodDays || undefined,
-      organisationId: plan.organisationId || undefined,
       features: Array.isArray(plan.features)
         ? (plan.features as string[])
         : undefined,
@@ -79,7 +77,6 @@ export class SubscriptionPlansResolver {
       description: plan.description || undefined,
       paystackPlanCode: plan.paystackPlanCode || undefined,
       trialPeriodDays: plan.trialPeriodDays || undefined,
-      organisationId: plan.organisationId || undefined,
       features: Array.isArray(plan.features)
         ? (plan.features as string[])
         : undefined,
@@ -97,7 +94,6 @@ export class SubscriptionPlansResolver {
       description: plan.description ?? undefined,
       trialPeriodDays: plan.trialPeriodDays ?? undefined,
       paystackPlanCode: plan.paystackPlanCode ?? undefined,
-      organisationId: plan.organisationId ?? undefined,
       features: Array.isArray(plan.features) ? plan.features as string[] : undefined,
       activeSubscriptionsCount: plan._count?.subscriptions || 0,
     };
@@ -115,7 +111,6 @@ export class SubscriptionPlansResolver {
       description: plan.description ?? undefined,
       trialPeriodDays: plan.trialPeriodDays ?? undefined,
       paystackPlanCode: plan.paystackPlanCode ?? undefined,
-      organisationId: plan.organisationId ?? undefined,
       features: Array.isArray(plan.features) ? plan.features as string[] : undefined,
       activeSubscriptionsCount: plan._count?.subscriptions || 0,
     };
@@ -132,7 +127,6 @@ export class SubscriptionPlansResolver {
       description: plan.description ?? undefined,
       trialPeriodDays: plan.trialPeriodDays ?? undefined,
       paystackPlanCode: plan.paystackPlanCode ?? undefined,
-      organisationId: plan.organisationId ?? undefined,
       features: Array.isArray(plan.features) ? plan.features as string[] : undefined,
       activeSubscriptionsCount: plan._count?.subscriptions || 0,
     };
@@ -151,7 +145,6 @@ export class SubscriptionPlansResolver {
       description: plan.description || undefined,
       paystackPlanCode: plan.paystackPlanCode || undefined,
       trialPeriodDays: plan.trialPeriodDays || undefined,
-      organisationId: plan.organisationId || undefined,
       features: Array.isArray(plan.features)
         ? (plan.features as string[])
         : undefined,
