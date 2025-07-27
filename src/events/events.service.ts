@@ -4,7 +4,14 @@ import { CreateEventInput, RecurrenceType } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
 import { Event as PrismaEvent, Prisma } from '@prisma/client';
 import { WorkflowsService } from '../workflows/services/workflows.service';
-import { addDays, addWeeks, addMonths, addYears, isBefore, format } from 'date-fns';
+import {
+  addDays,
+  addWeeks,
+  addMonths,
+  addYears,
+  isBefore,
+  format,
+} from 'date-fns';
 
 @Injectable()
 export class EventsService {
@@ -28,6 +35,20 @@ export class EventsService {
 
     // Create a clean data object by spreading the input
     const data = { ...input };
+
+    // Remove recurring fields that don't exist in the Prisma Event model
+    const recurringFields = [
+      'isRecurring',
+      'recurrenceType',
+      'recurrenceInterval',
+      'recurrenceEndDate',
+      'recurrenceDaysOfWeek',
+      'recurrencePattern',
+    ];
+
+    recurringFields.forEach((field) => {
+      delete data[field];
+    });
 
     // Remove undefined fields
     Object.keys(data).forEach((key) => {
@@ -64,29 +85,35 @@ export class EventsService {
   }
 
   async createRecurringEvents(input: CreateEventInput): Promise<PrismaEvent[]> {
-    console.log('🔥 EventsService.createRecurringEvents START');
-    console.log('📥 Service input:', JSON.stringify(input, null, 2));
+    console.log(' EventsService.createRecurringEvents START');
+    console.log(' Service input:', JSON.stringify(input, null, 2));
 
-    if (!input.isRecurring || !input.recurrenceType || !input.recurrenceEndDate) {
-      console.error('❌ Service validation failed: Invalid recurring event configuration');
+    if (
+      !input.isRecurring ||
+      !input.recurrenceType ||
+      !input.recurrenceEndDate
+    ) {
+      console.error(
+        ' Service validation failed: Invalid recurring event configuration',
+      );
       throw new Error('Invalid recurring event configuration');
     }
 
     const events: PrismaEvent[] = [];
-    const { 
-      recurrenceType, 
-      recurrenceInterval = 1, 
+    const {
+      recurrenceType,
+      recurrenceInterval = 1,
       recurrenceEndDate,
       recurrenceDaysOfWeek = [],
-      ...baseEventData 
+      ...baseEventData
     } = input;
 
-    console.log('📊 Extracted data:', {
+    console.log(' Extracted data:', {
       recurrenceType,
       recurrenceInterval,
       recurrenceEndDate,
       recurrenceDaysOfWeek,
-      baseEventData
+      baseEventData,
     });
 
     let currentDate = new Date(input.startDate);
@@ -94,26 +121,35 @@ export class EventsService {
     let eventCount = 0;
     const maxEvents = 100; // Safety limit to prevent infinite loops
 
-    console.log('📅 Date range:', {
+    console.log(' Date range:', {
       startDate: currentDate,
       endDate: endDate,
-      maxEvents
+      maxEvents,
     });
 
     while (isBefore(currentDate, endDate) && eventCount < maxEvents) {
-      console.log(`🔄 Processing event ${eventCount + 1}, current date: ${currentDate}`);
-      
+      console.log(
+        ` Processing event ${eventCount + 1}, current date: ${currentDate}`,
+      );
+
       // For weekly recurrence with specific days, check if current day matches
-      if (recurrenceType === RecurrenceType.WEEKLY && recurrenceDaysOfWeek.length > 0) {
+      if (
+        recurrenceType === RecurrenceType.WEEKLY &&
+        recurrenceDaysOfWeek.length > 0
+      ) {
         const dayOfWeek = format(currentDate, 'EEEE').toUpperCase();
-        const allowedDaysUppercase = recurrenceDaysOfWeek.map(day => day.toUpperCase());
-        console.log(`📆 Weekly check: current day ${dayOfWeek}, allowed days: ${allowedDaysUppercase}`);
+        const allowedDaysUppercase = recurrenceDaysOfWeek.map((day) =>
+          day.toUpperCase(),
+        );
+        console.log(
+          ` Weekly check: current day ${dayOfWeek}, allowed days: ${allowedDaysUppercase}`,
+        );
         if (!allowedDaysUppercase.includes(dayOfWeek)) {
           currentDate = addDays(currentDate, 1);
-          console.log('⏭️ Skipping day, moving to next');
+          console.log(' Skipping day, moving to next');
           continue;
         }
-        console.log('✅ Day matches! Creating event for this day');
+        console.log(' Day matches! Creating event for this day');
       }
 
       // Calculate end date for this occurrence
@@ -132,39 +168,49 @@ export class EventsService {
         location: baseEventData.location,
         category: baseEventData.category,
         ...(baseEventData.branchId && {
-          branch: { connect: { id: baseEventData.branchId } }
+          branch: { connect: { id: baseEventData.branchId } },
         }),
         ...(baseEventData.organisationId && {
-          organisation: { connect: { id: baseEventData.organisationId } }
+          organisation: { connect: { id: baseEventData.organisationId } },
         }),
       };
 
-      console.log(`💾 Creating event ${eventCount + 1}:`, JSON.stringify(eventData, null, 2));
+      console.log(
+        ` Creating event ${eventCount + 1}:`,
+        JSON.stringify(eventData, null, 2),
+      );
 
       try {
-        console.log('🚀 Calling prisma.event.create...');
-        const createdEvent = await this.prisma.event.create({ data: eventData });
-        console.log('✅ Event created successfully:', createdEvent.id);
+        console.log(' Calling prisma.event.create...');
+        const createdEvent = await this.prisma.event.create({
+          data: eventData,
+        });
+        console.log(' Event created successfully:', createdEvent.id);
         events.push(createdEvent);
         eventCount++;
 
         // Trigger workflow automation for each event
         if (baseEventData.organisationId && baseEventData.branchId) {
           try {
-            console.log('🔄 Triggering workflow automation...');
+            console.log(' Triggering workflow automation...');
             await this.workflowsService.handleEventCreated(
               createdEvent.id,
               baseEventData.organisationId,
               baseEventData.branchId,
             );
-            console.log('✅ Workflow triggered successfully');
+            console.log(' Workflow triggered successfully');
           } catch (error) {
-            console.warn(`⚠️ Failed to trigger event created workflow for event ${createdEvent.id}: ${error.message}`);
+            console.warn(
+              ` Failed to trigger event created workflow for event ${createdEvent.id}: ${error.message}`,
+            );
           }
         }
       } catch (error) {
-        console.error(`💥 Failed to create recurring event occurrence:`, error);
-        console.error('📋 Event data that failed:', JSON.stringify(eventData, null, 2));
+        console.error(` Failed to create recurring event occurrence:`, error);
+        console.error(
+          ' Event data that failed:',
+          JSON.stringify(eventData, null, 2),
+        );
         break;
       }
 
@@ -193,8 +239,11 @@ export class EventsService {
       }
     }
 
-    console.log(`🎉 FINAL RESULT: Created ${events.length} recurring events`);
-    console.log('📋 Event IDs created:', events.map(e => e.id));
+    console.log(` FINAL RESULT: Created ${events.length} recurring events`);
+    console.log(
+      ' Event IDs created:',
+      events.map((e) => e.id),
+    );
     return events;
   }
 

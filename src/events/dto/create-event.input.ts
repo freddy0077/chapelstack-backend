@@ -1,18 +1,22 @@
 import { InputType, Field, registerEnumType } from '@nestjs/graphql';
 import { GraphQLISODateTime } from '@nestjs/graphql';
 import {
-  IsNotEmpty,
   IsString,
   IsOptional,
-  IsUUID,
+  IsNotEmpty,
   IsDate,
   IsBoolean,
   IsEnum,
   IsInt,
   Min,
+  IsUUID,
   IsArray,
+  ValidateIf,
+  registerDecorator,
+  ValidationOptions,
+  ValidationArguments,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 // Register RecurrenceType enum for GraphQL
 export enum RecurrenceType {
@@ -26,6 +30,44 @@ registerEnumType(RecurrenceType, {
   name: 'RecurrenceType',
   description: 'Type of event recurrence',
 });
+
+// Custom validator for optional date that handles empty strings
+function IsOptionalDate(validationOptions?: ValidationOptions) {
+  return function (object: Object, propertyName: string) {
+    registerDecorator({
+      name: 'isOptionalDate',
+      target: object.constructor,
+      propertyName: propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: any, args: ValidationArguments) {
+          console.log(`IsOptionalDate validator - Field: ${args.property}, Value:`, JSON.stringify(value), `Type: ${typeof value}`);
+          
+          // Allow undefined, null, empty string, or whitespace-only strings
+          if (value === undefined || value === null || value === '' || 
+              (typeof value === 'string' && value.trim() === '')) {
+            console.log(`IsOptionalDate validator - Allowing empty value for ${args.property}`);
+            return true;
+          }
+          
+          // For non-empty values, check if it's a valid date
+          try {
+            const date = new Date(value);
+            const isValid = !isNaN(date.getTime());
+            console.log(`IsOptionalDate validator - Date validation for ${args.property}:`, isValid);
+            return isValid;
+          } catch (error) {
+            console.log(`IsOptionalDate validator - Error parsing date for ${args.property}:`, error);
+            return false;
+          }
+        },
+        defaultMessage(args: ValidationArguments) {
+          return `${args.property} must be a valid date or empty`;
+        },
+      },
+    });
+  };
+}
 
 @InputType()
 export class CreateEventInput {
@@ -48,7 +90,7 @@ export class CreateEventInput {
   @Field(() => GraphQLISODateTime, { nullable: true })
   @IsOptional()
   @Type(() => Date)
-  @IsDate()
+  @IsOptionalDate()
   endDate?: Date;
 
   @Field({ nullable: true })
@@ -90,8 +132,6 @@ export class CreateEventInput {
 
   @Field(() => GraphQLISODateTime, { nullable: true })
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
   recurrenceEndDate?: Date;
 
   @Field(() => [String], { nullable: true })

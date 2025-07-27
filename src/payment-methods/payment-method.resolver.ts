@@ -1,4 +1,4 @@
-import { Resolver, Query, Args } from '@nestjs/graphql';
+import { Resolver, Query } from '@nestjs/graphql';
 import { PaymentMethod } from './payment-method.entity';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -7,15 +7,9 @@ export class PaymentMethodResolver {
   constructor(private readonly prisma: PrismaService) {}
 
   @Query(() => [PaymentMethod])
-  async paymentMethods(
-    @Args('organisationId', { type: () => String, nullable: true })
-    organisationId?: string,
-  ): Promise<PaymentMethod[]> {
-    const where: any = {};
-    if (organisationId) where.organisationId = organisationId;
+  async paymentMethods(): Promise<PaymentMethod[]> {
     // Fetch up to 50 to ensure uniqueness, then filter for unique names
     const methods = await this.prisma.paymentMethod.findMany({
-      where,
       orderBy: { createdAt: 'desc' },
       take: 50,
     });

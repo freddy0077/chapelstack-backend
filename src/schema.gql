@@ -3485,7 +3485,7 @@ type Query {
   communicationChannelStats(filter: CommunicationStatsFilterInput): [CommunicationChannelStats!]!
   communicationStats(filter: CommunicationStatsFilterInput): CommunicationStatsEntity!
   contribution(id: String!): Contribution!
-  contributionTypes(branchId: String, organisationId: String): [ContributionType!]!
+  contributionTypes: [ContributionType!]!
   contributions(organisationId: String): [Contribution!]!
   counselingSession(id: String!): CounselingSession!
   counselingSessions(filter: CounselingSessionFilterInput!, skip: Int! = 0, take: Int! = 50): [CounselingSession!]!
@@ -3584,7 +3584,7 @@ type Query {
   pastoralVisit(id: String!): PastoralVisit!
   pastoralVisits(filter: PastoralVisitFilterInput!, skip: Int! = 0, take: Int! = 50): [PastoralVisit!]!
   pastoralVisitsCount(filter: PastoralVisitFilterInput!): Int!
-  paymentMethods(organisationId: String): [PaymentMethod!]!
+  paymentMethods: [PaymentMethod!]!
   permissionsGroupedBySubject: [[Permission!]!]!
   pledge(id: String!): Pledge!
   pledges(organisationId: String): [Pledge!]!
