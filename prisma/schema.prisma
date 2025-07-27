@@ -71,23 +71,23 @@ model User {
   transactions              Transaction[]             @relation("UserTransactions")
   passwordResetToken        String?                   @db.VarChar(255)
   passwordResetTokenExpiry  DateTime?
-  
+
   // Workflow relations
-  createdWorkflowTemplates  WorkflowTemplate[]
+  createdWorkflowTemplates    WorkflowTemplate[]
   triggeredWorkflowExecutions WorkflowExecution[]
-  
+
   // Pastoral Care Management relations
-  pastoralVisitsAsPastor    PastoralVisit[]           @relation("PastoralVisitPastor")
-  pastoralVisitsCreated     PastoralVisit[]           @relation("PastoralVisitCreator")
-  counselingSessionsAsCounselor CounselingSession[]   @relation("CounselingSessionCounselor")
-  counselingSessionsCreated CounselingSession[]       @relation("CounselingSessionCreator")
-  careRequestsAssigned      CareRequest[]             @relation("CareRequestAssignedPastor")
-  careRequestsCreated       CareRequest[]             @relation("CareRequestCreator")
-  followUpRemindersAssigned FollowUpReminder[]        @relation("FollowUpReminderAssignedTo")
-  followUpRemindersCreated  FollowUpReminder[]        @relation("FollowUpReminderCreator")
-  
+  pastoralVisitsAsPastor        PastoralVisit[]     @relation("PastoralVisitPastor")
+  pastoralVisitsCreated         PastoralVisit[]     @relation("PastoralVisitCreator")
+  counselingSessionsAsCounselor CounselingSession[] @relation("CounselingSessionCounselor")
+  counselingSessionsCreated     CounselingSession[] @relation("CounselingSessionCreator")
+  careRequestsAssigned          CareRequest[]       @relation("CareRequestAssignedPastor")
+  careRequestsCreated           CareRequest[]       @relation("CareRequestCreator")
+  followUpRemindersAssigned     FollowUpReminder[]  @relation("FollowUpReminderAssignedTo")
+  followUpRemindersCreated      FollowUpReminder[]  @relation("FollowUpReminderCreator")
+
   // Organization suspension relation
-  suspendedOrganizations    Organisation[]            @relation("OrganizationSuspendedBy")
+  suspendedOrganizations Organisation[] @relation("OrganizationSuspendedBy")
 
   @@index([organisationId])
 }
@@ -189,18 +189,18 @@ model Branch {
   scheduledReports         ScheduledReport[]
   userDashboardPreferences UserDashboardPreference[]
   attendanceRecords        AttendanceRecord[]        @relation("BranchAttendanceRecords")
-  
+
   // Workflow relations
-  workflowTemplates        WorkflowTemplate[]
-  workflowExecutions       WorkflowExecution[]
-  workflowTriggers         WorkflowTrigger[]
-  
+  workflowTemplates  WorkflowTemplate[]
+  workflowExecutions WorkflowExecution[]
+  workflowTriggers   WorkflowTrigger[]
+
   // Pastoral Care Management relations
-  pastoralVisits           PastoralVisit[]
-  counselingSessions       CounselingSession[]
-  careRequests             CareRequest[]
-  followUpReminders        FollowUpReminder[]
-  
+  pastoralVisits     PastoralVisit[]
+  counselingSessions CounselingSession[]
+  careRequests       CareRequest[]
+  followUpReminders  FollowUpReminder[]
+
   @@index([organisationId])
 }
 
@@ -518,7 +518,7 @@ model Member {
 
   // Workflow relations
   workflowExecutions WorkflowExecution[]
-  
+
   // Children's Ministry relations
   guardianProfile     Guardian?
   volunteerProfile    ChildrenMinistryVolunteer?
@@ -535,26 +535,26 @@ model Member {
   sacramentalRecords  SacramentalRecord[]
   prayerRequests      PrayerRequest[]
   transactions        Transaction[]
-  
+
   // Transfer relation
   transferRequests TransferRequest[]
-  
+
   // Financial relations
   contributions      Contribution[]
   pledges            Pledge[]
   attendanceRecords  AttendanceRecord[]
   notifications      Notification[]
   MemberNotification MemberNotification[]
-  
+
   // Pastoral Care Management relations
   pastoralVisits     PastoralVisit[]
   counselingSessions CounselingSession[]
   careRequests       CareRequest[]
   followUpReminders  FollowUpReminder[]
-  
+
   // Subscription Management relations
-  paystackCustomer   PaystackCustomer?
-  
+  paystackCustomer PaystackCustomer?
+
   @@index([branchId])
   @@index([status])
   @@index([membershipDate])
@@ -762,17 +762,17 @@ model AttendanceSession {
 }
 
 model AttendanceRecord {
-  id            String            @id @default(uuid())
+  id            String    @id @default(uuid())
   checkInTime   DateTime
   checkOutTime  DateTime?
-  checkInMethod String            @default("MANUAL") // MANUAL, MOBILE, RFID, NFC
+  checkInMethod String    @default("MANUAL") // MANUAL, MOBILE, RFID, NFC
   notes         String?
-  
+
   // Flexible attendance linking - can link to either session OR event
-  sessionId     String?
-  session       AttendanceSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  eventId       String?
-  event         Event?            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sessionId String?
+  session   AttendanceSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  eventId   String?
+  event     Event?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   // Either member or visitor info
   memberId     String?
@@ -1742,42 +1742,42 @@ model OnboardingProgress {
 }
 
 model Organisation {
-  id                         String                      @id @default(uuid())
-  name                       String
-  email                      String?                     @unique
-  phoneNumber                String?
-  website                    String?
-  address                    String?
-  city                       String?
-  state                      String?
-  country                    String?
-  zipCode                    String?
-  denomination               String?
-  foundingYear               Int?
-  size                       String?
-  vision                     String?
-  missionStatement           String?
-  description                String?
-  timezone                   String?
-  currency                   String?
-  primaryColor               String
-  secondaryColor             String
-  accentColor                String?
-  logoUrl                    String?
-  faviconUrl                 String?
-  slogan                     String?
-  brandFont                  String?
-  socialHandle               String?
-  createdAt                  DateTime                    @default(now())
-  updatedAt                  DateTime                    @updatedAt
-  
+  id               String   @id @default(uuid())
+  name             String
+  email            String?  @unique
+  phoneNumber      String?
+  website          String?
+  address          String?
+  city             String?
+  state            String?
+  country          String?
+  zipCode          String?
+  denomination     String?
+  foundingYear     Int?
+  size             String?
+  vision           String?
+  missionStatement String?
+  description      String?
+  timezone         String?
+  currency         String?
+  primaryColor     String
+  secondaryColor   String
+  accentColor      String?
+  logoUrl          String?
+  faviconUrl       String?
+  slogan           String?
+  brandFont        String?
+  socialHandle     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
   // Organization status management
-  status                     OrganisationStatus          @default(ACTIVE)
-  suspensionReason           String?
-  suspendedAt                DateTime?
-  suspendedBy                String?
-  suspendedByUser            User?                       @relation("OrganizationSuspendedBy", fields: [suspendedBy], references: [id])
-  
+  status           OrganisationStatus @default(ACTIVE)
+  suspensionReason String?
+  suspendedAt      DateTime?
+  suspendedBy      String?
+  suspendedByUser  User?              @relation("OrganizationSuspendedBy", fields: [suspendedBy], references: [id])
+
   branches                   Branch[]
   users                      User[]
   members                    Member[]
@@ -1817,24 +1817,23 @@ model Organisation {
   notifications              Notification[]
   attendanceRecords          AttendanceRecord[]
   transactions               Transaction[]               @relation("OrganisationTransactions")
-  
+
   // Workflow relations
-  workflowTemplates          WorkflowTemplate[]
-  workflowExecutions         WorkflowExecution[]
-  workflowTriggers           WorkflowTrigger[]
-  
+  workflowTemplates  WorkflowTemplate[]
+  workflowExecutions WorkflowExecution[]
+  workflowTriggers   WorkflowTrigger[]
+
   // Pastoral Care Management relations
-  pastoralVisits             PastoralVisit[]
-  counselingSessions         CounselingSession[]
-  careRequests               CareRequest[]
-  followUpReminders          FollowUpReminder[]
-  
+  pastoralVisits     PastoralVisit[]
+  counselingSessions CounselingSession[]
+  careRequests       CareRequest[]
+  followUpReminders  FollowUpReminder[]
+
   // Subscription Management relations
-  subscriptionPlans          SubscriptionPlan[]
-  subscriptions              Subscription[]              @relation("SubscriptionOrganisation")
-  subscriptionsAsCustomer    Subscription[]              @relation("SubscriptionCustomer")
-  webhookEvents              WebhookEvent[]
-  
+  subscriptions           Subscription[] @relation("SubscriptionOrganisation")
+  subscriptionsAsCustomer Subscription[] @relation("SubscriptionCustomer")
+  webhookEvents           WebhookEvent[]
+
   @@index([email])
 }
 
@@ -1860,7 +1859,7 @@ model Event {
   // Relationships
   transactions      Transaction[]
   attendanceRecords AttendanceRecord[]
-  
+
   // Workflow relations
   workflowExecutions WorkflowExecution[]
 
@@ -2013,37 +2012,37 @@ enum WorkflowExecutionStatus {
 }
 
 model WorkflowTemplate {
-  id              String        @id @default(uuid())
-  name            String
-  description     String?
-  type            WorkflowType
-  status          WorkflowStatus @default(ACTIVE)
-  triggerType     WorkflowTriggerType
-  triggerConfig   Json?         // Configuration for trigger conditions
-  
+  id            String              @id @default(uuid())
+  name          String
+  description   String?
+  type          WorkflowType
+  status        WorkflowStatus      @default(ACTIVE)
+  triggerType   WorkflowTriggerType
+  triggerConfig Json? // Configuration for trigger conditions
+
   // Organization and Branch scoping
-  organisationId  String
-  branchId        String?
-  
+  organisationId String
+  branchId       String?
+
   // Workflow steps/actions
-  actions         WorkflowAction[]
-  
+  actions WorkflowAction[]
+
   // Execution tracking
-  executions      WorkflowExecution[]
-  
+  executions WorkflowExecution[]
+
   // Trigger tracking
-  triggers        WorkflowTrigger[]
-  
+  triggers WorkflowTrigger[]
+
   // Metadata
-  createdBy       String
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  organisation    Organisation  @relation(fields: [organisationId], references: [id])
-  branch          Branch?       @relation(fields: [branchId], references: [id])
-  creator         User          @relation(fields: [createdBy], references: [id])
-  
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  creator      User         @relation(fields: [createdBy], references: [id])
+
   @@index([organisationId])
   @@index([branchId])
   @@index([type])
@@ -2052,64 +2051,64 @@ model WorkflowTemplate {
 }
 
 model WorkflowAction {
-  id              String              @id @default(uuid())
-  workflowId      String
-  stepNumber      Int
-  actionType      WorkflowActionType
-  actionConfig    Json                // Configuration for the action
-  delayMinutes    Int?                // Delay before executing this action
-  
+  id           String             @id @default(uuid())
+  workflowId   String
+  stepNumber   Int
+  actionType   WorkflowActionType
+  actionConfig Json // Configuration for the action
+  delayMinutes Int? // Delay before executing this action
+
   // Conditions for execution
-  conditions      Json?               // Conditions that must be met
-  
+  conditions Json? // Conditions that must be met
+
   // Relations
-  workflow        WorkflowTemplate    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  executions      WorkflowActionExecution[]
-  
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  
+  workflow   WorkflowTemplate          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  executions WorkflowActionExecution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([workflowId])
   @@index([stepNumber])
 }
 
 model WorkflowExecution {
-  id              String                    @id @default(uuid())
-  workflowId      String
-  status          WorkflowExecutionStatus   @default(PENDING)
-  
+  id         String                  @id @default(uuid())
+  workflowId String
+  status     WorkflowExecutionStatus @default(PENDING)
+
   // Trigger context
-  triggeredBy     String?                   // User ID who triggered (if manual)
-  triggerData     Json?                     // Data that triggered the workflow
-  
+  triggeredBy String? // User ID who triggered (if manual)
+  triggerData Json? // Data that triggered the workflow
+
   // Target context
-  targetMemberId  String?                   // Member this workflow is running for
-  targetEventId   String?                   // Event this workflow is related to
-  targetData      Json?                     // Additional target data
-  
+  targetMemberId String? // Member this workflow is running for
+  targetEventId  String? // Event this workflow is related to
+  targetData     Json? // Additional target data
+
   // Execution tracking
-  startedAt       DateTime?
-  completedAt     DateTime?
-  errorMessage    String?
-  
+  startedAt    DateTime?
+  completedAt  DateTime?
+  errorMessage String?
+
   // Organization and Branch scoping
-  organisationId  String
-  branchId        String?
-  
+  organisationId String
+  branchId       String?
+
   // Relations
-  workflow        WorkflowTemplate          @relation(fields: [workflowId], references: [id])
-  organisation    Organisation              @relation(fields: [organisationId], references: [id])
-  branch          Branch?                   @relation(fields: [branchId], references: [id])
-  targetMember    Member?                   @relation(fields: [targetMemberId], references: [id])
-  targetEvent     Event?                    @relation(fields: [targetEventId], references: [id])
-  triggeredByUser User?                     @relation(fields: [triggeredBy], references: [id])
-  
+  workflow        WorkflowTemplate @relation(fields: [workflowId], references: [id])
+  organisation    Organisation     @relation(fields: [organisationId], references: [id])
+  branch          Branch?          @relation(fields: [branchId], references: [id])
+  targetMember    Member?          @relation(fields: [targetMemberId], references: [id])
+  targetEvent     Event?           @relation(fields: [targetEventId], references: [id])
+  triggeredByUser User?            @relation(fields: [triggeredBy], references: [id])
+
   // Action executions
   actionExecutions WorkflowActionExecution[]
-  
-  createdAt       DateTime                  @default(now())
-  updatedAt       DateTime                  @updatedAt
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([workflowId])
   @@index([status])
   @@index([organisationId])
@@ -2120,55 +2119,55 @@ model WorkflowExecution {
 }
 
 model WorkflowActionExecution {
-  id              String                    @id @default(uuid())
-  executionId     String
-  actionId        String
-  status          WorkflowExecutionStatus   @default(PENDING)
-  
+  id          String                  @id @default(uuid())
+  executionId String
+  actionId    String
+  status      WorkflowExecutionStatus @default(PENDING)
+
   // Execution details
-  startedAt       DateTime?
-  completedAt     DateTime?
-  errorMessage    String?
-  result          Json?                     // Result data from action execution
-  
+  startedAt    DateTime?
+  completedAt  DateTime?
+  errorMessage String?
+  result       Json? // Result data from action execution
+
   // Relations
-  execution       WorkflowExecution         @relation(fields: [executionId], references: [id], onDelete: Cascade)
-  action          WorkflowAction            @relation(fields: [actionId], references: [id])
-  
-  createdAt       DateTime                  @default(now())
-  updatedAt       DateTime                  @updatedAt
-  
+  execution WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  action    WorkflowAction    @relation(fields: [actionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([executionId])
   @@index([actionId])
   @@index([status])
 }
 
 model WorkflowTrigger {
-  id              String              @id @default(uuid())
-  workflowId      String
-  triggerType     WorkflowTriggerType
-  triggerConfig   Json                // Configuration for when to trigger
-  
+  id            String              @id @default(uuid())
+  workflowId    String
+  triggerType   WorkflowTriggerType
+  triggerConfig Json // Configuration for when to trigger
+
   // Scheduling for time-based triggers
-  cronExpression  String?             // For recurring triggers
-  nextRunAt       DateTime?           // Next scheduled run
-  
+  cronExpression String? // For recurring triggers
+  nextRunAt      DateTime? // Next scheduled run
+
   // Status
-  isActive        Boolean             @default(true)
+  isActive        Boolean   @default(true)
   lastTriggeredAt DateTime?
-  
+
   // Organization and Branch
-  organisationId  String
-  branchId        String?
-  
+  organisationId String
+  branchId       String?
+
   // Relations
-  workflow        WorkflowTemplate    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  organisation    Organisation        @relation(fields: [organisationId], references: [id])
-  branch          Branch?             @relation(fields: [branchId], references: [id])
-  
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  
+  workflow     WorkflowTemplate @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  organisation Organisation     @relation(fields: [organisationId], references: [id])
+  branch       Branch?          @relation(fields: [branchId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([workflowId])
   @@index([triggerType])
   @@index([organisationId])
@@ -2272,51 +2271,51 @@ enum FollowUpStatus {
 
 // Pastoral Visit Tracking
 model PastoralVisit {
-  id              String              @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   // Basic Information
-  title           String
-  description     String?
-  visitType       PastoralVisitType
-  status          PastoralVisitStatus @default(SCHEDULED)
-  
+  title       String
+  description String?
+  visitType   PastoralVisitType
+  status      PastoralVisitStatus @default(SCHEDULED)
+
   // Scheduling
-  scheduledDate   DateTime
-  actualDate      DateTime?
-  duration        Int?                // Duration in minutes
-  location        String?
-  
+  scheduledDate DateTime
+  actualDate    DateTime?
+  duration      Int? // Duration in minutes
+  location      String?
+
   // Participants
-  memberId        String
-  pastorId        String              // User ID of the pastor
-  additionalAttendees String?         // JSON array of additional attendee IDs
-  
+  memberId            String
+  pastorId            String // User ID of the pastor
+  additionalAttendees String? // JSON array of additional attendee IDs
+
   // Visit Details
-  notes           String?
-  privateNotes    String?             // Only visible to pastoral staff
-  actionItems     String?             // JSON array of follow-up actions
-  followUpNeeded  Boolean             @default(false)
-  followUpDate    DateTime?
-  
+  notes          String?
+  privateNotes   String? // Only visible to pastoral staff
+  actionItems    String? // JSON array of follow-up actions
+  followUpNeeded Boolean   @default(false)
+  followUpDate   DateTime?
+
   // Organization and Branch
-  organisationId  String
-  branchId        String?
-  
+  organisationId String
+  branchId       String?
+
   // Metadata
-  createdBy       String
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  member          Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  pastor          User                @relation("PastoralVisitPastor", fields: [pastorId], references: [id])
-  organisation    Organisation        @relation(fields: [organisationId], references: [id])
-  branch          Branch?             @relation(fields: [branchId], references: [id])
-  creator         User                @relation("PastoralVisitCreator", fields: [createdBy], references: [id])
-  
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pastor       User         @relation("PastoralVisitPastor", fields: [pastorId], references: [id])
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  creator      User         @relation("PastoralVisitCreator", fields: [createdBy], references: [id])
+
   // Follow-up reminders
   followUpReminders FollowUpReminder[]
-  
+
   @@index([memberId])
   @@index([pastorId])
   @@index([organisationId])
@@ -2328,57 +2327,57 @@ model PastoralVisit {
 
 // Counseling Session Management
 model CounselingSession {
-  id              String                  @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   // Basic Information
-  title           String
-  description     String?
-  sessionType     CounselingSessionType
-  status          CounselingSessionStatus @default(SCHEDULED)
-  
+  title       String
+  description String?
+  sessionType CounselingSessionType
+  status      CounselingSessionStatus @default(SCHEDULED)
+
   // Scheduling
-  scheduledDate   DateTime
-  actualDate      DateTime?
-  duration        Int?                    // Duration in minutes
-  location        String?
-  isRecurring     Boolean                 @default(false)
-  recurringPattern String?                // JSON for recurring schedule
-  
+  scheduledDate    DateTime
+  actualDate       DateTime?
+  duration         Int? // Duration in minutes
+  location         String?
+  isRecurring      Boolean   @default(false)
+  recurringPattern String? // JSON for recurring schedule
+
   // Participants
-  primaryMemberId String                  // Primary member being counseled
-  counselorId     String                  // User ID of the counselor
-  additionalMembers String?               // JSON array of additional member IDs (for couples/family)
-  
+  primaryMemberId   String // Primary member being counseled
+  counselorId       String // User ID of the counselor
+  additionalMembers String? // JSON array of additional member IDs (for couples/family)
+
   // Session Details
-  sessionNotes    String?
-  privateNotes    String?                 // Only visible to counseling staff
-  homework        String?                 // Assignments or homework for member
-  nextSteps       String?                 // Next steps or goals
-  
+  sessionNotes String?
+  privateNotes String? // Only visible to counseling staff
+  homework     String? // Assignments or homework for member
+  nextSteps    String? // Next steps or goals
+
   // Progress Tracking
-  sessionNumber   Int                     @default(1)
-  totalSessions   Int?                    // Planned total sessions
-  progressNotes   String?
-  
+  sessionNumber Int     @default(1)
+  totalSessions Int? // Planned total sessions
+  progressNotes String?
+
   // Organization and Branch
-  organisationId  String
-  branchId        String?
-  
+  organisationId String
+  branchId       String?
+
   // Metadata
-  createdBy       String
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-  
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  primaryMember   Member                  @relation(fields: [primaryMemberId], references: [id])
-  counselor       User                    @relation("CounselingSessionCounselor", fields: [counselorId], references: [id])
-  organisation    Organisation            @relation(fields: [organisationId], references: [id])
-  branch          Branch?                 @relation(fields: [branchId], references: [id])
-  creator         User                    @relation("CounselingSessionCreator", fields: [createdBy], references: [id])
-  
+  primaryMember Member       @relation(fields: [primaryMemberId], references: [id])
+  counselor     User         @relation("CounselingSessionCounselor", fields: [counselorId], references: [id])
+  organisation  Organisation @relation(fields: [organisationId], references: [id])
+  branch        Branch?      @relation(fields: [branchId], references: [id])
+  creator       User         @relation("CounselingSessionCreator", fields: [createdBy], references: [id])
+
   // Follow-up reminders
   followUpReminders FollowUpReminder[]
-  
+
   @@index([primaryMemberId])
   @@index([counselorId])
   @@index([organisationId])
@@ -2390,54 +2389,54 @@ model CounselingSession {
 
 // Care Request Workflow
 model CareRequest {
-  id              String              @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   // Basic Information
-  title           String
-  description     String
-  requestType     CareRequestType
-  priority        CareRequestPriority @default(MEDIUM)
-  status          CareRequestStatus   @default(SUBMITTED)
-  
+  title       String
+  description String
+  requestType CareRequestType
+  priority    CareRequestPriority @default(MEDIUM)
+  status      CareRequestStatus   @default(SUBMITTED)
+
   // Request Details
-  urgentNotes     String?             // Special notes for urgent requests
-  contactInfo     String?             // Alternative contact information
-  preferredContactMethod String?      // Phone, email, in-person, etc.
-  
+  urgentNotes            String? // Special notes for urgent requests
+  contactInfo            String? // Alternative contact information
+  preferredContactMethod String? // Phone, email, in-person, etc.
+
   // Assignment
-  requesterId     String?             // Member who made the request (can be null for anonymous)
-  assignedPastorId String?            // Assigned pastoral staff
-  assignedDate    DateTime?
-  
+  requesterId      String? // Member who made the request (can be null for anonymous)
+  assignedPastorId String? // Assigned pastoral staff
+  assignedDate     DateTime?
+
   // Timeline
-  requestDate     DateTime            @default(now())
-  responseDate    DateTime?           // When first response was made
-  completionDate  DateTime?
-  
+  requestDate    DateTime  @default(now())
+  responseDate   DateTime? // When first response was made
+  completionDate DateTime?
+
   // Response and Resolution
   responseNotes   String?
   resolutionNotes String?
-  actionsTaken    String?             // JSON array of actions taken
-  
+  actionsTaken    String? // JSON array of actions taken
+
   // Organization and Branch
-  organisationId  String
-  branchId        String?
-  
+  organisationId String
+  branchId       String?
+
   // Metadata
-  createdBy       String
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  requester       Member?             @relation(fields: [requesterId], references: [id])
-  assignedPastor  User?               @relation("CareRequestAssignedPastor", fields: [assignedPastorId], references: [id])
-  organisation    Organisation        @relation(fields: [organisationId], references: [id])
-  branch          Branch?             @relation(fields: [branchId], references: [id])
-  creator         User                @relation("CareRequestCreator", fields: [createdBy], references: [id])
-  
+  requester      Member?      @relation(fields: [requesterId], references: [id])
+  assignedPastor User?        @relation("CareRequestAssignedPastor", fields: [assignedPastorId], references: [id])
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+  branch         Branch?      @relation(fields: [branchId], references: [id])
+  creator        User         @relation("CareRequestCreator", fields: [createdBy], references: [id])
+
   // Follow-up reminders
   followUpReminders FollowUpReminder[]
-  
+
   @@index([requesterId])
   @@index([assignedPastorId])
   @@index([organisationId])
@@ -2450,52 +2449,52 @@ model CareRequest {
 
 // Follow-up Reminder System
 model FollowUpReminder {
-  id              String              @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   // Basic Information
-  title           String
-  description     String?
-  followUpType    FollowUpType
-  status          FollowUpStatus      @default(PENDING)
-  
+  title        String
+  description  String?
+  followUpType FollowUpType
+  status       FollowUpStatus @default(PENDING)
+
   // Scheduling
-  dueDate         DateTime
-  completedDate   DateTime?
-  reminderDate    DateTime?           // When to send reminder notification
-  
+  dueDate       DateTime
+  completedDate DateTime?
+  reminderDate  DateTime? // When to send reminder notification
+
   // Related Records (polymorphic relationships)
-  pastoralVisitId String?
+  pastoralVisitId     String?
   counselingSessionId String?
-  careRequestId   String?
-  memberId        String?             // Direct member follow-up
-  
+  careRequestId       String?
+  memberId            String? // Direct member follow-up
+
   // Assignment
-  assignedToId    String              // User ID of assigned pastoral staff
-  
+  assignedToId String // User ID of assigned pastoral staff
+
   // Follow-up Details
   notes           String?
   completionNotes String?
-  actionRequired  String?             // What action needs to be taken
-  
+  actionRequired  String? // What action needs to be taken
+
   // Organization and Branch
-  organisationId  String
-  branchId        String?
-  
+  organisationId String
+  branchId       String?
+
   // Metadata
-  createdBy       String
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  pastoralVisit   PastoralVisit?      @relation(fields: [pastoralVisitId], references: [id])
+  pastoralVisit     PastoralVisit?     @relation(fields: [pastoralVisitId], references: [id])
   counselingSession CounselingSession? @relation(fields: [counselingSessionId], references: [id])
-  careRequest     CareRequest?        @relation(fields: [careRequestId], references: [id])
-  member          Member?             @relation(fields: [memberId], references: [id])
-  assignedTo      User                @relation("FollowUpReminderAssignedTo", fields: [assignedToId], references: [id])
-  organisation    Organisation        @relation(fields: [organisationId], references: [id])
-  branch          Branch?             @relation(fields: [branchId], references: [id])
-  creator         User                @relation("FollowUpReminderCreator", fields: [createdBy], references: [id])
-  
+  careRequest       CareRequest?       @relation(fields: [careRequestId], references: [id])
+  member            Member?            @relation(fields: [memberId], references: [id])
+  assignedTo        User               @relation("FollowUpReminderAssignedTo", fields: [assignedToId], references: [id])
+  organisation      Organisation       @relation(fields: [organisationId], references: [id])
+  branch            Branch?            @relation(fields: [branchId], references: [id])
+  creator           User               @relation("FollowUpReminderCreator", fields: [createdBy], references: [id])
+
   @@index([assignedToId])
   @@index([organisationId])
   @@index([branchId])
@@ -2537,21 +2536,21 @@ enum SubscriptionInterval {
 
 // Subscription Plans
 model SubscriptionPlan {
-  id                String              @id @default(uuid())
-  name              String
-  description       String?
-  amount            Float
-  currency          String              @default("NGN")
-  interval          SubscriptionInterval @default(MONTHLY)
-  intervalCount     Int                 @default(1)
-  trialPeriodDays   Int?
-  isActive          Boolean             @default(true)
-  paystackPlanCode  String?             @unique
-  features          Json?               // JSON array of features
-  metadata          Json?               // Additional metadata
-  subscriptions     Subscription[]
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  id               String               @id @default(uuid())
+  name             String
+  description      String?
+  amount           Float
+  currency         String               @default("NGN")
+  interval         SubscriptionInterval @default(MONTHLY)
+  intervalCount    Int                  @default(1)
+  trialPeriodDays  Int?
+  isActive         Boolean              @default(true)
+  paystackPlanCode String?              @unique
+  features         Json? // JSON array of features
+  metadata         Json? // Additional metadata
+  subscriptions    Subscription[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
 
   @@index([isActive])
   @@index([paystackPlanCode])
@@ -2559,30 +2558,30 @@ model SubscriptionPlan {
 
 // Customer Subscriptions
 model Subscription {
-  id                    String              @id @default(uuid())
-  customerId            String
-  customer              Organisation        @relation("SubscriptionCustomer", fields: [customerId], references: [id], onDelete: Cascade)
-  planId                String
-  plan                  SubscriptionPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
-  status                SubscriptionStatus  @default(ACTIVE)
-  paystackSubscriptionCode String?          @unique
-  paystackCustomerCode  String?
-  currentPeriodStart    DateTime
-  currentPeriodEnd      DateTime
-  trialStart            DateTime?
-  trialEnd              DateTime?
-  cancelledAt           DateTime?
-  cancelAtPeriodEnd     Boolean            @default(false)
-  cancelReason          String?
-  nextBillingDate       DateTime?
-  lastPaymentDate       DateTime?
-  failedPaymentCount    Int                @default(0)
-  metadata              Json?              // Additional metadata
-  organisationId        String
-  organisation          Organisation       @relation("SubscriptionOrganisation", fields: [organisationId], references: [id], onDelete: Cascade)
-  payments              SubscriptionPayment[]
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  id                       String                @id @default(uuid())
+  customerId               String
+  customer                 Organisation          @relation("SubscriptionCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  planId                   String
+  plan                     SubscriptionPlan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  status                   SubscriptionStatus    @default(ACTIVE)
+  paystackSubscriptionCode String?               @unique
+  paystackCustomerCode     String?
+  currentPeriodStart       DateTime
+  currentPeriodEnd         DateTime
+  trialStart               DateTime?
+  trialEnd                 DateTime?
+  cancelledAt              DateTime?
+  cancelAtPeriodEnd        Boolean               @default(false)
+  cancelReason             String?
+  nextBillingDate          DateTime?
+  lastPaymentDate          DateTime?
+  failedPaymentCount       Int                   @default(0)
+  metadata                 Json? // Additional metadata
+  organisationId           String
+  organisation             Organisation          @relation("SubscriptionOrganisation", fields: [organisationId], references: [id], onDelete: Cascade)
+  payments                 SubscriptionPayment[]
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
 
   @@index([customerId])
   @@index([planId])
@@ -2595,24 +2594,24 @@ model Subscription {
 
 // Subscription Payment Records
 model SubscriptionPayment {
-  id                String        @id @default(uuid())
-  subscriptionId    String
-  subscription      Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  amount            Float
-  currency          String        @default("NGN")
-  status            PaymentStatus @default(PENDING)
-  paystackReference String?       @unique
-  paystackTransactionId String?   @unique
-  authorizationCode String?
-  paidAt            DateTime?
-  failedAt          DateTime?
-  periodStart       DateTime
-  periodEnd         DateTime
-  invoiceNumber     String?
-  failureReason     String?
-  metadata          Json?         // Additional payment metadata
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  id                    String        @id @default(uuid())
+  subscriptionId        String
+  subscription          Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  amount                Float
+  currency              String        @default("NGN")
+  status                PaymentStatus @default(PENDING)
+  paystackReference     String?       @unique
+  paystackTransactionId String?       @unique
+  authorizationCode     String?
+  paidAt                DateTime?
+  failedAt              DateTime?
+  periodStart           DateTime
+  periodEnd             DateTime
+  invoiceNumber         String?
+  failureReason         String?
+  metadata              Json? // Additional payment metadata
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   @@index([subscriptionId])
   @@index([status])
@@ -2624,17 +2623,17 @@ model SubscriptionPayment {
 
 // Paystack Customers (for caching customer data)
 model PaystackCustomer {
-  id                String    @id @default(uuid())
-  memberId          String    @unique
-  member            Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  paystackCustomerCode String @unique
-  email             String
-  firstName         String?
-  lastName          String?
-  phone             String?
-  metadata          Json?     // Additional customer metadata
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                   String   @id @default(uuid())
+  memberId             String   @unique
+  member               Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  paystackCustomerCode String   @unique
+  email                String
+  firstName            String?
+  lastName             String?
+  phone                String?
+  metadata             Json? // Additional customer metadata
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([memberId])
   @@index([paystackCustomerCode])
@@ -2643,18 +2642,18 @@ model PaystackCustomer {
 
 // Webhook Events Log
 model WebhookEvent {
-  id            String    @id @default(uuid())
-  eventType     String    // subscription.create, invoice.payment_failed, etc.
-  paystackId    String?   // Paystack event ID
-  data          Json      // Event payload
-  processed     Boolean   @default(false)
-  processedAt   DateTime?
-  errorMessage  String?
-  retryCount    Int       @default(0)
+  id             String        @id @default(uuid())
+  eventType      String // subscription.create, invoice.payment_failed, etc.
+  paystackId     String? // Paystack event ID
+  data           Json // Event payload
+  processed      Boolean       @default(false)
+  processedAt    DateTime?
+  errorMessage   String?
+  retryCount     Int           @default(0)
   organisationId String?
-  organisation  Organisation? @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  organisation   Organisation? @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([eventType])
   @@index([processed])
