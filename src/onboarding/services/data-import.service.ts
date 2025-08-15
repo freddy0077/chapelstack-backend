@@ -403,8 +403,8 @@ export class DataImportService {
             phoneNumber: phoneNumber,
             address: address,
             dateOfBirth,
-            gender: gender || '',
-            membershipStatus: membershipStatus,
+            gender: (gender as any) || 'MALE',
+            membershipStatus: (membershipStatus as any) || 'VISITOR',
             branch: { connect: { id: branchId } },
           },
         });

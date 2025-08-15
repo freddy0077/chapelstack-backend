@@ -15,10 +15,20 @@ import {
   MemberStatistics,
   MemberStatisticsPeriod,
   MemberAgeGroup,
+  MemberStatusDistribution,
+  MemberMembershipStatusDistribution,
 } from '../dto/member-statistics.output';
 import { GenderDistribution } from '../../reporting/entities/member-demographics-data.entity';
 import { MemberDashboard } from '../dto/member-dashboard.dto';
 import { WorkflowsService } from '../../workflows/services/workflows.service';
+import { MemberIdGenerationService } from '../../common/services/member-id-generation.service';
+import {
+  BulkAddToGroupInput,
+  BulkAddToMinistryInput,
+  BulkRemoveFromGroupInput,
+  BulkRemoveFromMinistryInput,
+} from '../dto/bulk-actions.input';
+import {User} from "../../users/entities/user.entity";
 
 @Injectable()
 export class MembersService {
@@ -46,6 +56,7 @@ export class MembersService {
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService,
     private readonly workflowsService: WorkflowsService,
+    private readonly memberIdGenerationService: MemberIdGenerationService,
   ) {}
 
   async createMember(data: {
@@ -70,9 +81,29 @@ export class MembersService {
         );
       }
 
+      // Generate Member ID for the new member
+      let memberId: string | undefined;
+      if (data.organisationId && data.branchId) {
+        try {
+          memberId = await this.memberIdGenerationService.generateMemberId(
+            data.organisationId,
+            data.branchId,
+            new Date().getFullYear(),
+          );
+          this.logger.log(
+            `Generated Member ID: ${memberId} for ${data.firstName} ${data.lastName}`,
+          );
+        } catch (error) {
+          this.logger.warn(`Failed to generate Member ID: ${error.message}`);
+          // Continue without Member ID - can be generated later
+        }
+      }
+
       const member = await this.prisma.member.create({
         data: {
           ...data,
+          memberId,
+          memberIdGeneratedAt: memberId ? new Date() : undefined,
           status: MemberStatus.ACTIVE,
           gender: 'MALE',
         },
@@ -136,7 +167,7 @@ export class MembersService {
       // Generate a unique RFID Card ID with retry logic
       const prefix = 'M';
       const year = new Date().getFullYear();
-      let rfidCardId: string;
+      let rfidCardId: string | null;
       let attempt = 0;
       const maxAttempts = 5;
       while (true) {
@@ -149,115 +180,154 @@ export class MembersService {
         } else {
           lastMemberCount = await this.prisma.member.count();
         }
-        const id = String(lastMemberCount + 1 + attempt).padStart(6, '0');
-        rfidCardId = `${prefix}-${year}-${branchCode}-${id}`;
-        // Check for existing RFID
-        const exists = await this.prisma.member.findUnique({
-          where: { rfidCardId },
+
+        const nextId = lastMemberCount + 1;
+        rfidCardId = `${prefix}${year}${branchCode}${nextId.toString().padStart(4, '0')}`;
+
+        // Check if this RFID card ID already exists
+        const existingMember = await this.prisma.member.findUnique({
+          where: { memberId: rfidCardId },
         });
-        if (!exists) break;
+
+        if (!existingMember) {
+          break; // Unique ID found
+        }
+
         attempt++;
         if (attempt >= maxAttempts) {
-          throw new Error(
-            'Failed to generate a unique RFID Card ID after several attempts.',
+          this.logger.warn(
+            `Failed to generate unique RFID card ID after ${maxAttempts} attempts`,
           );
+          rfidCardId = null; // Don't assign RFID if we can't generate unique one
+          break;
         }
       }
 
+      // Create the member with enhanced fields and proper defaults
       const member = await this.prisma.member.create({
         data: {
-          firstName: createMemberInput.firstName,
-          middleName: createMemberInput.middleName,
-          lastName: createMemberInput.lastName,
-          email: createMemberInput.email,
-          phoneNumber: createMemberInput.phoneNumber,
-          address: createMemberInput.address,
-          city: createMemberInput.city,
-          state: createMemberInput.state,
-          postalCode: createMemberInput.postalCode,
-          country: createMemberInput.country,
-          dateOfBirth: createMemberInput.dateOfBirth,
-          gender: createMemberInput.gender as unknown as string,
-          maritalStatus: createMemberInput.maritalStatus,
-          occupation: createMemberInput.occupation,
-          employerName: createMemberInput.employerName,
-          status: createMemberInput.status as unknown as string,
-          membershipDate: createMemberInput.membershipDate,
-          baptismDate: (() => {
-            const val: string | Date = createMemberInput.baptismDate as
-              | string
-              | Date;
-            if (val == null) return null;
-            if (typeof val === 'string') {
-              return val.trim() === '' ? null : val;
-            }
-            return val;
-          })(),
-          confirmationDate: (() => {
-            const val: string | Date = createMemberInput.confirmationDate as
-              | string
-              | Date;
-            if (val == null) return null;
-            if (typeof val === 'string') {
-              return val.trim() === '' ? null : val;
-            }
-            return val;
-          })(),
-          customFields: createMemberInput.customFields as Prisma.InputJsonValue,
-          privacySettings:
-            createMemberInput.privacySettings as Prisma.InputJsonValue,
-          notes: createMemberInput.notes,
-          branchId: createMemberInput.branchId,
-          organisationId: createMemberInput.organisationId,
-          spouseId: createMemberInput.spouseId,
-          parentId: createMemberInput.parentId,
-          rfidCardId, // Assign generated RFID Card ID
+          ...createMemberInput,
+          memberId: rfidCardId,
+          // Set audit fields
+          createdBy: userId,
+          lastModifiedBy: userId,
+          // Set GDPR compliance defaults if not provided
+          consentDate: createMemberInput.consentDate || new Date(),
+          consentVersion: createMemberInput.consentVersion || '1.0',
+          // Create supporting records
+          communicationPrefs: {
+            create: {
+              emailEnabled: true,
+              emailNewsletter: true,
+              emailEvents: true,
+              emailReminders: true,
+              emailPrayer: true,
+              smsEnabled: false,
+              smsEvents: false,
+              smsReminders: false,
+              smsEmergency: true,
+              phoneCallsEnabled: true,
+              phoneEmergency: true,
+              physicalMail: true,
+              pushNotifications: true,
+              doNotDisturbDays: [],
+            },
+          },
+          searchIndex: {
+            create: {
+              fullName: [
+                createMemberInput.firstName,
+                createMemberInput.middleName,
+                createMemberInput.lastName,
+              ]
+                .filter(Boolean)
+                .join(' '),
+              searchName: [
+                createMemberInput.firstName,
+                createMemberInput.middleName,
+                createMemberInput.lastName,
+              ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase(),
+              phoneNumbers: [
+                createMemberInput.phoneNumber,
+                createMemberInput.alternatePhone,
+              ].filter((phone): phone is string => Boolean(phone)),
+              emails: [
+                createMemberInput.email,
+                (createMemberInput as any).alternativeEmail,
+              ].filter((email): email is string => Boolean(email)),
+              addresses: [
+                [
+                  createMemberInput.address,
+                  (createMemberInput as any).addressLine2,
+                  createMemberInput.city,
+                  createMemberInput.state,
+                  createMemberInput.postalCode,
+                  createMemberInput.country,
+                  (createMemberInput as any).district,
+                  (createMemberInput as any).region,
+                  (createMemberInput as any).digitalAddress,
+                  (createMemberInput as any).landmark,
+                ]
+                  .filter(Boolean)
+                  .join(', '),
+              ].filter(Boolean),
+              tags: [],
+              searchRank: 1.0,
+            },
+          },
+          memberAnalytics: {
+            create: {
+              totalAttendances: 0,
+              attendanceRate: 0.0,
+              attendanceStreak: 0,
+              totalContributions: 0.0,
+              engagementScore: 0.0,
+              engagementLevel: 'NEW',
+              ministriesCount: 0,
+              leadershipRoles: 0,
+              volunteerHours: 0.0,
+              emailOpenRate: 0.0,
+              smsResponseRate: 0.0,
+              membershipDuration: createMemberInput.membershipDate
+                ? Math.floor(
+                    (Date.now() -
+                      new Date(createMemberInput.membershipDate).getTime()) /
+                      (1000 * 60 * 60 * 24),
+                  )
+                : null,
+              ageGroup: this.calculateAgeGroup(createMemberInput.dateOfBirth),
+            },
+          },
         },
         include: {
+          communicationPrefs: true,
+          searchIndex: true,
+          memberAnalytics: true,
           branch: true,
-          spouse: true,
-          parent: true,
-          children: true,
-          spiritualMilestones: true,
-          families: true,
-          groupMemberships: {
-            include: {
-              ministry: true,
-              smallGroup: true,
-            },
-          },
-          attendanceRecords: {
-            orderBy: { checkInTime: 'desc' },
-            take: 10,
-            include: {
-              session: true,
-            },
-          },
-          sacramentalRecords: true,
-          guardianProfile: true,
-          notifications: {
-            orderBy: { createdAt: 'desc' },
-            take: 10,
-          },
-          prayerRequests: true,
-          contributions: true,
-          familyRelationships: {
-            include: {
-              member: true,
-              relatedMember: true,
-              family: true,
-            },
-          },
         },
       });
 
-      // Log the action
+      // Create membership history record
+      if (createMemberInput.membershipStatus) {
+        await this.prisma.membershipHistory.create({
+          data: {
+            memberId: member.id,
+            toStatus: createMemberInput.membershipStatus,
+            changeReason: 'Initial member creation',
+            approvedBy: userId,
+          },
+        });
+      }
+
       await this.auditLogService.create({
         action: 'CREATE',
         entityType: 'Member',
         entityId: member.id,
         description: `Created member: ${member.firstName} ${member.lastName}`,
-        userId,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
         ipAddress,
         userAgent,
       });
@@ -285,184 +355,6 @@ export class MembersService {
     }
   }
 
-  async findAll(
-    skip = 0,
-    take = 10,
-    where?: Prisma.MemberWhereInput,
-    orderBy?: Prisma.MemberOrderByWithRelationInput,
-    search?: string,
-  ): Promise<Member[]> {
-    try {
-      let queryConditions: Prisma.MemberWhereInput = where || {};
-
-      if (search && search.trim().length > 0) {
-        const searchTerms = search.trim().split(/\s+/);
-        const searchFilter: Prisma.MemberWhereInput = {
-          OR: [
-            {
-              firstName: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            {
-              lastName: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            { email: { contains: search, mode: Prisma.QueryMode.insensitive } },
-            {
-              phoneNumber: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            {
-              rfidCardId: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            ...(searchTerms.length > 1
-              ? [
-                  {
-                    AND: [
-                      {
-                        firstName: {
-                          contains: searchTerms[0],
-                          mode: Prisma.QueryMode.insensitive,
-                        },
-                      },
-                      {
-                        lastName: {
-                          contains: searchTerms.slice(1).join(' '),
-                          mode: Prisma.QueryMode.insensitive,
-                        },
-                      },
-                    ],
-                  },
-                ]
-              : []),
-          ],
-        };
-
-        queryConditions = {
-          ...queryConditions,
-          AND: [
-            ...(Array.isArray(queryConditions.AND)
-              ? queryConditions.AND
-              : queryConditions.AND
-                ? [queryConditions.AND]
-                : []),
-            searchFilter,
-          ],
-        };
-      }
-
-      const members = await this.prisma.member.findMany({
-        skip,
-        take,
-        where: queryConditions,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          branch: true,
-          spouse: true,
-          parent: true,
-          children: true,
-          spiritualMilestones: true,
-          families: true,
-          familyRelationships: {
-            include: {
-              member: true,
-              relatedMember: true,
-              family: true,
-            },
-          },
-          groupMemberships: {
-            include: {
-              ministry: true,
-              smallGroup: true,
-            },
-          },
-          attendanceRecords: true,
-          sacramentalRecords: true,
-          guardianProfile: true,
-          notifications: true,
-          prayerRequests: true,
-          contributions: true,
-        },
-      });
-
-      return members as unknown as Member[];
-    } catch (error) {
-      this.logger.error(
-        `Error finding members: ${(error as Error).message}`,
-        (error as Error).stack,
-      );
-      throw error;
-    }
-  }
-
-  async findOne(id: string): Promise<Member> {
-    try {
-      const member = await this.prisma.member.findUnique({
-        where: { id },
-        include: {
-          branch: true,
-          spouse: true,
-          parent: true,
-          children: true,
-          spiritualMilestones: true,
-          families: true,
-          familyRelationships: {
-            include: {
-              member: true,
-              relatedMember: true,
-              family: true,
-            },
-          },
-          groupMemberships: {
-            include: {
-              ministry: true,
-              smallGroup: true,
-            },
-          },
-          attendanceRecords: {
-            orderBy: { checkInTime: 'desc' },
-            take: 10,
-            include: {
-              session: true,
-            },
-          },
-          sacramentalRecords: true,
-          guardianProfile: true,
-          notifications: {
-            orderBy: { createdAt: 'desc' },
-            take: 10,
-          },
-          prayerRequests: true,
-          contributions: true,
-        },
-      });
-
-      if (!member) {
-        throw new NotFoundException(`Member with ID ${id} not found`);
-      }
-
-      return member as unknown as Member;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        `Error finding member: ${(error as Error).message}`,
-        (error as Error).stack,
-      );
-      throw error;
-    }
-  }
-
   async update(
     id: string,
     updateMemberInput: UpdateMemberInput,
@@ -474,74 +366,127 @@ export class MembersService {
       // Check if member exists
       const existingMember = await this.prisma.member.findUnique({
         where: { id },
+        include: {
+          searchIndex: true,
+          memberAnalytics: true,
+        },
       });
 
       if (!existingMember) {
         throw new NotFoundException(`Member with ID ${id} not found`);
       }
 
-      // Update member
+      // Track status changes for membership history
+      const statusChanged =
+        updateMemberInput.membershipStatus &&
+        updateMemberInput.membershipStatus !== existingMember.membershipStatus;
+
+      // Update member with enhanced fields
       const updatedMember = await this.prisma.member.update({
         where: { id },
         data: {
-          firstName: updateMemberInput.firstName,
-          middleName: updateMemberInput.middleName,
-          lastName: updateMemberInput.lastName,
-          profileImageUrl: updateMemberInput.profileImageUrl,
-          email: updateMemberInput.email,
-          phoneNumber: updateMemberInput.phoneNumber,
-          address: updateMemberInput.address,
-          city: updateMemberInput.city,
-          state: updateMemberInput.state,
-          postalCode: updateMemberInput.postalCode,
-          country: updateMemberInput.country,
-          dateOfBirth: updateMemberInput.dateOfBirth,
-          gender: updateMemberInput.gender as unknown as string,
-          maritalStatus: updateMemberInput.maritalStatus,
-          occupation: updateMemberInput.occupation,
-          employerName: updateMemberInput.employerName,
-          status: updateMemberInput.status as unknown as string,
-          membershipDate: updateMemberInput.membershipDate,
-          baptismDate: (() => {
-            const val: string | Date = updateMemberInput.baptismDate as
-              | string
-              | Date;
-            if (val == null) return null;
-            if (typeof val === 'string') {
-              return val.trim() === '' ? null : val;
-            }
-            return val;
-          })(),
-          confirmationDate: (() => {
-            const val: string | Date = updateMemberInput.confirmationDate as
-              | string
-              | Date;
-            if (val == null) return null;
-            if (typeof val === 'string') {
-              return val.trim() === '' ? null : val;
-            }
-            return val;
-          })(),
-          customFields: updateMemberInput.customFields as Prisma.InputJsonValue,
-          privacySettings:
-            updateMemberInput.privacySettings as Prisma.InputJsonValue,
-          notes: updateMemberInput.notes,
-          branchId: updateMemberInput.branchId,
-          // userId is not directly updatable
-          spouseId: updateMemberInput.spouseId,
-          parentId: updateMemberInput.parentId,
+          ...updateMemberInput,
+          // Set audit fields
+          lastModifiedBy: userId,
         },
         include: {
+          communicationPrefs: true,
+          searchIndex: true,
+          memberAnalytics: true,
+          membershipHistory: {
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+          },
           branch: true,
-          spouse: true,
-          parent: true,
-          children: true,
-          spiritualMilestones: true,
-          families: true,
-          prayerRequests: true,
-          contributions: true,
         },
       });
+
+      // Update search index if relevant fields changed
+      if (
+        updateMemberInput.firstName ||
+        updateMemberInput.middleName ||
+        updateMemberInput.lastName ||
+        updateMemberInput.phoneNumber ||
+        updateMemberInput.alternatePhone ||
+        updateMemberInput.email ||
+        (updateMemberInput as any).alternativeEmail ||
+        updateMemberInput.address ||
+        (updateMemberInput as any).addressLine2 ||
+        updateMemberInput.city ||
+        updateMemberInput.state ||
+        updateMemberInput.postalCode ||
+        updateMemberInput.country ||
+        (updateMemberInput as any).district ||
+        (updateMemberInput as any).region ||
+        (updateMemberInput as any).digitalAddress ||
+        (updateMemberInput as any).landmark
+      ) {
+        await this.prisma.memberSearchIndex.update({
+          where: { memberId: id },
+          data: {
+            fullName: [
+              updatedMember.firstName,
+              updatedMember.middleName,
+              updatedMember.lastName,
+            ]
+              .filter(Boolean)
+              .join(' '),
+            searchName: [
+              updatedMember.firstName,
+              updatedMember.middleName,
+              updatedMember.lastName,
+            ]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase(),
+            phoneNumbers: [
+              updatedMember.phoneNumber,
+              updatedMember.alternatePhone,
+            ].filter((phone): phone is string => Boolean(phone)),
+            emails: [updatedMember.email, (updatedMember as any).alternativeEmail]
+              .filter((email): email is string => Boolean(email)),
+            addresses: [
+              [
+                updatedMember.address,
+                (updatedMember as any).addressLine2,
+                updatedMember.city,
+                updatedMember.state,
+                updatedMember.postalCode,
+                updatedMember.country,
+                (updatedMember as any).district,
+                (updatedMember as any).region,
+                (updatedMember as any).digitalAddress,
+                (updatedMember as any).landmark,
+              ]
+                .filter(Boolean)
+                .join(', '),
+            ].filter(Boolean),
+          },
+        });
+      }
+
+      // Update member analytics if age-related fields changed
+      if (updateMemberInput.dateOfBirth) {
+        await this.prisma.memberAnalytics.update({
+          where: { memberId: id },
+          data: {
+            ageGroup: this.calculateAgeGroup(updateMemberInput.dateOfBirth),
+          },
+        });
+      }
+
+      // Create membership history record if status changed
+      if (statusChanged) {
+        await this.prisma.membershipHistory.create({
+          data: {
+            memberId: id,
+            fromStatus: existingMember.membershipStatus,
+            toStatus: updateMemberInput.membershipStatus!,
+            changeReason: 'Member profile update',
+            approvedBy: userId,
+          },
+        });
+      }
 
       // Log the action
       await this.auditLogService.create({
@@ -549,7 +494,7 @@ export class MembersService {
         entityType: 'Member',
         entityId: updatedMember.id,
         description: `Updated member: ${updatedMember.firstName} ${updatedMember.lastName}`,
-        userId,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
         ipAddress,
         userAgent,
       });
@@ -602,7 +547,7 @@ export class MembersService {
       const updatedMember = await this.prisma.member.update({
         where: { id },
         data: {
-          status: status as unknown as string,
+          status,
           statusChangeDate: new Date(),
           statusChangeReason: reason,
         },
@@ -624,7 +569,7 @@ export class MembersService {
         entityType: 'Member',
         entityId: id,
         description: `Updated member status: ${member.firstName} ${member.lastName} to ${status}`,
-        userId,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
         ipAddress,
         userAgent,
       });
@@ -691,7 +636,7 @@ export class MembersService {
       // Check if RFID card ID is already in use by another member
       const existingCardUser = await this.prisma.member.findFirst({
         where: {
-          rfidCardId: rfidCardId,
+          memberId: rfidCardId,
           NOT: {
             id: memberId, // Exclude the current member from this check
           },
@@ -708,7 +653,7 @@ export class MembersService {
       const updatedMember = await this.prisma.member.update({
         where: { id: memberId },
         data: {
-          rfidCardId: rfidCardId,
+          memberId: rfidCardId,
         },
         include: {
           branch: true,
@@ -728,7 +673,7 @@ export class MembersService {
         entityType: 'Member',
         entityId: memberId,
         description: `Assigned RFID card ID ${rfidCardId} to member ${member.firstName} ${member.lastName}`,
-        userId,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
         ipAddress,
         userAgent,
       });
@@ -766,7 +711,7 @@ export class MembersService {
         throw new NotFoundException(`Member with ID ${memberId} not found`);
       }
 
-      if (!member.rfidCardId) {
+      if (!member.memberId) {
         this.logger.warn(
           `Member ${memberId} does not have an RFID card assigned.`,
         );
@@ -777,7 +722,7 @@ export class MembersService {
       const updatedMember = await this.prisma.member.update({
         where: { id: memberId },
         data: {
-          rfidCardId: null,
+          memberId: null,
         },
         include: {
           branch: true,
@@ -796,8 +741,8 @@ export class MembersService {
         action: 'REMOVE_RFID_CARD',
         entityType: 'Member',
         entityId: memberId,
-        description: `Removed RFID card ID ${member.rfidCardId} from member ${member.firstName} ${member.lastName}`,
-        userId,
+        description: `Removed RFID card ID ${member.memberId} from member ${member.firstName} ${member.lastName}`,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
         ipAddress,
         userAgent,
       });
@@ -819,7 +764,7 @@ export class MembersService {
     this.logger.log(`Attempting to find member by RFID card ID ${rfidCardId}`);
     try {
       const member = await this.prisma.member.findUnique({
-        where: { rfidCardId: rfidCardId },
+        where: { memberId: rfidCardId },
         include: {
           branch: true,
           spouse: true,
@@ -886,12 +831,12 @@ export class MembersService {
 
       const activeMembersPromise = this.count({
         ...periodWhere,
-        status: MemberStatus.ACTIVE,
+        membershipStatus: 'ACTIVE_MEMBER',
       });
 
       const inactiveMembersPromise = this.count({
         ...periodWhere,
-        status: MemberStatus.INACTIVE,
+        membershipStatus: 'INACTIVE_MEMBER',
       });
 
       const newMembersInPeriodPromise = this.count({
@@ -904,8 +849,8 @@ export class MembersService {
 
       const visitorsInPeriodPromise = this.count({
         ...periodWhere,
-        status: {
-          in: [MemberStatus.VISITOR],
+        membershipStatus: {
+          in: ['VISITOR'],
         },
         createdAt: {
           gte: startDate,
@@ -989,6 +934,9 @@ export class MembersService {
     const genderStatsPromise = this.getGenderDistribution(baseWhere);
     const averageAgePromise = this.calculateAverageAge(baseWhere);
     const ageGroupsPromise = this.getAgeGroups(baseWhere);
+    const statusDistributionPromise = this.getMemberStatusDistribution(baseWhere);
+    const membershipStatusDistributionPromise =
+      this.getMembershipStatusDistribution(baseWhere);
 
     const [
       currentMonthStats,
@@ -996,12 +944,16 @@ export class MembersService {
       genderStats,
       averageAge,
       ageGroups,
+      membersByStatus,
+      membersByMembershipStatus,
     ] = await Promise.all([
       currentMonthStatsPromise,
       lastMonthStatsPromise,
       genderStatsPromise,
       averageAgePromise,
       ageGroupsPromise,
+      statusDistributionPromise,
+      membershipStatusDistributionPromise,
     ]);
 
     // Calculate growth rate
@@ -1036,6 +988,8 @@ export class MembersService {
       genderDistribution: genderStats,
       ageGroups,
       lastMonth: lastMonthStats,
+      membersByStatus,
+      membersByMembershipStatus,
     };
   }
 
@@ -1045,7 +999,7 @@ export class MembersService {
     const [maleCount, femaleCount, otherCount] = await Promise.all([
       this.count({ ...whereClause, gender: 'MALE' }),
       this.count({ ...whereClause, gender: 'FEMALE' }),
-      this.count({ ...whereClause, gender: 'OTHER' }),
+      this.count({ ...whereClause, gender: 'UNKNOWN' as any }),
     ]);
 
     const total = maleCount + femaleCount + otherCount;
@@ -1136,6 +1090,48 @@ export class MembersService {
       range,
       count,
       percentage: total > 0 ? (count / total) * 100 : 0,
+    }));
+  }
+
+  private async getMemberStatusDistribution(
+    whereClause: Prisma.MemberWhereInput,
+  ): Promise<MemberStatusDistribution[]> {
+    const totalMembers = await this.count(whereClause);
+    if (totalMembers === 0) return [];
+
+    const statusCounts = await this.prisma.member.groupBy({
+      by: ['status'],
+      where: whereClause,
+      _count: {
+        id: true,
+      },
+    });
+
+    return statusCounts.map((item) => ({
+      status: item.status,
+      count: item._count.id,
+      percentage: (item._count.id / totalMembers) * 100,
+    }));
+  }
+
+  private async getMembershipStatusDistribution(
+    whereClause: Prisma.MemberWhereInput,
+  ): Promise<MemberMembershipStatusDistribution[]> {
+    const totalMembers = await this.count(whereClause);
+    if (totalMembers === 0) return [];
+
+    const statusCounts = await this.prisma.member.groupBy({
+      by: ['membershipStatus'],
+      where: whereClause,
+      _count: {
+        id: true,
+      },
+    });
+
+    return statusCounts.map((item) => ({
+      status: item.membershipStatus,
+      count: item._count.id,
+      percentage: (item._count.id / totalMembers) * 100,
     }));
   }
 
@@ -1230,38 +1226,36 @@ export class MembersService {
     userAgent?: string,
   ): Promise<boolean> {
     try {
-      // Check if member exists
-      const member = await this.prisma.member.findUnique({
-        where: { id },
-      });
-
+      const member = await this.prisma.member.findUnique({ where: { id } });
       if (!member) {
         throw new NotFoundException(`Member with ID ${id} not found`);
       }
 
-      // Delete member
-      await this.prisma.member.delete({
+      // Deactivate member
+      await this.prisma.member.update({
         where: { id },
+        data: {
+          isDeactivated: true,
+          deactivatedAt: new Date(),
+          deactivatedBy: userId,
+        },
       });
 
       // Log the action
       await this.auditLogService.create({
-        action: 'DELETE',
+        action: 'DEACTIVATE',
         entityType: 'Member',
         entityId: id,
-        description: `Deleted member: ${member.firstName} ${member.lastName}`,
-        userId,
+        description: `Deactivated member: ${member.firstName} ${member.lastName}`,
+        userId: userId || 'system',
         ipAddress,
         userAgent,
       });
 
       return true;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       this.logger.error(
-        `Error deleting member: ${(error as Error).message}`,
+        `Error deactivating member ${id}: ${(error as Error).message}`,
         (error as Error).stack,
       );
       throw error;
@@ -1333,7 +1327,7 @@ export class MembersService {
         entityType: 'Member',
         entityId: memberId,
         description: `Transferred member ${member.firstName} ${member.lastName} from branch ${fromBranch.name} to ${toBranch.name}`,
-        userId,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
         ipAddress,
         userAgent,
       });
@@ -1401,7 +1395,7 @@ export class MembersService {
         entityType: 'Member',
         entityId: memberId,
         description: `Added member ${member.firstName} ${member.lastName} to branch ${branch.name}`,
-        userId,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
         ipAddress,
         userAgent,
         branchId,
@@ -1470,7 +1464,7 @@ export class MembersService {
         entityType: 'Member',
         entityId: memberId,
         description: `Removed member ${member.firstName} ${member.lastName} from branch ${branch.name}`,
-        userId,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
         ipAddress,
         userAgent,
         branchId,
@@ -1487,5 +1481,960 @@ export class MembersService {
       );
       throw error;
     }
+  }
+
+  // Communication Preferences Management
+  async updateCommunicationPrefs(
+    memberId: string,
+    prefsData: any,
+    userId?: string,
+  ): Promise<any> {
+    try {
+      const updatedPrefs = await this.prisma.communicationPrefs.upsert({
+        where: { memberId },
+        update: {
+          ...prefsData,
+        },
+        create: {
+          memberId,
+          ...prefsData,
+        },
+      });
+
+      await this.auditLogService.create({
+        action: 'UPDATE',
+        entityType: 'CommunicationPrefs',
+        entityId: updatedPrefs.id,
+        description: `Updated communication preferences for member ${memberId}`,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
+      });
+
+      return updatedPrefs;
+    } catch (error) {
+      this.logger.error(
+        `Error updating communication preferences: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  // Member Relationships Management
+  async createMemberRelationship(
+    relationshipData: any,
+    userId?: string,
+  ): Promise<any> {
+    try {
+      const relationship = await this.prisma.memberRelationship.create({
+        data: {
+          ...relationshipData,
+          createdBy: userId,
+        },
+        include: {
+          primaryMember: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+          relatedMember: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+        },
+      });
+
+      await this.auditLogService.create({
+        action: 'CREATE',
+        entityType: 'MemberRelationship',
+        entityId: relationship.id,
+        description: `Created relationship between ${relationship.primaryMember.firstName} ${relationship.primaryMember.lastName} and ${relationship.relatedMember.firstName} ${relationship.relatedMember.lastName}`,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
+      });
+
+      return relationship;
+    } catch (error) {
+      this.logger.error(
+        `Error creating member relationship: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  async updateMemberRelationship(
+    id: string,
+    relationshipData: any,
+    userId?: string,
+  ): Promise<any> {
+    try {
+      const relationship = await this.prisma.memberRelationship.update({
+        where: { id },
+        data: {
+          ...relationshipData,
+          lastModifiedBy: userId,
+          lastModifiedAt: new Date(),
+        },
+        include: {
+          primaryMember: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+          relatedMember: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+        },
+      });
+
+      await this.auditLogService.create({
+        action: 'UPDATE',
+        entityType: 'MemberRelationship',
+        entityId: relationship.id,
+        description: `Updated relationship between ${relationship.primaryMember.firstName} ${relationship.primaryMember.lastName} and ${relationship.relatedMember.firstName} ${relationship.relatedMember.lastName}`,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
+      });
+
+      return relationship;
+    } catch (error) {
+      this.logger.error(
+        `Error updating member relationship: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  async deleteMemberRelationship(
+    id: string,
+    userId?: string,
+  ): Promise<boolean> {
+    try {
+      const relationship = await this.prisma.memberRelationship.findUnique({
+        where: { id },
+        include: {
+          primaryMember: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+          relatedMember: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+        },
+      });
+
+      if (!relationship) {
+        throw new NotFoundException(`Relationship with ID ${id} not found`);
+      }
+
+      await this.prisma.memberRelationship.delete({
+        where: { id },
+      });
+
+      await this.auditLogService.create({
+        action: 'DELETE',
+        entityType: 'MemberRelationship',
+        entityId: id,
+        description: `Deleted relationship between ${relationship.primaryMember.firstName} ${relationship.primaryMember.lastName} and ${relationship.relatedMember.firstName} ${relationship.relatedMember.lastName}`,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Error deleting member relationship: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  // Membership History Management
+  async createMembershipHistoryEntry(
+    historyData: any,
+    userId?: string,
+  ): Promise<any> {
+    try {
+      const historyEntry = await this.prisma.membershipHistory.create({
+        data: {
+          ...historyData,
+          approvedBy: userId,
+        },
+        include: {
+          member: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+          fromBranch: {
+            select: { id: true, name: true },
+          },
+          toBranch: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      await this.auditLogService.create({
+        action: 'CREATE',
+        entityType: 'MembershipHistory',
+        entityId: historyEntry.id,
+        description: `Created membership history entry for ${historyEntry.member.firstName} ${historyEntry.member.lastName}: ${historyEntry.fromStatus || 'NEW'} → ${historyEntry.toStatus}`,
+        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
+      });
+
+      return historyEntry;
+    } catch (error) {
+      this.logger.error(
+        `Error creating membership history entry: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  // Enhanced Member Search with new search index
+  async searchMembers(
+    query: string,
+    filters?: {
+      branchId?: string;
+      membershipStatus?: string;
+      ageGroup?: string;
+      gender?: string;
+    },
+    skip = 0,
+    take = 20,
+  ): Promise<Member[]> {
+    try {
+      const searchResults = await this.prisma.memberSearchIndex.findMany({
+        where: {
+          OR: [
+            { searchName: { contains: query.toLowerCase() } },
+            { phoneNumbers: { hasSome: [query] } },
+            { emails: { hasSome: [query] } },
+            { addresses: { hasSome: [query] } },
+            { tags: { hasSome: [query.toLowerCase()] } },
+          ],
+          member: {
+            ...(filters?.branchId && { branchId: filters.branchId }),
+            ...(filters?.membershipStatus && {
+              membershipStatus: filters.membershipStatus as any,
+            }),
+            ...(filters?.gender && { gender: filters.gender as any }),
+            deletedAt: null, // Exclude soft-deleted members
+          },
+        },
+        include: {
+          member: {
+            include: {
+              branch: true,
+              communicationPrefs: true,
+              memberAnalytics: true,
+            },
+          },
+        },
+        orderBy: [{ searchRank: 'desc' }],
+        skip,
+        take,
+      });
+
+      return searchResults.map(
+        (result) => result.member,
+      ) as unknown as Member[];
+    } catch (error) {
+      this.logger.error(
+        `Error searching members: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  // Member Analytics and Engagement
+  async updateMemberAnalytics(
+    memberId: string,
+    analyticsData: Partial<any>,
+    userId?: string,
+  ): Promise<any> {
+    try {
+      const updatedAnalytics = await this.prisma.memberAnalytics.upsert({
+        where: { memberId },
+        update: {
+          ...analyticsData,
+        },
+        create: {
+          memberId,
+          ...analyticsData,
+          totalAttendances: analyticsData.totalAttendances || 0,
+          attendanceRate: analyticsData.attendanceRate || 0.0,
+          attendanceStreak: analyticsData.attendanceStreak || 0,
+          totalContributions: analyticsData.totalContributions || 0.0,
+          engagementScore: analyticsData.engagementScore || 0.0,
+          engagementLevel: analyticsData.engagementLevel || 'NEW',
+          ministriesCount: analyticsData.ministriesCount || 0,
+          leadershipRoles: analyticsData.leadershipRoles || 0,
+          volunteerHours: analyticsData.volunteerHours || 0.0,
+          emailOpenRate: analyticsData.emailOpenRate || 0.0,
+          smsResponseRate: analyticsData.smsResponseRate || 0.0,
+        },
+      });
+
+      return updatedAnalytics;
+    } catch (error) {
+      this.logger.error(
+        `Error updating member analytics: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  private calculateAgeGroup(dateOfBirth?: Date): string {
+    if (!dateOfBirth) return 'ADULT';
+
+    const age = Math.floor(
+      (Date.now() - new Date(dateOfBirth).getTime()) /
+        (1000 * 60 * 60 * 24 * 365),
+    );
+
+    if (age < 13) return 'CHILD';
+    if (age < 18) return 'YOUTH';
+    if (age >= 65) return 'SENIOR';
+    return 'ADULT';
+  }
+
+  async findAll(
+    skip = 0,
+    take = 10,
+    where?: Prisma.MemberWhereInput,
+    orderBy?: Prisma.MemberOrderByWithRelationInput,
+    search?: string,
+  ): Promise<Member[]> {
+    try {
+      let queryConditions: Prisma.MemberWhereInput = where || {};
+
+      if (search && search.trim().length > 0) {
+        const searchTerms = search.trim().split(/\s+/);
+        const searchFilter: Prisma.MemberWhereInput = {
+          OR: [
+            {
+              firstName: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              lastName: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            { email: { contains: search, mode: Prisma.QueryMode.insensitive } },
+            {
+              phoneNumber: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              memberId: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            ...(searchTerms.length > 1
+              ? [
+                  {
+                    AND: [
+                      {
+                        firstName: {
+                          contains: searchTerms[0],
+                          mode: Prisma.QueryMode.insensitive,
+                        },
+                      },
+                      {
+                        lastName: {
+                          contains: searchTerms.slice(1).join(' '),
+                          mode: Prisma.QueryMode.insensitive,
+                        },
+                      },
+                    ],
+                  },
+                ]
+              : []),
+          ],
+        };
+
+        queryConditions = {
+          ...queryConditions,
+          AND: [
+            ...(Array.isArray(queryConditions.AND)
+              ? queryConditions.AND
+              : queryConditions.AND
+                ? [queryConditions.AND]
+                : []),
+            searchFilter,
+          ],
+        };
+      }
+
+      const members = await this.prisma.member.findMany({
+        skip,
+        take,
+        where: queryConditions,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          branch: true,
+          communicationPrefs: true,
+          memberAnalytics: true,
+        },
+      });
+
+      return members as unknown as Member[];
+    } catch (error) {
+      this.logger.error(
+        `Error finding members: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  async findOne(id: string): Promise<Member> {
+    try {
+      const member = await this.prisma.member.findUnique({
+        where: { id },
+        include: {
+          branch: true,
+          communicationPrefs: true,
+          memberAnalytics: true,
+          membershipHistory: {
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+          },
+        },
+      });
+
+      if (!member) {
+        throw new NotFoundException(`Member with ID ${id} not found`);
+      }
+
+      return member as unknown as Member;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Error finding member: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Issue a physical card for a member
+   */
+  async issueMemberCard(
+    memberId: string,
+    cardType: 'NFC' | 'RFID' | 'BARCODE',
+    userId: string,
+  ): Promise<Member> {
+    try {
+      const member = await this.prisma.member.findUnique({
+        where: { memberId },
+      });
+
+      if (!member) {
+        throw new NotFoundException(`Member not found with ID: ${memberId}`);
+      }
+
+      const updatedMember = await this.prisma.member.update({
+        where: { memberId },
+        data: {
+          cardIssued: true,
+          cardIssuedAt: new Date(),
+          cardType,
+        },
+      });
+
+      await this.auditLogService.create({
+        action: 'UPDATE',
+        entityType: 'Member',
+        entityId: member.id,
+        description: `Issued ${cardType} card for member: ${member.firstName} ${member.lastName}`,
+        userId,
+      });
+
+      this.logger.log(`Issued ${cardType} card for member: ${memberId}`);
+      return updatedMember as Member;
+    } catch (error) {
+      this.logger.error(
+        `Failed to issue card for member ${memberId}: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Generate Member ID for existing member
+   */
+  async generateMemberIdForExisting(
+    memberInternalId: string,
+    userId: string,
+  ): Promise<Member> {
+    try {
+      const member = await this.prisma.member.findUnique({
+        where: { id: memberInternalId },
+      });
+
+      if (!member) {
+        throw new NotFoundException(
+          `Member not found with internal ID: ${memberInternalId}`,
+        );
+      }
+
+      if (member.memberId) {
+        this.logger.warn(
+          `Member ${memberInternalId} already has Member ID: ${member.memberId}`,
+        );
+        return member as Member;
+      }
+
+      if (!member.organisationId || !member.branchId) {
+        throw new Error(
+          'Member must have organisationId and branchId to generate Member ID',
+        );
+      }
+
+      const membershipYear = member.membershipDate
+        ? new Date(member.membershipDate).getFullYear()
+        : new Date().getFullYear();
+
+      const memberId = await this.memberIdGenerationService.generateMemberId(
+        member.organisationId,
+        member.branchId,
+        membershipYear,
+      );
+
+      const updatedMember = await this.prisma.member.update({
+        where: { id: memberInternalId },
+        data: {
+          memberId,
+          memberIdGeneratedAt: new Date(),
+          gender: 'MALE' as any,
+        },
+      });
+
+      await this.auditLogService.create({
+        action: 'UPDATE',
+        entityType: 'Member',
+        entityId: member.id,
+        description: `Generated Member ID: ${memberId} for ${member.firstName} ${member.lastName}`,
+        userId,
+      });
+
+      this.logger.log(
+        `Generated Member ID: ${memberId} for existing member: ${member.firstName} ${member.lastName}`,
+      );
+      return updatedMember as Member;
+    } catch (error) {
+      this.logger.error(
+        `Failed to generate Member ID for member ${memberInternalId}: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk generate Member IDs for all members in an organization
+   */
+  async bulkGenerateMemberIds(
+    organisationId: string,
+    userId: string,
+  ): Promise<{ success: number; failed: number; errors: string[] }> {
+    try {
+      this.logger.log(
+        `Starting bulk Member ID generation for organization: ${organisationId}`,
+      );
+
+      const results =
+        await this.memberIdGenerationService.bulkGenerateMemberIds(
+          organisationId,
+        );
+
+      await this.auditLogService.create({
+        action: 'BULK_UPDATE',
+        entityType: 'Member',
+        entityId: organisationId,
+        description: `Bulk generated Member IDs: ${results.success} success, ${results.failed} failed`,
+        userId,
+      });
+
+      this.logger.log(
+        `Bulk Member ID generation completed: ${results.success} success, ${results.failed} failed`,
+      );
+      return results;
+    } catch (error) {
+      this.logger.error(`Bulk Member ID generation failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async findByMemberId(memberId: string): Promise<Member | null> {
+    try {
+      const member = await this.prisma.member.findUnique({
+        where: { memberId },
+        include: {
+          branch: true,
+          organisation: true,
+        },
+      });
+      return member as Member | null;
+    } catch (error) {
+      this.logger.error(
+        `Failed to find member by Member ID ${memberId}: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  async bulkUpdateStatus(
+    memberIds: string[],
+    status: MemberStatus,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    await this.prisma.member.updateMany({
+      where: { id: { in: memberIds } },
+      data: { status },
+    });
+
+    for (const memberId of memberIds) {
+      await this.auditLogService.create({
+        action: 'UPDATE_STATUS',
+        entityType: 'Member',
+        entityId: memberId,
+        description: `Updated member status to ${status}`,
+        userId,
+        ipAddress,
+        userAgent,
+      });
+    }
+
+    return true;
+  }
+
+  async bulkDeactivate(
+    memberIds: string[],
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    await this.prisma.member.updateMany({
+      where: { id: { in: memberIds } },
+      data: {
+        isDeactivated: true,
+        deactivatedAt: new Date(),
+        deactivatedBy: userId,
+      },
+    });
+
+    for (const memberId of memberIds) {
+      await this.auditLogService.create({
+        action: 'DEACTIVATE',
+        entityType: 'Member',
+        entityId: memberId,
+        description: 'Deactivated member',
+        userId,
+        ipAddress,
+        userAgent,
+      });
+    }
+
+    return true;
+  }
+
+  async bulkAssignRfid(
+    memberIds: string[],
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    for (const memberId of memberIds) {
+      // This is a simplified example. In a real-world scenario, you would likely have a pool of RFID cards to assign from.
+      const rfidCardId = `M-${Date.now()}`;
+      await this.prisma.member.update({
+        where: { id: memberId },
+        data: { memberId: rfidCardId },
+      });
+
+      await this.auditLogService.create({
+        action: 'ASSIGN_RFID',
+        entityType: 'Member',
+        entityId: memberId,
+        description: `Assigned RFID card ${rfidCardId}`,
+        userId,
+        ipAddress,
+        userAgent,
+      });
+    }
+
+    return true;
+  }
+
+  async bulkExportData(
+    memberIds: string[],
+    user: User,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<string> {
+    const members = await this.prisma.member.findMany({
+      where: { id: { in: memberIds } },
+    });
+
+    // For now, we'll just return a CSV string as a placeholder.
+    // In a real-world scenario, you would use a library like 'csv-writer'.
+    const header = 'ID,Name,Email\n';
+    const csv = members
+      .map((m) => `${m.id},${m.firstName} ${m.lastName},${m.email}`)
+      .join('\n');
+
+    await this.auditLogService.create({
+      action: 'BULK_EXPORT',
+      entityType: 'Member',
+      entityId: memberIds.join(','),
+      description: `Exported data for ${memberIds.length} members.`,
+      userId: user.id,
+      ipAddress,
+      userAgent,
+    });
+
+    return header + csv;
+  }
+
+  async bulkTransfer(
+    memberIds: string[],
+    newBranchId: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    await this.prisma.member.updateMany({
+      where: { id: { in: memberIds } },
+      data: { branchId: newBranchId },
+    });
+
+    for (const memberId of memberIds) {
+      await this.auditLogService.create({
+        action: 'TRANSFER',
+        entityType: 'Member',
+        entityId: memberId,
+        description: `Transferred member to branch ${newBranchId}`,
+        userId,
+        ipAddress,
+        userAgent,
+      });
+    }
+
+    return true;
+  }
+
+  async bulkAddToGroup(
+    bulkAddToGroupInput: BulkAddToGroupInput,
+    currentUser: User,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    const { memberIds, groupId } = bulkAddToGroupInput;
+
+    // 1. Validate that the group exists
+    const group = await this.prisma.smallGroup.findUnique({
+      where: { id: groupId },
+      select: { id: true, name: true },
+    });
+    if (!group) {
+      throw new NotFoundException(`Group with ID ${groupId} not found`);
+    }
+
+    // 2. Validate that all members exist
+    const existingMembers = await this.prisma.member.findMany({
+      where: { id: { in: memberIds } },
+      select: { id: true },
+    });
+    const existingMemberIds = new Set(existingMembers.map((m) => m.id));
+    const notFoundIds = memberIds.filter((id) => !existingMemberIds.has(id));
+    if (notFoundIds.length > 0) {
+      this.logger.warn(
+        `bulkAddToGroup: The following member IDs were not found and will be skipped: ${notFoundIds.join(', ')}`,
+      );
+    }
+    const validMemberIds = [...existingMemberIds];
+    if (validMemberIds.length === 0) {
+      this.logger.warn('bulkAddToGroup: No valid members found to add.');
+      return true; // Nothing to do
+    }
+
+    // 3. Find which members are already in the group to avoid duplicates
+    const existingGroupMembers = await this.prisma.groupMember.findMany({
+      where: {
+        smallGroupId: groupId,
+        memberId: { in: validMemberIds },
+      },
+      select: { memberId: true },
+    });
+    const membersAlreadyInGroup = new Set(
+      existingGroupMembers.map((gm) => gm.memberId),
+    );
+
+    // 4. Determine which new GroupMember entries to create
+    const memberIdsToAdd = validMemberIds.filter(
+      (id) => !membersAlreadyInGroup.has(id),
+    );
+
+    if (memberIdsToAdd.length === 0) {
+      this.logger.warn(
+        `bulkAddToGroup: All valid members are already in group ${group.name}`,
+      );
+      return true; // Nothing to add
+    }
+
+    // 5. Create the new entries in the join table
+    try {
+      await this.prisma.groupMember.createMany({
+        data: memberIdsToAdd.map((memberId) => ({
+          memberId,
+          smallGroupId: groupId,
+          role: 'MEMBER',
+          status: 'ACTIVE',
+        })),
+        skipDuplicates: true, // As a safeguard
+      });
+
+      // 6. Audit Logging
+      await this.auditLogService.create({
+        action: 'BULK_ADD_TO_GROUP',
+        entityType: 'SmallGroup',
+        entityId: groupId,
+        description: `Bulk added ${memberIdsToAdd.length} members to group: ${group.name}`,
+        userId: currentUser.id,
+        ipAddress,
+        userAgent,
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to bulk add members to group ${groupId}: ${error.message}`,
+        error.stack,
+      );
+      // Re-throw the original error to be handled by the exception filter
+      throw error;
+    }
+  }
+
+  async bulkRemoveFromGroup(
+    bulkRemoveFromGroupInput: BulkRemoveFromGroupInput,
+    currentUser: User,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    const { memberIds, groupId } = bulkRemoveFromGroupInput;
+
+    // Correctly delete entries from the GroupMember join table
+    await this.prisma.groupMember.deleteMany({
+      where: {
+        smallGroupId: groupId,
+        memberId: { in: memberIds },
+      },
+    });
+
+    // Audit logging for the bulk removal
+    await this.auditLogService.create({
+      action: 'BULK_REMOVE_FROM_GROUP',
+      entityType: 'SmallGroup',
+      entityId: groupId,
+      description: `Bulk removed ${memberIds.length} members from group.`,
+      userId: currentUser.id,
+      ipAddress,
+      userAgent,
+    });
+
+    return true;
+  }
+
+  async bulkAddToMinistry(
+    bulkAddToMinistryInput: BulkAddToMinistryInput,
+    currentUser: User,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    const { memberIds, ministryId } = bulkAddToMinistryInput;
+
+    // Ensure the ministry exists
+    const ministry = await this.prisma.ministry.findUnique({
+      where: { id: ministryId },
+    });
+
+    if (!ministry) {
+      throw new NotFoundException(`Ministry with ID ${ministryId} not found`);
+    }
+
+    const updatePromises = memberIds.map((memberId) =>
+      this.prisma.ministry.update({
+        where: { id: ministryId },
+        data: {
+          members: {
+            connect: { id: memberId },
+          },
+        },
+      }),
+    );
+
+    await this.prisma.$transaction(updatePromises);
+
+    const auditLogPromises = memberIds.map((memberId) =>
+      this.auditLogService.create({
+        userId: currentUser.id,
+        action: 'bulk_add_to_ministry',
+        entityId: memberId,
+        entityType: 'Member',
+        description: `Member added to ministry ${ministryId}`,
+        ipAddress,
+        userAgent,
+      }),
+    );
+    await Promise.all(auditLogPromises);
+
+    return true;
+  }
+
+  async bulkRemoveFromMinistry(
+    bulkRemoveFromMinistryInput: BulkRemoveFromMinistryInput,
+    currentUser: User,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    const { memberIds, ministryId } = bulkRemoveFromMinistryInput;
+
+    const updatePromises = memberIds.map((memberId) =>
+      this.prisma.ministry.update({
+        where: { id: ministryId },
+        data: {
+          members: {
+            disconnect: { id: memberId },
+          },
+        },
+      }),
+    );
+
+    await this.prisma.$transaction(updatePromises);
+
+    const auditLogPromises = memberIds.map((memberId) =>
+      this.auditLogService.create({
+        userId: currentUser.id,
+        action: 'bulk_remove_from_ministry',
+        entityId: memberId,
+        entityType: 'Member',
+        description: `Member removed from ministry ${ministryId}`,
+        ipAddress,
+        userAgent,
+      }),
+    );
+    await Promise.all(auditLogPromises);
+
+    return true;
   }
 }

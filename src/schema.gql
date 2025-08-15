@@ -694,6 +694,49 @@ type Budget {
   totalSpent: Float!
 }
 
+input BulkAddToGroupInput {
+  groupId: String!
+  memberIds: [String!]!
+}
+
+input BulkAddToMinistryInput {
+  memberIds: [String!]!
+  ministryId: String!
+}
+
+input BulkAssignRfidInput {
+  memberIds: [String!]!
+}
+
+input BulkDeactivateInput {
+  memberIds: [String!]!
+}
+
+input BulkExportInput {
+  format: String = "CSV"
+  memberIds: [String!]!
+}
+
+input BulkRemoveFromGroupInput {
+  groupId: String!
+  memberIds: [String!]!
+}
+
+input BulkRemoveFromMinistryInput {
+  memberIds: [String!]!
+  ministryId: String!
+}
+
+input BulkTransferInput {
+  memberIds: [String!]!
+  newBranchId: String!
+}
+
+input BulkUpdateStatusInput {
+  memberIds: [String!]!
+  status: MemberStatus!
+}
+
 input CardScanInput {
   branchId: ID
   cardId: String!
@@ -896,6 +939,28 @@ type CommunicationChannelStats {
   deliveryRate: Int!
   messagesSent: Int!
   openRate: Int
+}
+
+type CommunicationPrefs {
+  createdAt: DateTime!
+  doNotDisturbDays: [String!]!
+  emailEnabled: Boolean!
+  emailEvents: Boolean!
+  emailNewsletter: Boolean!
+  emailPrayer: Boolean!
+  emailReminders: Boolean!
+  id: ID!
+  memberId: ID!
+  phoneCallsEnabled: Boolean!
+  phoneEmergency: Boolean!
+  physicalMail: Boolean!
+  preferredCallTime: String
+  pushNotifications: Boolean!
+  smsEmergency: Boolean!
+  smsEnabled: Boolean!
+  smsEvents: Boolean!
+  smsReminders: Boolean!
+  updatedAt: DateTime!
 }
 
 type CommunicationStatsEntity {
@@ -1237,18 +1302,62 @@ input CreateEmailTemplateInput {
 
 input CreateEventInput {
   branchId: String
+  capacity: Int
   category: String
+  currency: String = "GHS"
   description: String
   endDate: DateTime
+  eventImageUrl: String
+  eventType: EventType! = OTHER
+  isFree: Boolean! = true
+  isPublic: Boolean! = true
   isRecurring: Boolean = false
   location: String
   organisationId: String
+  organizerEmail: String
+  organizerName: String
+  organizerPhone: String
   recurrenceDaysOfWeek: [String!]
   recurrenceEndDate: DateTime
   recurrenceInterval: Float = 1
+  recurrencePattern: String
   recurrenceType: RecurrenceType
+  registrationDeadline: DateTime
+  registrationRequired: Boolean! = false
+  requiresApproval: Boolean! = false
   startDate: DateTime!
+  status: EventStatus! = DRAFT
+  tags: [String!]
+  ticketPrice: Float
   title: String!
+}
+
+input CreateEventRSVPInput {
+  eventId: String!
+  guestEmail: String
+  guestName: String
+  memberId: String
+  message: String
+  numberOfGuests: Int! = 0
+  rsvpSource: String
+  status: RSVPStatus! = PENDING
+}
+
+input CreateEventRegistrationInput {
+  amountPaid: Float
+  eventId: String!
+  guestEmail: String
+  guestName: String
+  guestPhone: String
+  memberId: String
+  notes: String
+  numberOfGuests: Int! = 0
+  paymentMethod: String
+  paymentStatus: String
+  registrationSource: String
+  specialRequests: String
+  status: RSVPStatus! = PENDING
+  transactionId: String
 }
 
 input CreateExpenseCategoryInput {
@@ -1403,32 +1512,90 @@ input CreateMediaItemInput {
 
 input CreateMemberInput {
   address: String
+  addressLine2: String
+  alternatePhone: String
+  alternativeEmail: String
   baptismDate: DateTime
-  branchId: ID
+  baptismLocation: String
+  branchId: String
   city: String
   confirmationDate: DateTime
+  consentDate: DateTime
+  consentVersion: String
   country: String
   customFields: JSON
+  dataRetentionDate: DateTime
   dateOfBirth: DateTime
+  digitalAddress: String
+  district: String
+  education: String
   email: String
+  emergencyContactName: String
+  emergencyContactPhone: String
+  emergencyContactRelation: String
   employerName: String
+  familyId: String
+  fatherName: String
+  fatherOccupation: String
   firstName: String!
-  gender: String
+  gender: Gender! = NOT_SPECIFIED
+  headOfHousehold: Boolean! = false
+  isRegularAttendee: Boolean! = false
+  landmark: String
   lastName: String!
-  maritalStatus: MaritalStatus
+  maritalStatus: MaritalStatus! = UNKNOWN
   membershipDate: DateTime
+  membershipStatus: MembershipStatus! = VISITOR
+  membershipType: MembershipType! = REGULAR
   middleName: String
+  motherName: String
+  motherOccupation: String
+  nationality: String
+  nfcId: String
+  nlbNumber: String
   notes: String
   occupation: String
-  organisationId: ID
-  parentId: ID
+  organisationId: String
+  parentId: String
   phoneNumber: String
+  placeOfBirth: String
   postalCode: String
-  privacySettings: JSON
-  spouseId: ID
+  preferredLanguage: String! = "en"
+  preferredName: String
+  privacyLevel: PrivacyLevel! = STANDARD
+  profileImageUrl: String
+  region: String
+  rfidCardId: String
+  salvationDate: DateTime
+  spouseId: String
   state: String
   status: MemberStatus! = ACTIVE
-  userId: ID
+  statusChangeReason: String
+  title: String
+}
+
+input CreateMemberRelationshipInput {
+  canPickupChildren: Boolean! = false
+  isEmergencyContact: Boolean! = false
+  isGuardian: Boolean! = false
+  notes: String
+  primaryMemberId: ID!
+  relatedMemberId: ID!
+  relationshipEnd: DateTime
+  relationshipStart: DateTime
+  relationshipType: RelationshipType!
+}
+
+input CreateMembershipHistoryInput {
+  approvedBy: String
+  changeReason: String
+  fromBranchId: String
+  fromStatus: MembershipStatus
+  memberId: ID!
+  metadata: JSON
+  notes: String
+  toBranchId: String
+  toStatus: MembershipStatus!
 }
 
 input CreateMinistryInput {
@@ -1864,16 +2031,33 @@ type Event {
   attendees: [User!]
   branch: Branch
   branchId: String
+  capacity: Int
   category: String
   createdAt: DateTime
   createdBy: String
   creator: User
+  currency: String
   description: String
   endDate: DateTime
+  eventImageUrl: String
+  eventRSVPs: [EventRSVP!]
+  eventRegistrations: [EventRegistration!]
+  eventType: EventType!
   id: ID!
+  isFree: Boolean!
+  isPublic: Boolean!
   location: String
   organisationId: String
+  organizerEmail: String
+  organizerName: String
+  organizerPhone: String
+  registrationDeadline: DateTime
+  registrationRequired: Boolean!
+  requiresApproval: Boolean!
   startDate: DateTime!
+  status: EventStatus!
+  tags: [String!]
+  ticketPrice: Float
   title: String!
   updatedAt: DateTime
   updatedBy: String
@@ -1910,6 +2094,106 @@ type EventItem {
   location: String
   startDate: DateTime!
   title: String!
+}
+
+type EventRSVP {
+  createdAt: DateTime!
+  createdBy: String
+  event: Event
+  eventId: ID!
+  guestEmail: String
+  guestName: String
+  guestPhone: String
+  id: ID!
+  member: Member
+  memberId: ID
+  message: String
+  numberOfGuests: Int!
+  responseDate: DateTime!
+  rsvpSource: String
+  status: RSVPStatus!
+  updatedAt: DateTime!
+  updatedBy: String
+}
+
+input EventRSVPFilterInput {
+  branchId: String
+  eventId: String
+  memberId: String
+  organisationId: String
+  status: RSVPStatus
+}
+
+type EventRegistration {
+  amountPaid: Float
+  approvalStatus: String
+  approvedAt: DateTime
+  approvedBy: String
+  createdAt: DateTime!
+  createdBy: String
+  event: Event
+  eventId: ID!
+  guestEmail: String
+  guestName: String
+  guestPhone: String
+  id: ID!
+  member: Member
+  memberId: ID
+  notes: String
+  numberOfGuests: Int!
+  paymentMethod: String
+  paymentStatus: String
+  registrationDate: DateTime!
+  registrationSource: String
+  rejectionReason: String
+  specialRequests: String
+  status: RSVPStatus!
+  transactionId: String
+  updatedAt: DateTime!
+  updatedBy: String
+}
+
+input EventRegistrationFilterInput {
+  approvalStatus: String
+  branchId: String
+  eventId: String
+  memberId: String
+  organisationId: String
+  paymentStatus: String
+  status: RSVPStatus
+}
+
+"""Status of the event"""
+enum EventStatus {
+  CANCELLED
+  COMPLETED
+  DRAFT
+  IN_PROGRESS
+  POSTPONED
+  PUBLISHED
+  REGISTRATION_CLOSED
+}
+
+"""Type of event with corresponding icons"""
+enum EventType {
+  BAPTISM
+  BIBLE_STUDY
+  CELEBRATION
+  CHILDREN_EVENT
+  COMMUNITY_SERVICE
+  CONFERENCE
+  FELLOWSHIP
+  FUNDRAISER
+  FUNERAL
+  GRADUATION
+  MEETING
+  OTHER
+  PRAYER_MEETING
+  RETREAT
+  WEDDING
+  WORKSHOP
+  WORSHIP_SERVICE
+  YOUTH_EVENT
 }
 
 type Expense {
@@ -2193,6 +2477,14 @@ type Fund {
   status: String!
 }
 
+"""Gender options for members"""
+enum Gender {
+  FEMALE
+  MALE
+  NOT_SPECIFIED
+  UNKNOWN
+}
+
 type GenderDistribution {
   femaleCount: Float!
   femalePercentage: Float!
@@ -2233,9 +2525,11 @@ type GroupMember {
 }
 
 input GroupMemberFilterInput {
+  branchId: ID
   id: ID
   memberId: ID
   ministryId: ID
+  organisationId: ID
   role: String
   smallGroupId: ID
   status: String
@@ -2358,10 +2652,11 @@ enum LicenseType {
 """Marital status options"""
 enum MaritalStatus {
   DIVORCED
+  ENGAGED
   MARRIED
-  OTHER
   SEPARATED
   SINGLE
+  UNKNOWN
   WIDOWED
 }
 
@@ -2391,51 +2686,96 @@ enum MediaType {
 
 type Member {
   address: String
+  addressLine2: String
+  affidavitUrl: String
+  alternatePhone: String
+  alternativeEmail: String
   attendanceRecords: [JSON!]
   baptismDate: DateTime
+  baptismLocation: String
   branch: Branch
   branchId: String
+  cardIssued: Boolean!
+  cardIssuedAt: DateTime
+  cardType: String
   children: [Member!]
   city: String
+  communicationPrefs: CommunicationPrefs
   confirmationDate: DateTime
-  contributions: [JSON!]
+  consentDate: DateTime
+  consentVersion: String
   country: String
   createdAt: DateTime!
+  createdBy: String
   customFields: JSON
+  dataRetentionDate: DateTime
   dateOfBirth: DateTime
+  deactivatedAt: DateTime
+  deactivatedBy: String
+  deactivationReason: String
+  deletedAt: DateTime
+  deletedBy: String
+  deletionReason: String
+  digitalAddress: String
+  district: String
+  education: String
   email: String
+  emergencyContactName: String
+  emergencyContactPhone: String
+  emergencyContactRelation: String
   employerName: String
-  families: [Family!]
-  familyRelationships: [FamilyRelationship!]
+  familyId: String
+  fatherName: String
+  fatherOccupation: String
   firstName: String!
-  gender: String
+  gender: Gender!
   groupMemberships: [JSON!]
   guardianProfile: JSON
+  headOfHousehold: Boolean!
   id: ID!
+  isDeactivated: Boolean!
+  isRegularAttendee: Boolean!
+  landmark: String
+  lastAttendanceDate: DateTime
+  lastModifiedBy: String
   lastName: String!
-  maritalStatus: MaritalStatus
+  maritalStatus: MaritalStatus!
+  memberId: String
+  memberIdGeneratedAt: DateTime
   membershipDate: DateTime
+  membershipStatus: MembershipStatus!
+  membershipType: MembershipType!
   middleName: String
   ministryMemberships: [MinistryMember!]
+  motherName: String
+  motherOccupation: String
+  nationality: String
+  nfcId: String
+  nlbNumber: String
   notes: String
-  notifications: [JSON!]
   occupation: String
   organisationId: String
   parent: Member
   parentId: String
   phoneNumber: String
+  placeOfBirth: String
   postalCode: String
-  prayerRequests: [JSON!]
+  preferredLanguage: String!
+  preferredName: String
+  privacyLevel: PrivacyLevel!
   privacySettings: JSON
   profileImageUrl: String
+  region: String
   rfidCardId: String
   sacramentalRecords: [JSON!]
+  salvationDate: DateTime
   spouse: Member
   spouseId: String
   state: String
   status: MemberStatus!
   statusChangeDate: DateTime
   statusChangeReason: String
+  title: String
   updatedAt: DateTime!
 }
 
@@ -2506,6 +2846,12 @@ type MemberGeographic {
   memberCount: Int!
   percentage: Float!
   primaryGender: String
+}
+
+type MemberMembershipStatusDistribution {
+  count: Int!
+  percentage: Float!
+  status: String!
 }
 
 type MemberPastoralHistory {
@@ -2623,6 +2969,8 @@ type MemberStatistics {
   growthRate: Float!
   inactiveMembers: Int!
   lastMonth: MemberStatisticsPeriod
+  membersByMembershipStatus: [MemberMembershipStatusDistribution!]!
+  membersByStatus: [MemberStatusDistribution!]!
   newMembersInPeriod: Int!
   retentionRate: Float!
   totalMembers: Int!
@@ -2647,8 +2995,15 @@ enum MemberStatus {
   ACTIVE
   DECEASED
   INACTIVE
+  REMOVED
+  SUSPENDED
   TRANSFERRED
-  VISITOR
+}
+
+type MemberStatusDistribution {
+  count: Int!
+  percentage: Float!
+  status: String!
 }
 
 type MemberSummary {
@@ -2656,10 +3011,32 @@ type MemberSummary {
   total: Float!
 }
 
+"""Membership status in the church"""
+enum MembershipStatus {
+  ACTIVE_MEMBER
+  DECEASED
+  INACTIVE_MEMBER
+  MEMBER
+  REGULAR_ATTENDEE
+  TRANSFERRED
+  VISITOR
+}
+
 type MembershipStatusDistribution {
   count: Float!
   percentage: Float!
   status: String!
+}
+
+"""Type of membership"""
+enum MembershipType {
+  ASSOCIATE
+  CHILD
+  CLERGY
+  HONORARY
+  REGULAR
+  SENIOR
+  YOUTH
 }
 
 type MemoryUsage {
@@ -2781,6 +3158,15 @@ type Mutation {
   assignRoleToUser(roleId: ID!, userId: ID!): AuthUser!
   assignUserRole(branchId: String!, role: String!, userId: String!): User!
   assignVolunteerToEvent(input: CreateVolunteerAssignmentInput!): VolunteerEventAssignment!
+  bulkAddToGroup(bulkAddToGroupInput: BulkAddToGroupInput!): Boolean!
+  bulkAddToMinistry(bulkAddToMinistryInput: BulkAddToMinistryInput!): Boolean!
+  bulkAssignRfidCards(bulkAssignRfidInput: BulkAssignRfidInput!): Boolean!
+  bulkDeactivateMembers(bulkDeactivateInput: BulkDeactivateInput!): Boolean!
+  bulkExportMembers(bulkExportInput: BulkExportInput!): String!
+  bulkRemoveFromGroup(bulkRemoveFromGroupInput: BulkRemoveFromGroupInput!): Boolean!
+  bulkRemoveFromMinistry(bulkRemoveFromMinistryInput: BulkRemoveFromMinistryInput!): Boolean!
+  bulkTransferMembers(bulkTransferInput: BulkTransferInput!): Boolean!
+  bulkUpdateMemberStatus(bulkUpdateStatusInput: BulkUpdateStatusInput!): Boolean!
   cancelDataOperation(id: ID!): DataOperation!
   cancelSubscription(id: ID!, reason: String): Subscription!
   cancelWorkflowExecution(executionId: String!): Boolean!
@@ -2809,7 +3195,9 @@ type Mutation {
   createDataExport(input: CreateDataExportInput!): DataOperation!
   createDataImport(input: CreateDataImportInput!): DataOperation!
   createEmailTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
-  createEvent(input: CreateEventInput!): Event!
+  createEvent(createEventInput: CreateEventInput!): Event!
+  createEventRSVP(createEventRSVPInput: CreateEventRSVPInput!): EventRSVP!
+  createEventRegistration(createEventRegistrationInput: CreateEventRegistrationInput!): EventRegistration!
   createExpense(createExpenseInput: CreateExpenseInput!): Expense!
   createExpenseCategory(createExpenseCategoryInput: CreateExpenseCategoryInput!): ExpenseCategory!
   createFamily(createFamilyInput: CreateFamilyInput!): Family!
@@ -2826,6 +3214,8 @@ type Mutation {
   createLicense(input: CreateLicenseInput!): License!
   createMediaItem(createMediaItemInput: CreateMediaItemInput!): MediaItem!
   createMember(createMemberInput: CreateMemberInput!): Member!
+  createMemberRelationship(createMemberRelationshipInput: CreateMemberRelationshipInput!): Boolean!
+  createMembershipHistoryEntry(createMembershipHistoryInput: CreateMembershipHistoryInput!): Boolean!
   createMinistry(input: CreateMinistryInput!): Ministry!
   createNotification(input: CreateNotificationInput!): NotificationDto!
   createOrganisation(input: CreateOrganisationInput!): Organisation!
@@ -2835,7 +3225,7 @@ type Mutation {
   createPledge(createPledgeInput: CreatePledgeInput!): Pledge!
   createPrayerRequest(data: CreatePrayerRequestInput!): PrayerRequest!
   createPredefinedWorkflows(branchId: String, organisationId: String): [WorkflowTemplate!]!
-  createRecurringEvent(input: CreateEventInput!): [Event!]!
+  createRecurringEvent(createEventInput: CreateEventInput!): [Event!]!
   createRole(input: CreateRoleInput!): Role!
   createRoleWithPermissions(input: CreateRoleWithPermissionsInput!): Role!
   createSacramentalRecord(input: CreateSacramentalRecordInput!): SacramentalRecord!
@@ -2862,6 +3252,7 @@ type Mutation {
   deleteFile(id: String!): Boolean!
   deleteFollowUpReminder(id: String!): Boolean!
   deleteLicense(id: ID!): Boolean!
+  deleteMemberRelationship(id: String!): Boolean!
   deleteMinistry(id: ID!): Boolean!
   deleteNotification(notificationId: ID!): Boolean!
   deleteOrganisation(id: ID!): Boolean!
@@ -2902,7 +3293,9 @@ type Mutation {
   removeChildrenEvent(id: ID!): ChildrenEvent!
   removeChildrenMinistryVolunteer(id: ID!): ChildrenMinistryVolunteer!
   removeContribution(id: String!): Contribution!
-  removeEvent(id: ID!): Event!
+  removeEvent(id: ID!): Boolean!
+  removeEventRSVP(id: ID!): Boolean!
+  removeEventRegistration(id: ID!): Boolean!
   removeExpense(id: String!): Expense!
   removeExpenseCategory(id: String!): ExpenseCategory!
   removeFamily(id: String!, relationship: String!): Boolean!
@@ -2955,10 +3348,13 @@ type Mutation {
   updateChild(input: UpdateChildInput!): Child!
   updateChildrenEvent(input: UpdateChildrenEventInput!): ChildrenEvent!
   updateChildrenMinistryVolunteer(input: UpdateVolunteerInput!): ChildrenMinistryVolunteer!
+  updateCommunicationPrefs(memberId: String!, prefsData: String!): Boolean!
   updateContribution(updateContributionInput: UpdateContributionInput!): Contribution!
   updateCounselingSession(input: UpdateCounselingSessionInput!): CounselingSession!
   updateEmailTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
-  updateEvent(input: UpdateEventInput!): Event!
+  updateEvent(updateEventInput: UpdateEventInput!): Event!
+  updateEventRSVP(updateEventRSVPInput: UpdateEventRSVPInput!): EventRSVP!
+  updateEventRegistration(updateEventRegistrationInput: UpdateEventRegistrationInput!): EventRegistration!
   updateExpense(updateExpenseInput: UpdateExpenseInput!): Expense!
   updateExpenseCategory(updateExpenseCategoryInput: UpdateExpenseCategoryInput!): ExpenseCategory!
   updateFamily(id: String!, updateFamilyInput: UpdateFamilyInput!): Family!
@@ -2972,6 +3368,7 @@ type Mutation {
   updateLicense(id: ID!, input: UpdateLicenseInput!): License!
   updateMediaItem(updateMediaItemInput: UpdateMediaItemInput!): MediaItem!
   updateMember(id: String!, updateMemberInput: UpdateMemberInput!): Member!
+  updateMemberRelationship(id: String!, updateMemberRelationshipInput: UpdateMemberRelationshipInput!): Boolean!
   updateMemberStatus(id: String!, reason: String, status: MemberStatus!): Member!
   updateMinistry(id: ID!, input: UpdateMinistryInput!): Ministry!
   updateOrganisation(input: UpdateOrganisationInput!): Organisation!
@@ -3429,6 +3826,14 @@ type PrayerRequestSummaryWidget {
   widgetType: WidgetType!
 }
 
+"""Privacy level for member information"""
+enum PrivacyLevel {
+  PRIVATE
+  PUBLIC
+  RESTRICTED
+  STANDARD
+}
+
 type QRCodeToken {
   createdAt: DateTime!
   expiresAt: DateTime!
@@ -3500,7 +3905,9 @@ type Query {
   event(id: ID!): Event!
   eventAttendance(eventId: ID!): EventAttendanceOutput!
   eventAttendanceRecords(eventId: ID!, filter: AttendanceFilterInput): [AttendanceRecord!]!
-  events(branchId: String, organisationId: String): [Event!]!
+  eventRSVPs(filter: EventRSVPFilterInput!, skip: Float, take: Float): [EventRSVP!]!
+  eventRegistrations(filter: EventRegistrationFilterInput!, skip: Float, take: Float): [EventRegistration!]!
+  events(branchId: ID, organisationId: ID): [Event!]!
   expense(id: String!): Expense!
   expenseCategories(organisationId: String): [ExpenseCategory!]!
   expenseCategory(id: String!): ExpenseCategory!
@@ -3559,7 +3966,7 @@ type Query {
   memberPastoralHistory(memberId: String!): MemberPastoralHistory!
   memberSearch(query: String!): [Member!]!
   memberStatistics(branchId: String, organisationId: String): MemberStatistics!
-  members(branchId: String, hasRfidCard: Boolean, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
+  members(branchId: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, isRegularAttendee: Boolean, joinedAfter: String, joinedBefore: String, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], minAge: Int, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
   membersCount(branchId: String, organisationId: String): Int!
   messagePerformanceMetrics(filter: CommunicationStatsFilterInput): MessagePerformanceEntity!
   ministries(filters: MinistryFilterInput): [Ministry!]!
@@ -3599,6 +4006,7 @@ type Query {
   sacramentalRecords(filter: SacramentalRecordFilterInput): [SacramentalRecord!]!
   sacramentsByMember(memberId: ID!): [SacramentalRecord!]!
   search(branchId: String, query: String!, type: String): [MediaItem!]!
+  searchMembers(ageGroup: String, branchId: String, gender: String, membershipStatus: String, query: String!, skip: Int! = 0, take: Int! = 20): [Member!]!
   series(branchId: String): [Series!]!
   seriesById(id: ID!): Series!
   sermons(branchId: String, seriesId: String, speakerId: String, status: String): [Sermon!]!
@@ -3656,6 +4064,15 @@ type QuickLinksWidget {
   links: [QuickLinkItem!]!
   title: String!
   widgetType: WidgetType!
+}
+
+"""The RSVP status for an event"""
+enum RSVPStatus {
+  ATTENDING
+  CANCELLED
+  MAYBE
+  NOT_ATTENDING
+  PENDING
 }
 
 type RecentSacramentsWidget {
@@ -3718,6 +4135,24 @@ enum RecurrenceType {
 
 input RefreshTokenInput {
   refreshToken: String!
+}
+
+"""Type of relationship between members"""
+enum RelationshipType {
+  CHILD
+  COUSIN
+  EMERGENCY_CONTACT
+  FRIEND
+  GRANDCHILD
+  GRANDPARENT
+  GUARDIAN
+  NEPHEW_NIECE
+  OTHER
+  PARENT
+  SIBLING
+  SPOUSE
+  UNCLE_AUNT
+  WARD
 }
 
 input ReportFilterInput {
@@ -4514,19 +4949,57 @@ input UpdateEmailTemplateInput {
 
 input UpdateEventInput {
   branchId: String
+  capacity: Int
   category: String
+  currency: String = "GHS"
   description: String
   endDate: DateTime
+  eventImageUrl: String
+  eventType: EventType = OTHER
   id: ID!
+  isFree: Boolean = true
+  isPublic: Boolean = true
   isRecurring: Boolean = false
   location: String
   organisationId: String
+  organizerEmail: String
+  organizerName: String
+  organizerPhone: String
   recurrenceDaysOfWeek: [String!]
   recurrenceEndDate: DateTime
   recurrenceInterval: Float = 1
+  recurrencePattern: String
   recurrenceType: RecurrenceType
+  registrationDeadline: DateTime
+  registrationRequired: Boolean = false
+  requiresApproval: Boolean = false
   startDate: DateTime
+  status: EventStatus = DRAFT
+  tags: [String!]
+  ticketPrice: Float
   title: String
+}
+
+input UpdateEventRSVPInput {
+  id: String!
+  message: String
+  numberOfGuests: Int
+  status: RSVPStatus
+}
+
+input UpdateEventRegistrationInput {
+  amountPaid: Float
+  approvalStatus: String
+  approvedBy: String
+  id: String!
+  notes: String
+  numberOfGuests: Int
+  paymentMethod: String
+  paymentStatus: String
+  rejectionReason: String
+  specialRequests: String
+  status: RSVPStatus
+  transactionId: String
 }
 
 input UpdateExpenseCategoryInput {
@@ -4675,34 +5148,78 @@ input UpdateMediaItemInput {
 
 input UpdateMemberInput {
   address: String
+  addressLine2: String
+  alternatePhone: String
+  alternativeEmail: String
   baptismDate: DateTime
-  branchId: ID
+  baptismLocation: String
+  branchId: String
   city: String
   confirmationDate: DateTime
+  consentDate: DateTime
+  consentVersion: String
   country: String
   customFields: JSON
+  dataRetentionDate: DateTime
   dateOfBirth: DateTime
+  digitalAddress: String
+  district: String
+  education: String
   email: String
+  emergencyContactName: String
+  emergencyContactPhone: String
+  emergencyContactRelation: String
   employerName: String
+  familyId: String
+  fatherName: String
+  fatherOccupation: String
   firstName: String
-  gender: String
+  gender: Gender = NOT_SPECIFIED
+  headOfHousehold: Boolean = false
   id: ID!
+  isRegularAttendee: Boolean = false
+  landmark: String
   lastName: String
-  maritalStatus: MaritalStatus
+  maritalStatus: MaritalStatus = UNKNOWN
   membershipDate: DateTime
+  membershipStatus: MembershipStatus = VISITOR
+  membershipType: MembershipType = REGULAR
   middleName: String
+  motherName: String
+  motherOccupation: String
+  nationality: String
+  nfcId: String
+  nlbNumber: String
   notes: String
   occupation: String
-  organisationId: ID
-  parentId: ID
+  organisationId: String
+  parentId: String
   phoneNumber: String
+  placeOfBirth: String
   postalCode: String
-  privacySettings: JSON
+  preferredLanguage: String = "en"
+  preferredName: String
+  privacyLevel: PrivacyLevel = STANDARD
   profileImageUrl: String
-  spouseId: ID
+  region: String
+  rfidCardId: String
+  salvationDate: DateTime
+  spouseId: String
   state: String
   status: MemberStatus = ACTIVE
-  userId: ID
+  statusChangeReason: String
+  title: String
+}
+
+input UpdateMemberRelationshipInput {
+  canPickupChildren: Boolean
+  id: ID!
+  isEmergencyContact: Boolean
+  isGuardian: Boolean
+  notes: String
+  relationshipEnd: DateTime
+  relationshipStart: DateTime
+  relationshipType: RelationshipType
 }
 
 input UpdateMinistryInput {

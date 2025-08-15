@@ -245,11 +245,13 @@ export class SubscriptionsResolver {
     @Args('input', { type: () => VerifyPaymentInput })
     input: VerifyPaymentInput,
   ): Promise<Subscription> {
-    const subscription = await this.subscriptionsService.verifyPaymentAndCreateSubscription(input);
-    
+    const subscription =
+      await this.subscriptionsService.verifyPaymentAndCreateSubscription(input);
+
     return {
       ...subscription,
-      paystackSubscriptionCode: subscription.paystackSubscriptionCode || undefined,
+      paystackSubscriptionCode:
+        subscription.paystackSubscriptionCode || undefined,
       paystackCustomerCode: subscription.paystackCustomerCode || undefined,
       trialStart: subscription.trialStart || undefined,
       trialEnd: subscription.trialEnd || undefined,

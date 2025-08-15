@@ -113,9 +113,13 @@ export class AuthService {
   }
 
   // signIn method will be modified to return AuthPayload including refreshToken
-  async signIn(
-    signInDto: SignInDto,
-  ): Promise<AuthPayload & { refreshToken: string; accessTokenExpiresAt: number; refreshTokenExpiresAt: number }> {
+  async signIn(signInDto: SignInDto): Promise<
+    AuthPayload & {
+      refreshToken: string;
+      accessTokenExpiresAt: number;
+      refreshTokenExpiresAt: number;
+    }
+  > {
     // Modified return type
     const { email, password: passwordInput } = signInDto;
 
@@ -156,7 +160,10 @@ export class AuthService {
     console.log('🔍 Backend signIn - Raw user data from database:');
     console.log('🔍 Raw user:', user);
     console.log('🔍 Raw user.organisationId:', user?.organisationId);
-    console.log('🔍 Raw user.organisationId type:', typeof user?.organisationId);
+    console.log(
+      '🔍 Raw user.organisationId type:',
+      typeof user?.organisationId,
+    );
     console.log('🔍 Raw user.userBranches:', user?.userBranches);
 
     if (!user) {
@@ -179,16 +186,21 @@ export class AuthService {
     // Check organization subscription status before allowing login
     // Skip subscription validation for SUBSCRIPTION_MANAGER role
     console.log('🔍 Checking user roles for subscription exemption...');
-    console.log('User roles:', user.roles.map(r => r.name));
-    
+    console.log(
+      'User roles:',
+      user.roles.map((r) => r.name),
+    );
+
     const isSubscriptionManager = user.roles.some(
       (role) => role.name === 'SUBSCRIPTION_MANAGER',
     );
-    
+
     console.log('Is subscription manager:', isSubscriptionManager);
 
     if (!isSubscriptionManager && user.organisationId) {
-      console.log('⚠️ User is not a subscription manager, checking subscription status...');
+      console.log(
+        '⚠️ User is not a subscription manager, checking subscription status...',
+      );
       // Get organization subscription status
       const subscription = await this.prisma.subscription.findFirst({
         where: {
@@ -243,15 +255,20 @@ export class AuthService {
     const refreshToken = await this._createAndStoreRefreshToken(user.id);
 
     // Calculate token expiry timestamps for frontend
-    const accessTokenExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN', '15m');
+    const accessTokenExpiresIn = this.configService.get<string>(
+      'JWT_EXPIRES_IN',
+      '15m',
+    );
     const refreshTokenExpiresInDays = parseInt(
       this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRATION_DAYS', '7'),
     );
-    
+
     // Convert expiry times to timestamps
     const now = Date.now();
-    const accessTokenExpiresAt = now + this._parseExpiryTime(accessTokenExpiresIn);
-    const refreshTokenExpiresAt = now + (refreshTokenExpiresInDays * 24 * 60 * 60 * 1000);
+    const accessTokenExpiresAt =
+      now + this._parseExpiryTime(accessTokenExpiresIn);
+    const refreshTokenExpiresAt =
+      now + refreshTokenExpiresInDays * 24 * 60 * 60 * 1000;
 
     // Update lastLoginAt
     await this.prisma.user.update({
@@ -267,7 +284,10 @@ export class AuthService {
     console.log('🔍 User email:', userData.email);
     console.log('🔍 User organisationId:', userData.organisationId);
     console.log('🔍 User organisationId type:', typeof userData.organisationId);
-    console.log('🔍 User roles:', userData.roles?.map(r => r.name));
+    console.log(
+      '🔍 User roles:',
+      userData.roles?.map((r) => r.name),
+    );
     console.log('🔍 User userBranches count:', userData.userBranches?.length);
     if (userData.userBranches && userData.userBranches.length > 0) {
       console.log('🔍 First userBranch:', userData.userBranches[0]);
@@ -313,8 +333,14 @@ export class AuthService {
 
     console.log('🔍 Backend signIn - AuthPayload being returned:');
     console.log('🔍 AuthPayload user:', authPayload.user);
-    console.log('🔍 AuthPayload user.organisationId:', authPayload.user.organisationId);
-    console.log('🔍 AuthPayload user.organisationId type:', typeof authPayload.user.organisationId);
+    console.log(
+      '🔍 AuthPayload user.organisationId:',
+      authPayload.user.organisationId,
+    );
+    console.log(
+      '🔍 AuthPayload user.organisationId type:',
+      typeof authPayload.user.organisationId,
+    );
 
     return authPayload;
   }

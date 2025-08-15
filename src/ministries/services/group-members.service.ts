@@ -41,7 +41,7 @@ export class GroupMembersService {
         ministry: true,
         smallGroup: true,
       },
-    });
+    }) as unknown as GroupMember[];
   }
 
   async findOne(
@@ -196,17 +196,13 @@ export class GroupMembersService {
 
     return this.prisma.groupMember.update({
       where: { id },
-      data: {
-        ...(input.role !== undefined && { role: input.role }),
-
-        ...(input.status !== undefined && { status: input.status }),
-      },
+      data: input,
       include: {
         member: true,
         ministry: true,
         smallGroup: true,
       },
-    });
+    }) as unknown as GroupMember;
   }
 
   async removeMemberFromGroup(id: string): Promise<boolean> {

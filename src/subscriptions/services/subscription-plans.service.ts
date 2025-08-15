@@ -13,14 +13,14 @@ import { UpdatePlanInput } from '../dto/update-plan.input';
 export class SubscriptionPlansService {
   private readonly logger = new Logger(SubscriptionPlansService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Create a new subscription plan (GraphQL version)
    */
-  async createPlan(input: CreatePlanInput): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
+  async createPlan(
+    input: CreatePlanInput,
+  ): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
     try {
       this.logger.log(`Creating subscription plan: ${input.name}`);
 
@@ -61,7 +61,10 @@ export class SubscriptionPlansService {
   /**
    * Update a subscription plan (GraphQL version)
    */
-  async updatePlan(id: string, input: UpdatePlanInput): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
+  async updatePlan(
+    id: string,
+    input: UpdatePlanInput,
+  ): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
     try {
       this.logger.log(`Updating subscription plan: ${id}`);
 
@@ -70,7 +73,9 @@ export class SubscriptionPlansService {
       });
 
       if (!existingPlan) {
-        throw new NotFoundException(`Subscription plan with ID ${id} not found`);
+        throw new NotFoundException(
+          `Subscription plan with ID ${id} not found`,
+        );
       }
 
       // Update plan in database (no Paystack plan update needed)
@@ -78,12 +83,16 @@ export class SubscriptionPlansService {
         where: { id },
         data: {
           ...(input.name && { name: input.name }),
-          ...(input.description !== undefined && { description: input.description }),
+          ...(input.description !== undefined && {
+            description: input.description,
+          }),
           ...(input.amount && { amount: input.amount }),
           ...(input.currency && { currency: input.currency }),
           ...(input.interval && { interval: input.interval }),
           ...(input.intervalCount && { intervalCount: input.intervalCount }),
-          ...(input.trialPeriodDays !== undefined && { trialPeriodDays: input.trialPeriodDays }),
+          ...(input.trialPeriodDays !== undefined && {
+            trialPeriodDays: input.trialPeriodDays,
+          }),
           ...(input.features && { features: input.features }),
           ...(input.isActive !== undefined && { isActive: input.isActive }),
         },
@@ -110,7 +119,9 @@ export class SubscriptionPlansService {
   /**
    * Delete a subscription plan (GraphQL version)
    */
-  async deletePlan(id: string): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
+  async deletePlan(
+    id: string,
+  ): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
     try {
       this.logger.log(`Deleting subscription plan: ${id}`);
 
@@ -126,7 +137,9 @@ export class SubscriptionPlansService {
       });
 
       if (!existingPlan) {
-        throw new NotFoundException(`Subscription plan with ID ${id} not found`);
+        throw new NotFoundException(
+          `Subscription plan with ID ${id} not found`,
+        );
       }
 
       // Check if plan has active subscriptions
@@ -155,7 +168,9 @@ export class SubscriptionPlansService {
   /**
    * Get subscription plan by ID
    */
-  async getPlan(id: string): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
+  async getPlan(
+    id: string,
+  ): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
     const plan = await this.prisma.subscriptionPlan.findUnique({
       where: { id },
       include: {
@@ -310,7 +325,9 @@ export class SubscriptionPlansService {
   /**
    * Sync plan with Paystack
    */
-  async syncPlanWithPaystack(id: string): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
+  async syncPlanWithPaystack(
+    id: string,
+  ): Promise<SubscriptionPlan & { _count?: { subscriptions: number } }> {
     try {
       this.logger.log(`Syncing plan with Paystack: ${id}`);
 
@@ -326,7 +343,9 @@ export class SubscriptionPlansService {
       });
 
       if (!plan) {
-        throw new NotFoundException(`Subscription plan with ID ${id} not found`);
+        throw new NotFoundException(
+          `Subscription plan with ID ${id} not found`,
+        );
       }
 
       if (!plan.paystackPlanCode) {

@@ -12,6 +12,7 @@ import { AttendanceModule } from '../attendance/attendance.module';
 import { ConfigModule } from '@nestjs/config';
 import { ContentModule } from '../content/content.module';
 import { WorkflowsModule } from '../workflows/workflows.module';
+import { MemberIdGenerationService } from '../common/services/member-id-generation.service';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { WorkflowsModule } from '../workflows/workflows.module';
     MembersResolver,
     SpiritualMilestonesResolver,
     FamiliesResolver,
+    MemberIdGenerationService,
   ],
   exports: [
     MembersService,

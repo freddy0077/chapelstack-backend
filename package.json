@@ -24,7 +24,18 @@
     "prisma:seed": "prisma generate && ts-node prisma/seed.ts",
     "seed": "ts-node prisma/seed.ts",
     "seed:subscription-manager": "ts-node prisma/seeders/subscription-manager.seeder.ts",
-    "seed:ghana-plans": "ts-node prisma/seeders/subscription-plans-ghana.seeder.ts"
+    "seed:ghana-plans": "ts-node prisma/seeders/subscription-plans-ghana.seeder.ts",
+    "migrate:members": "ts-node scripts/member-data-migration.ts migrate",
+    "migrate:members:validate": "ts-node scripts/member-data-migration.ts validate",
+    "migrate:members:rollback": "ts-node scripts/member-data-migration.ts rollback",
+    "validate:members": "ts-node scripts/member-data-validation.ts report",
+    "validate:members:data": "ts-node scripts/member-data-validation.ts members",
+    "validate:members:prefs": "ts-node scripts/member-data-validation.ts prefs",
+    "validate:members:relationships": "ts-node scripts/member-data-validation.ts relationships",
+    "validate:members:search": "ts-node scripts/member-data-validation.ts search",
+    "validate:members:analytics": "ts-node scripts/member-data-validation.ts analytics",
+    "seed:comprehensive-members": "ts-node src/database/seeders/run-comprehensive-seeder.ts",
+    "seed:members-standalone": "ts-node src/database/seeders/standalone-comprehensive-seeder.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

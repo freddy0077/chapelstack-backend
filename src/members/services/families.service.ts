@@ -901,19 +901,17 @@ export class FamiliesService {
   }
 
   async addMemberToFamilyByRfidCard(
-    rfidCardId: string,
+    memberId: string,
     familyId: string,
     relatedMemberId: string,
     relationship: string,
   ): Promise<Family> {
-    // Find the member by RFID card ID
+    // Find the member by ID
     const member = await this.prisma.member.findUnique({
-      where: { rfidCardId },
+      where: { id: memberId },
     });
     if (!member) {
-      throw new NotFoundException(
-        `Member with RFID card ID ${rfidCardId} not found`,
-      );
+      throw new NotFoundException(`Member with ID ${memberId} not found`);
     }
 
     // Check if family exists

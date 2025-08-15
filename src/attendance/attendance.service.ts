@@ -615,7 +615,7 @@ export class AttendanceService {
 
     // Find member by RFID/NFC card ID
     const member = await this.prisma.member.findFirst({
-      where: { rfidCardId: data.cardId },
+      where: { memberId: data.cardId },
     });
 
     if (!member) {

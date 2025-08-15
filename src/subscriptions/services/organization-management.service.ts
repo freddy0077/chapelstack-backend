@@ -46,7 +46,13 @@ export class OrganizationManagementService {
   async getOrganizations(
     filter: OrganizationFilter = {},
   ): Promise<OrganizationWithSubscription[]> {
-    const { status, subscriptionStatus, search, limit = 50, offset = 0 } = filter;
+    const {
+      status,
+      subscriptionStatus,
+      search,
+      limit = 50,
+      offset = 0,
+    } = filter;
 
     const where: any = {};
 
@@ -65,10 +71,10 @@ export class OrganizationManagementService {
               {
                 AND: [
                   { status: { in: ['ACTIVE', 'TRIALING'] } },
-                  { currentPeriodEnd: { lt: new Date() } }
-                ]
-              }
-            ]
+                  { currentPeriodEnd: { lt: new Date() } },
+                ],
+              },
+            ],
           },
         };
       } else {
@@ -149,7 +155,8 @@ export class OrganizationManagementService {
             id: org.subscriptionsAsCustomer[0].id,
             status: org.subscriptionsAsCustomer[0].status,
             planName: org.subscriptionsAsCustomer[0].plan?.name || 'Unknown',
-            currentPeriodStart: org.subscriptionsAsCustomer[0].currentPeriodStart,
+            currentPeriodStart:
+              org.subscriptionsAsCustomer[0].currentPeriodStart,
             currentPeriodEnd: org.subscriptionsAsCustomer[0].currentPeriodEnd,
             amount: org.subscriptionsAsCustomer[0].plan?.amount || 0,
           }
@@ -212,10 +219,12 @@ export class OrganizationManagementService {
         ? {
             id: organization.subscriptionsAsCustomer[0].id,
             status: organization.subscriptionsAsCustomer[0].status,
-            planName: organization.subscriptionsAsCustomer[0].plan?.name || 'Unknown',
+            planName:
+              organization.subscriptionsAsCustomer[0].plan?.name || 'Unknown',
             currentPeriodStart:
               organization.subscriptionsAsCustomer[0].currentPeriodStart,
-            currentPeriodEnd: organization.subscriptionsAsCustomer[0].currentPeriodEnd,
+            currentPeriodEnd:
+              organization.subscriptionsAsCustomer[0].currentPeriodEnd,
             amount: organization.subscriptionsAsCustomer[0].plan?.amount || 0,
           }
         : undefined,

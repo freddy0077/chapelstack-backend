@@ -32,6 +32,30 @@ export class MemberAgeGroup {
 }
 
 @ObjectType()
+export class MemberStatusDistribution {
+  @Field()
+  status: string;
+
+  @Field(() => Int)
+  count: number;
+
+  @Field(() => Float)
+  percentage: number;
+}
+
+@ObjectType()
+export class MemberMembershipStatusDistribution {
+  @Field()
+  status: string;
+
+  @Field(() => Int)
+  count: number;
+
+  @Field(() => Float)
+  percentage: number;
+}
+
+@ObjectType()
 export class MemberStatistics {
   @Field(() => Int)
   totalMembers: number;
@@ -65,6 +89,12 @@ export class MemberStatistics {
 
   @Field(() => [MemberAgeGroup])
   ageGroups: MemberAgeGroup[];
+
+  @Field(() => [MemberStatusDistribution])
+  membersByStatus: MemberStatusDistribution[];
+
+  @Field(() => [MemberMembershipStatusDistribution])
+  membersByMembershipStatus: MemberMembershipStatusDistribution[];
 
   @Field(() => MemberStatisticsPeriod, { nullable: true })
   lastMonth?: MemberStatisticsPeriod;

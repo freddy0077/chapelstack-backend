@@ -13,7 +13,7 @@ import {
   Subscription,
   SubscriptionPayment,
   PaystackCustomer,
-  Prisma
+  Prisma,
 } from '@prisma/client';
 import { CreateSubscriptionInput } from '../dto/create-subscription.input';
 import { UpdateSubscriptionInput } from '../dto/update-subscription.input';
@@ -981,10 +981,17 @@ export class SubscriptionsService {
   ): Promise<Subscription> {
     try {
       // Verify payment on Paystack
-      const paymentVerification = await this.paystackService.verifyTransaction(input.reference);
+      const paymentVerification = await this.paystackService.verifyTransaction(
+        input.reference,
+      );
 
-      if (!paymentVerification.status || paymentVerification.data.status !== 'success') {
-        throw new BadRequestException('Payment verification failed or payment was not successful');
+      if (
+        !paymentVerification.status ||
+        paymentVerification.data.status !== 'success'
+      ) {
+        throw new BadRequestException(
+          'Payment verification failed or payment was not successful',
+        );
       }
 
       // Get the organization
@@ -1008,13 +1015,15 @@ export class SubscriptionsService {
       // Verify payment amount matches plan amount
       const expectedAmount = plan.amount * 100; // Convert to kobo/pesewas
       if (paymentVerification.data.amount !== expectedAmount) {
-        throw new BadRequestException('Payment amount does not match plan amount');
+        throw new BadRequestException(
+          'Payment amount does not match plan amount',
+        );
       }
 
       // Create subscription for the organization
       const startDate = new Date();
       const currentPeriodEnd = new Date();
-      
+
       // Calculate period end based on plan interval
       if (plan.interval === 'MONTHLY') {
         currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
@@ -1030,7 +1039,8 @@ export class SubscriptionsService {
           status: 'ACTIVE',
           currentPeriodStart: startDate,
           currentPeriodEnd: currentPeriodEnd,
-          paystackCustomerCode: paymentVerification.data.customer?.customer_code,
+          paystackCustomerCode:
+            paymentVerification.data.customer?.customer_code,
           metadata: {
             paymentReference: input.reference,
             contactName: input.contactName,
@@ -1061,7 +1071,9 @@ export class SubscriptionsService {
         },
       });
 
-      this.logger.log(`Successfully created subscription ${subscription.id} for organization ${input.organizationId} after payment verification`);
+      this.logger.log(
+        `Successfully created subscription ${subscription.id} for organization ${input.organizationId} after payment verification`,
+      );
 
       return subscription;
     } catch (error) {

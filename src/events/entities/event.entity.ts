@@ -1,8 +1,11 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 import { GraphQLISODateTime } from '@nestjs/graphql';
+import { EventType, EventStatus } from '../enums/graphql-enums';
 import { Branch } from '../../branches/entities/branch.entity';
 import { User } from '../../users/entities/user.entity';
 import { AttendanceRecord } from '../../attendance/entities/attendance-record.entity';
+import { EventRegistration } from './event-registration.entity';
+import { EventRSVP } from './event-rsvp.entity';
 
 @ObjectType()
 export class Event {
@@ -12,7 +15,7 @@ export class Event {
   @Field()
   title: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   description?: string;
 
   @Field(() => GraphQLISODateTime)
@@ -21,23 +24,72 @@ export class Event {
   @Field(() => GraphQLISODateTime, { nullable: true })
   endDate?: Date;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   location?: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   category?: string;
 
-  @Field({ nullable: true })
-  branchId?: string;
+  // New event enhancement fields
+  @Field(() => EventType)
+  eventType: EventType;
 
-  @Field({ nullable: true })
-  organisationId?: string;
+  @Field(() => EventStatus)
+  status: EventStatus;
 
-  @Field({ nullable: true })
-  createdBy?: string;
+  @Field(() => Int, { nullable: true })
+  capacity?: number | null;
 
-  @Field({ nullable: true })
-  updatedBy?: string;
+  @Field()
+  registrationRequired: boolean;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  registrationDeadline?: Date | null;
+
+  @Field()
+  isPublic: boolean;
+
+  @Field()
+  requiresApproval: boolean;
+
+  @Field(() => String, { nullable: true })
+  eventImageUrl?: string | null;
+
+  @Field(() => [String], { nullable: true })
+  tags?: string[] | null;
+
+  // Contact and organizer info
+  @Field(() => String, { nullable: true })
+  organizerName?: string | null;
+
+  @Field(() => String, { nullable: true })
+  organizerEmail?: string | null;
+
+  @Field(() => String, { nullable: true })
+  organizerPhone?: string | null;
+
+  // Pricing (for paid events)
+  @Field()
+  isFree: boolean;
+
+  @Field(() => Float, { nullable: true })
+  ticketPrice?: number | null;
+
+  @Field(() => String, { nullable: true })
+  currency?: string | null;
+
+  // Existing fields
+  @Field(() => String, { nullable: true })
+  branchId?: string | null;
+
+  @Field(() => String, { nullable: true })
+  organisationId?: string | null;
+
+  @Field(() => String, { nullable: true })
+  createdBy?: string | null;
+
+  @Field(() => String, { nullable: true })
+  updatedBy?: string | null;
 
   @Field(() => Branch, { nullable: true })
   branch?: Branch;
@@ -47,6 +99,13 @@ export class Event {
 
   @Field(() => User, { nullable: true })
   creator?: User;
+
+  // Enhanced relationships
+  @Field(() => [EventRegistration], { nullable: true })
+  eventRegistrations?: EventRegistration[];
+
+  @Field(() => [EventRSVP], { nullable: true })
+  eventRSVPs?: EventRSVP[];
 
   @Field(() => [AttendanceRecord], { nullable: true })
   attendanceRecords?: AttendanceRecord[];

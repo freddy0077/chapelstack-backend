@@ -7,7 +7,8 @@ import * as nodeCrypto from 'crypto';
 
 // Check if crypto is already available
 const hasCrypto = typeof (global as any).crypto !== 'undefined';
-const hasRandomUUID = hasCrypto && typeof (global as any).crypto.randomUUID === 'function';
+const hasRandomUUID =
+  hasCrypto && typeof (global as any).crypto.randomUUID === 'function';
 
 console.log('🔍 Crypto polyfill check:', { hasCrypto, hasRandomUUID });
 
@@ -19,25 +20,34 @@ if (!hasCrypto || !hasRandomUUID) {
       value: nodeCrypto,
       writable: false,
       enumerable: true,
-      configurable: true
+      configurable: true,
     });
     console.log('✅ Crypto polyfill applied using Object.defineProperty');
   } catch (error) {
-    console.warn('⚠️ Could not set global.crypto via Object.defineProperty:', error.message);
-    
+    console.warn(
+      '⚠️ Could not set global.crypto via Object.defineProperty:',
+      error.message,
+    );
+
     // Fallback: try direct assignment for older Node.js versions
     try {
       (global as any).crypto = nodeCrypto;
       console.log('✅ Crypto polyfill applied using direct assignment');
     } catch (fallbackError) {
-      console.warn('⚠️ Could not set global.crypto via direct assignment:', fallbackError.message);
-      
+      console.warn(
+        '⚠️ Could not set global.crypto via direct assignment:',
+        fallbackError.message,
+      );
+
       // Final fallback: ensure globalThis has crypto
       try {
         (globalThis as any).crypto = nodeCrypto;
         console.log('✅ Crypto polyfill applied to globalThis');
       } catch (globalThisError) {
-        console.error('❌ All crypto polyfill methods failed:', globalThisError.message);
+        console.error(
+          '❌ All crypto polyfill methods failed:',
+          globalThisError.message,
+        );
       }
     }
   }

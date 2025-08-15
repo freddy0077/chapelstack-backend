@@ -158,18 +158,20 @@ describe('AuthService', () => {
       // Assert
       expect(result).toBeDefined();
       expect(result.user).toBeDefined();
-      expect(result.user.organisationId).toBe('9885dc20-3f03-42d3-a45b-3d5ed3799309');
+      expect(result.user.organisationId).toBe(
+        '9885dc20-3f03-42d3-a45b-3d5ed3799309',
+      );
       expect(result.user.organisationId).not.toBeNull();
       expect(result.user.organisationId).not.toBeUndefined();
       expect(typeof result.user.organisationId).toBe('string');
-      
+
       // Verify other user properties
       expect(result.user.id).toBe(mockUser.id);
       expect(result.user.email).toBe(mockUser.email);
       expect(result.user.firstName).toBe(mockUser.firstName);
       expect(result.user.lastName).toBe(mockUser.lastName);
       expect(result.user.isActive).toBe(true);
-      
+
       // Verify tokens are returned
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();

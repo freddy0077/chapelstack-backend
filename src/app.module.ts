@@ -73,6 +73,10 @@ registerEnumType(AttendanceStatsPeriod, {
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
+      subscriptions: {
+        'graphql-ws': true,
+        'subscriptions-transport-ws': true,
+      },
       buildSchemaOptions: {
         orphanedTypes: [Branch],
         scalarsMap: [

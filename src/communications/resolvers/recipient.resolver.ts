@@ -58,7 +58,7 @@ export class RecipientResolver {
     }
     // Age filter logic (requires dateOfBirth)
     // ...
-    return this.prisma.member.findMany({ where });
+    return this.prisma.member.findMany({ where }) as unknown as Member[];
   }
 
   @Query(() => [Member])
@@ -97,7 +97,7 @@ export class RecipientResolver {
           lt: end,
         },
       },
-    });
+    }) as unknown as Member[];
   }
 
   @Query(() => [Member])
@@ -114,6 +114,6 @@ export class RecipientResolver {
         ],
       },
       take: 20,
-    });
+    }) as unknown as Member[];
   }
 }

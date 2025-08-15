@@ -1,5 +1,13 @@
 import { InputType, Field, Float, Int } from '@nestjs/graphql';
-import { IsString, IsOptional, IsNumber, IsBoolean, IsEnum, IsArray, Min } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  IsEnum,
+  IsArray,
+  Min,
+} from 'class-validator';
 import { SubscriptionInterval } from '@prisma/client';
 
 @InputType()

@@ -1,4 +1,4 @@
-import { InputType, Field, registerEnumType } from '@nestjs/graphql';
+import { InputType, Field, registerEnumType, Int } from '@nestjs/graphql';
 import { GraphQLISODateTime } from '@nestjs/graphql';
 import {
   IsString,
@@ -15,8 +15,11 @@ import {
   registerDecorator,
   ValidationOptions,
   ValidationArguments,
+  IsEmail,
+  IsDecimal,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { EventType, EventStatus } from '@prisma/client';
 
 // Register RecurrenceType enum for GraphQL
 export enum RecurrenceType {
@@ -31,6 +34,18 @@ registerEnumType(RecurrenceType, {
   description: 'Type of event recurrence',
 });
 
+// Register EventType enum for GraphQL
+registerEnumType(EventType, {
+  name: 'EventType',
+  description: 'Type of event with corresponding icons',
+});
+
+// Register EventStatus enum for GraphQL
+registerEnumType(EventStatus, {
+  name: 'EventStatus',
+  description: 'Status of the event',
+});
+
 // Custom validator for optional date that handles empty strings
 function IsOptionalDate(validationOptions?: ValidationOptions) {
   return function (object: Object, propertyName: string) {
@@ -41,23 +56,39 @@ function IsOptionalDate(validationOptions?: ValidationOptions) {
       options: validationOptions,
       validator: {
         validate(value: any, args: ValidationArguments) {
-          console.log(`IsOptionalDate validator - Field: ${args.property}, Value:`, JSON.stringify(value), `Type: ${typeof value}`);
-          
+          console.log(
+            `IsOptionalDate validator - Field: ${args.property}, Value:`,
+            JSON.stringify(value),
+            `Type: ${typeof value}`,
+          );
+
           // Allow undefined, null, empty string, or whitespace-only strings
-          if (value === undefined || value === null || value === '' || 
-              (typeof value === 'string' && value.trim() === '')) {
-            console.log(`IsOptionalDate validator - Allowing empty value for ${args.property}`);
+          if (
+            value === undefined ||
+            value === null ||
+            value === '' ||
+            (typeof value === 'string' && value.trim() === '')
+          ) {
+            console.log(
+              `IsOptionalDate validator - Allowing empty value for ${args.property}`,
+            );
             return true;
           }
-          
+
           // For non-empty values, check if it's a valid date
           try {
             const date = new Date(value);
             const isValid = !isNaN(date.getTime());
-            console.log(`IsOptionalDate validator - Date validation for ${args.property}:`, isValid);
+            console.log(
+              `IsOptionalDate validator - Date validation for ${args.property}:`,
+              isValid,
+            );
             return isValid;
           } catch (error) {
-            console.log(`IsOptionalDate validator - Error parsing date for ${args.property}:`, error);
+            console.log(
+              `IsOptionalDate validator - Error parsing date for ${args.property}:`,
+              error,
+            );
             return false;
           }
         },
@@ -138,4 +169,89 @@ export class CreateEventInput {
   @IsOptional()
   @IsArray()
   recurrenceDaysOfWeek?: string[];
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  recurrencePattern?: string;
+
+  // New event enhancement fields
+  @Field(() => EventType, { defaultValue: EventType.OTHER })
+  @IsOptional()
+  @IsEnum(EventType)
+  eventType?: EventType;
+
+  @Field(() => EventStatus, { defaultValue: EventStatus.DRAFT })
+  @IsOptional()
+  @IsEnum(EventStatus)
+  status?: EventStatus;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  capacity?: number;
+
+  @Field({ defaultValue: false })
+  @IsOptional()
+  @IsBoolean()
+  registrationRequired?: boolean;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  @IsOptional()
+  @Type(() => Date)
+  @IsOptionalDate()
+  registrationDeadline?: Date;
+
+  @Field({ defaultValue: true })
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+
+  @Field({ defaultValue: false })
+  @IsOptional()
+  @IsBoolean()
+  requiresApproval?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  eventImageUrl?: string;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  tags?: string[];
+
+  // Contact and organizer info
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  organizerName?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsEmail()
+  organizerEmail?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  organizerPhone?: string;
+
+  // Pricing (for paid events)
+  @Field({ defaultValue: true })
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsDecimal()
+  ticketPrice?: number;
+
+  @Field({ nullable: true, defaultValue: 'GHS' })
+  @IsOptional()
+  @IsString()
+  currency?: string;
 }

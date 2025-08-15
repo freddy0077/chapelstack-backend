@@ -121,7 +121,7 @@ export async function seedExpiredSubscriptionOrganisation() {
         email: `system-customer-${organisation.id}@chapelstack.com`,
         phoneNumber: '+233-555-0003',
         dateOfBirth: new Date('1990-01-01'),
-        gender: 'OTHER',
+        gender: 'UNKNOWN',
         maritalStatus: 'SINGLE',
         address: '789 Expired Lane',
         city: 'Accra',

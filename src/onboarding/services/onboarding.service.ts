@@ -5,13 +5,13 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { BranchesService } from 'src/branches/branches.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { BranchesService } from '../../branches/branches.service';
 import {
   OnboardingProgress,
   OnboardingStep,
 } from '../entities/onboarding-progress.entity';
-import { SettingsService } from 'src/settings/settings.service';
+import { SettingsService } from '../../settings/settings.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { Prisma } from '@prisma/client';
 

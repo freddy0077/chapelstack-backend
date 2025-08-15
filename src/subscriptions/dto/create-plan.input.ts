@@ -1,5 +1,15 @@
 import { InputType, Field, Float, Int } from '@nestjs/graphql';
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsBoolean, IsEnum, IsArray, Min, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+  IsArray,
+  Min,
+  IsUUID,
+} from 'class-validator';
 import { SubscriptionInterval } from '@prisma/client';
 
 @InputType()
@@ -24,7 +34,9 @@ export class CreatePlanInput {
   @IsNotEmpty()
   currency: string;
 
-  @Field(() => SubscriptionInterval, { defaultValue: SubscriptionInterval.MONTHLY })
+  @Field(() => SubscriptionInterval, {
+    defaultValue: SubscriptionInterval.MONTHLY,
+  })
   @IsEnum(SubscriptionInterval)
   interval: SubscriptionInterval;
 

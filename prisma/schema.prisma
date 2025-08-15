@@ -87,7 +87,8 @@ model User {
   followUpRemindersCreated      FollowUpReminder[]  @relation("FollowUpReminderCreator")
 
   // Organization suspension relation
-  suspendedOrganizations Organisation[] @relation("OrganizationSuspendedBy")
+  suspendedOrganizations Organisation[]      @relation("OrganizationSuspendedBy")
+  MembershipHistory      MembershipHistory[]
 
   @@index([organisationId])
 }
@@ -118,7 +119,7 @@ model Permission {
 }
 
 model Branch {
-  events                Event[]
+  events                Event[]                   @relation("BranchEvents")
   id                    String              @id @default(uuid())
   name                  String
   createdAt             DateTime            @default(now())
@@ -162,7 +163,7 @@ model Branch {
   pledges           Pledge[]
   expenseCategories ExpenseCategory[]
   expenses          Expense[]
-  vendors           Vendor[]
+  vendors           Vendor[] @relation("VendorExpenses")
   budgets           Budget[]
 
   // Content management relations
@@ -200,6 +201,9 @@ model Branch {
   counselingSessions CounselingSession[]
   careRequests       CareRequest[]
   followUpReminders  FollowUpReminder[]
+  fromBranchHistory  MembershipHistory[] @relation("FromBranchHistory")
+  toBranchHistory    MembershipHistory[] @relation("ToBranchHistory")
+  memberIdSequences  MemberIdSequence[]
 
   @@index([organisationId])
 }
@@ -475,46 +479,74 @@ model Backup {
 }
 
 model Member {
-  id                 String        @id @default(uuid())
+  id                 String           @id @default(uuid())
   firstName          String
   middleName         String?
   lastName           String
-  gender             String
+  title              String?
+  gender             Gender           @default(NOT_SPECIFIED)
   dateOfBirth        DateTime?
-  email              String?       @unique
+  email              String?          @unique
+  alternativeEmail   String?
   phoneNumber        String?
+  rfidCardId         String?
+  nfcId              String?
   address            String?
+  addressLine2       String?
   city               String?
   state              String?
   postalCode         String?
   country            String?
-  maritalStatus      String?
+  district           String?
+  region             String?
+  digitalAddress     String?
+  landmark           String?
+  maritalStatus      MaritalStatus    @default(UNKNOWN)
   occupation         String?
   employerName       String?
+  nlbNumber          String?
+  fatherName         String?
+  motherName         String?
+  fatherOccupation   String?
+  motherOccupation   String?
   membershipDate     DateTime?
-  membershipStatus   String?
-  status             String        @default("ACTIVE") // ACTIVE, INACTIVE, DECEASED, TRANSFERRED
+  membershipStatus   MembershipStatus @default(VISITOR)
+  status             MemberStatus     @default(ACTIVE) // ACTIVE, INACTIVE, DECEASED, TRANSFERRED
   statusChangeDate   DateTime?
   statusChangeReason String?
   baptismDate        DateTime?
   baptismLocation    String?
   confirmationDate   DateTime?
+  affidavitUrl       String?
   profileImageUrl    String?
   notes              String?
   customFields       Json?
   privacySettings    Json?
-  rfidCardId         String?       @unique
-  isRegularAttendee  Boolean       @default(false)
+  
+  // Single unified member identifier
+  memberId           String?          @unique // Primary member identifier for ALL systems
+  memberIdGeneratedAt DateTime?       // When the ID was generated
+  
+  // Optional: Physical card metadata
+  cardIssued         Boolean          @default(false)
+  cardIssuedAt       DateTime?
+  cardType           String?          // 'NFC', 'RFID', 'BARCODE', etc.
+  
+  isRegularAttendee  Boolean          @default(false)
+  isDeactivated      Boolean          @default(false)
+  deactivatedAt      DateTime?
+  deactivatedBy      String?
+  deactivationReason String?
   organisationId     String?
-  organisation       Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  organisation       Organisation?    @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
   branchId           String?
   parentId           String?
-  spouseId           String?       @unique
-  branch             Branch?       @relation(fields: [branchId], references: [id])
-  userId             String?       @unique
-  user               User?         @relation(fields: [userId], references: [id], name: "UserToMember")
+  spouseId           String?          @unique
+  branch             Branch?          @relation(fields: [branchId], references: [id])
+  userId             String?          @unique
+  user               User?            @relation(fields: [userId], references: [id], name: "UserToMember")
 
   // Workflow relations
   workflowExecutions WorkflowExecution[]
@@ -553,12 +585,219 @@ model Member {
   followUpReminders  FollowUpReminder[]
 
   // Subscription Management relations
-  paystackCustomer PaystackCustomer?
+  paystackCustomer   PaystackCustomer?
+  communicationPrefs  CommunicationPrefs?
+  memberRelationships MemberRelationship[] @relation("PrimaryMember")
+  relatedMembers      MemberRelationship[] @relation("RelatedMember")
+  membershipHistory   MembershipHistory[]
+  memberAnalytics     MemberAnalytics?
+  searchIndex         MemberSearchIndex?
+
+  preferredName            String?
+  placeOfBirth             String?
+  nationality              String?
+  alternatePhone           String?
+  emergencyContactName     String?
+  emergencyContactPhone    String?
+  emergencyContactRelation String?
+  education                String?
+  membershipType           MembershipType @default(REGULAR)
+  salvationDate            DateTime?
+  preferredLanguage        String         @default("en")
+  privacyLevel             PrivacyLevel   @default(STANDARD)
+  lastAttendanceDate       DateTime?
+  familyId                 String?
+  headOfHousehold          Boolean        @default(false)
+  dataRetentionDate        DateTime?
+  consentDate              DateTime?
+  consentVersion           String?
+  deletedAt                DateTime?
+  deletedBy                String?
+  deletionReason           String?
+  createdBy                String?
+  lastModifiedBy           String?
+
+  // Event-related relations
+  eventRegistrations       EventRegistration[]
+  eventRSVPs              EventRSVP[]
 
   @@index([branchId])
   @@index([status])
   @@index([membershipDate])
-  @@index([rfidCardId])
+}
+
+model CommunicationPrefs {
+  id       String @id @default(uuid())
+  memberId String @unique
+
+  // Email Preferences
+  emailEnabled    Boolean @default(true)
+  emailNewsletter Boolean @default(true)
+  emailEvents     Boolean @default(true)
+  emailReminders  Boolean @default(true)
+  emailPrayer     Boolean @default(true)
+
+  // SMS Preferences
+  smsEnabled   Boolean @default(false)
+  smsEvents    Boolean @default(false)
+  smsReminders Boolean @default(false)
+  smsEmergency Boolean @default(true)
+
+  // Phone Preferences
+  phoneCallsEnabled Boolean @default(true)
+  phoneEmergency    Boolean @default(true)
+
+  // Mail Preferences
+  physicalMail Boolean @default(true)
+
+  // App Notifications
+  pushNotifications Boolean @default(true)
+
+  // Communication Times
+  preferredCallTime String? // JSON: {start: "09:00", end: "17:00"}
+  doNotDisturbDays  String[] // ["SUNDAY", "SATURDAY"]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+}
+
+model MemberRelationship {
+  id               String           @id @default(uuid())
+  primaryMemberId  String
+  relatedMemberId  String
+  relationshipType RelationshipType
+
+  // Relationship Details
+  isEmergencyContact Boolean @default(false)
+  isGuardian         Boolean @default(false)
+  canPickupChildren  Boolean @default(false)
+
+  // Dates
+  relationshipStart DateTime?
+  relationshipEnd   DateTime?
+
+  // Notes
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  primaryMember Member  @relation("PrimaryMember", fields: [primaryMemberId], references: [id], onDelete: Cascade)
+  relatedMember Member  @relation("RelatedMember", fields: [relatedMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([primaryMemberId, relatedMemberId, relationshipType])
+  @@index([primaryMemberId])
+  @@index([relatedMemberId])
+  @@index([relationshipType])
+}
+
+model MembershipHistory {
+  id       String @id @default(uuid())
+  memberId String
+
+  // Status Change
+  fromStatus   MembershipStatus?
+  toStatus     MembershipStatus
+  changeDate   DateTime          @default(now())
+  changeReason String?
+
+  // Branch Transfer
+  fromBranchId String?
+  toBranchId   String?
+
+  // Additional Context
+  notes      String?
+  approvedBy String? // User ID who approved the change
+
+  // Metadata
+  metadata Json? // Additional change context
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  member     Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  fromBranch Branch? @relation("FromBranchHistory", fields: [fromBranchId], references: [id])
+  toBranch   Branch? @relation("ToBranchHistory", fields: [toBranchId], references: [id])
+  approver   User?   @relation(fields: [approvedBy], references: [id])
+
+  @@index([memberId])
+  @@index([changeDate])
+  @@index([toStatus])
+}
+
+model MemberSearchIndex {
+  id       String @id @default(uuid())
+  memberId String @unique
+
+  // Searchable Fields (denormalized for performance)
+  fullName     String // "John Michael Doe"
+  searchName   String // "john michael doe" (lowercase)
+  phoneNumbers String[] // All phone numbers
+  emails       String[] // All email addresses
+  addresses    String[] // All addresses
+
+  // Search Tags
+  tags String[] // Custom searchable tags
+
+  // Metadata for search ranking
+  lastUpdated DateTime @default(now())
+  searchRank  Float    @default(1.0)
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([searchName])
+  @@index([fullName])
+  @@index([phoneNumbers])
+  @@index([emails])
+}
+
+model MemberAnalytics {
+  id       String @id @default(uuid())
+  memberId String @unique
+
+  // Engagement Metrics
+  totalAttendances   Int       @default(0)
+  attendanceRate     Float     @default(0.0) // Percentage
+  lastAttendanceDate DateTime?
+  attendanceStreak   Int       @default(0) // Consecutive weeks
+
+  // Contribution Metrics
+  totalContributions    Float     @default(0)
+  lastContributionDate  DateTime?
+  contributionFrequency String? // WEEKLY, MONTHLY, etc.
+
+  // Engagement Score
+  engagementScore Float  @default(0.0) // 0-100
+  engagementLevel String @default("NEW") // NEW, LOW, MEDIUM, HIGH
+
+  // Ministry Involvement
+  ministriesCount Int   @default(0)
+  leadershipRoles Int   @default(0)
+  volunteerHours  Float @default(0)
+
+  // Communication Metrics
+  emailOpenRate     Float     @default(0.0)
+  smsResponseRate   Float     @default(0.0)
+  lastCommunication DateTime?
+
+  // Calculated Fields
+  membershipDuration Int? // Days since membership
+  ageGroup           String? // CHILD, YOUTH, ADULT, SENIOR
+
+  // Update Tracking
+  lastCalculated DateTime @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([engagementLevel])
+  @@index([ageGroup])
+  @@index([lastAttendanceDate])
 }
 
 model SpiritualMilestone {
@@ -1082,9 +1321,9 @@ model ExpenseCategory {
   subCategories  ExpenseCategory[] @relation("SubCategories")
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
+  expenses       Expense[]         @relation("CategoryExpenses")
 
   // Relations
-  expenses    Expense[]
   budgetItems BudgetItem[]
 
   @@unique([name, organisationId, branchId], name: "expense_category_unique_constraint")
@@ -1104,7 +1343,7 @@ model Expense {
 
   // Relations
   expenseCategoryId String
-  expenseCategory   ExpenseCategory @relation(fields: [expenseCategoryId], references: [id])
+  expenseCategory   ExpenseCategory @relation("CategoryExpenses", fields: [expenseCategoryId], references: [id])
 
   fundId String
   fund   Fund   @relation(fields: [fundId], references: [id])
@@ -1114,7 +1353,7 @@ model Expense {
 
   // Vendor information
   vendorId String?
-  vendor   Vendor? @relation(fields: [vendorId], references: [id])
+  vendor   Vendor? @relation("VendorExpenses", fields: [vendorId], references: [id])
 
   vendorName    String?
   vendorContact String?
@@ -1155,21 +1394,18 @@ model Vendor {
   notes          String?
   isActive       Boolean       @default(true)
   branchId       String?
-  branch         Branch?       @relation(fields: [branchId], references: [id])
+  branch         Branch?       @relation("VendorExpenses", fields: [branchId], references: [id])
   organisationId String?
   organisation   Organisation? @relation(fields: [organisationId], references: [id])
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
 
   // Relations
-  expenses Expense[]
+  expenses Expense[] @relation("VendorExpenses")
 
   @@unique([name, organisationId, branchId], name: "vendor_unique_constraint")
   @@index([branchId])
   @@index([organisationId])
 }
 
-// Budgets for different departments/ministries
 model Budget {
   id          String   @id @default(uuid())
   name        String
@@ -1510,7 +1746,7 @@ model VolunteerEventAssignment {
   id          String   @id @default(uuid())
   volunteerId String
   eventId     String
-  role        String?
+  role        String? // LEADER, ASSISTANT, HELPER
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -1834,6 +2070,10 @@ model Organisation {
   subscriptionsAsCustomer Subscription[] @relation("SubscriptionCustomer")
   webhookEvents           WebhookEvent[]
 
+  // Member ID Generation relations
+  memberIdConfigs         MemberIdConfig[]
+  memberIdSequences       MemberIdSequence[]
+
   @@index([email])
 }
 
@@ -1845,10 +2085,33 @@ model Event {
   endDate        DateTime?
   location       String?
   category       String?
+  
+  // New event enhancement fields
+  eventType      EventType     @default(OTHER)
+  status         EventStatus   @default(DRAFT)
+  capacity       Int?          // Maximum attendees
+  registrationRequired Boolean @default(false)
+  registrationDeadline DateTime?
+  isPublic       Boolean       @default(true)
+  requiresApproval Boolean     @default(false)
+  eventImageUrl  String?       // Event banner/image
+  tags           String[]      // Event tags for filtering
+  
+  // Contact and organizer info
+  organizerName  String?
+  organizerEmail String?
+  organizerPhone String?
+  
+  // Pricing (for paid events)
+  isFree         Boolean       @default(true)
+  ticketPrice    Decimal?      @db.Decimal(10, 2)
+  currency       String?       @default("GHS")
+  
+  // Existing fields
   branchId       String?
   organisationId String?
   organisation   Organisation? @relation(fields: [organisationId], references: [id])
-  branch         Branch?       @relation(fields: [branchId], references: [id])
+  branch         Branch?       @relation(fields: [branchId], references: [id], name: "BranchEvents")
   createdBy      String?
   creator        User?         @relation("EventCreatedBy", fields: [createdBy], references: [id])
   updatedBy      String?
@@ -1856,7 +2119,9 @@ model Event {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  // Relationships
+  // Enhanced relationships
+  eventRegistrations EventRegistration[]
+  eventRSVPs        EventRSVP[]
   transactions      Transaction[]
   attendanceRecords AttendanceRecord[]
 
@@ -1865,6 +2130,87 @@ model Event {
 
   @@index([branchId])
   @@index([organisationId])
+  @@index([eventType])
+  @@index([status])
+  @@index([startDate])
+}
+
+// Event Registration Model - for events requiring registration
+model EventRegistration {
+  id                String              @id @default(uuid())
+  eventId           String
+  event             Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId          String?             // Registered member
+  member            Member?             @relation(fields: [memberId], references: [id])
+  
+  // Guest registration (for non-members)
+  guestName         String?
+  guestEmail        String?
+  guestPhone        String?
+  
+  // Registration details
+  registrationDate  DateTime            @default(now())
+  status            RSVPStatus          @default(PENDING)
+  numberOfGuests    Int                 @default(0)
+  specialRequests   String?             // Dietary restrictions, accessibility needs, etc.
+  
+  // Payment info (for paid events)
+  amountPaid        Decimal?            @db.Decimal(10, 2)
+  paymentStatus     String?             // PENDING, PAID, REFUNDED
+  paymentMethod     String?
+  transactionId     String?
+  
+  // Approval workflow
+  approvalStatus    String?             // PENDING, APPROVED, REJECTED
+  approvedBy        String?
+  approvedAt        DateTime?
+  rejectionReason   String?
+  
+  // Metadata
+  registrationSource String?            // WEB, MOBILE, ADMIN
+  notes             String?
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([eventId, memberId])
+  @@unique([eventId, guestEmail])
+  @@index([eventId])
+  @@index([memberId])
+  @@index([status])
+}
+
+// Event RSVP Model - for simple yes/no/maybe responses (lighter than full registration)
+model EventRSVP {
+  id            String      @id @default(uuid())
+  eventId       String
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId      String?     // RSVP member
+  member        Member?     @relation(fields: [memberId], references: [id])
+  
+  // Guest RSVP (for non-members)
+  guestName     String?
+  guestEmail    String?
+  
+  // RSVP details
+  status        RSVPStatus  @default(PENDING)
+  responseDate  DateTime    @default(now())
+  numberOfGuests Int        @default(0)
+  message       String?     // Optional message from attendee
+  
+  // Metadata
+  rsvpSource    String?     // WEB, MOBILE, EMAIL, SMS
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([eventId, memberId])
+  @@unique([eventId, guestEmail])
+  @@index([eventId])
+  @@index([memberId])
+  @@index([status])
 }
 
 model PrayerRequest {
@@ -2668,4 +3014,138 @@ enum OrganisationStatus {
   TRIAL
   CANCELLED
   INACTIVE
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+  ENGAGED
+  UNKNOWN
+}
+
+enum MembershipStatus {
+  VISITOR
+  REGULAR_ATTENDEE
+  MEMBER
+  ACTIVE_MEMBER
+  INACTIVE_MEMBER
+  TRANSFERRED
+  DECEASED
+}
+
+enum MembershipType {
+  REGULAR
+  ASSOCIATE
+  HONORARY
+  YOUTH
+  CHILD
+  SENIOR
+  CLERGY
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  TRANSFERRED
+  DECEASED
+  REMOVED
+}
+
+enum PrivacyLevel {
+  PUBLIC // All info visible to members
+  STANDARD // Basic info visible
+  RESTRICTED // Only leadership can see
+  PRIVATE // Only admin/pastoral staff
+}
+
+enum RelationshipType {
+  SPOUSE
+  PARENT
+  CHILD
+  SIBLING
+  GRANDPARENT
+  GRANDCHILD
+  UNCLE_AUNT
+  NEPHEW_NIECE
+  COUSIN
+  GUARDIAN
+  WARD
+  FRIEND
+  EMERGENCY_CONTACT
+  OTHER
+}
+
+// Event Management Enums
+enum EventType {
+  WORSHIP_SERVICE
+  WEDDING
+  FUNERAL
+  BAPTISM
+  GRADUATION
+  CONFERENCE
+  WORKSHOP
+  RETREAT
+  FELLOWSHIP
+  YOUTH_EVENT
+  CHILDREN_EVENT
+  PRAYER_MEETING
+  BIBLE_STUDY
+  COMMUNITY_SERVICE
+  FUNDRAISER
+  CELEBRATION
+  MEETING
+  OTHER
+}
+
+enum RSVPStatus {
+  PENDING
+  ATTENDING
+  NOT_ATTENDING
+  MAYBE
+  CANCELLED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  REGISTRATION_CLOSED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+
+// Member ID Generation Tables
+model MemberIdConfig {
+  id             String        @id @default(uuid())
+  organisationId String
+  organisation   Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  pattern        String        // Pattern template like "{ORG_CODE}-{YYYY}-{BRANCH_CODE}-{SEQUENCE:6}"
+  enabled        Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organisationId])
+  @@index([organisationId])
+}
+
+model MemberIdSequence {
+  id             String        @id @default(uuid())
+  organisationId String
+  organisation   Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  branchId       String?
+  branch         Branch?       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  year           Int
+  currentValue   Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organisationId, branchId, year])
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([year])
 }

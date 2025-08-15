@@ -257,6 +257,10 @@ async function seedTestMembers() {
             ...memberData,
             organisationId: organization.id,
             branchId: branch.id,
+            // Cast enum fields to proper types
+            gender: memberData.gender as any,
+            maritalStatus: memberData.maritalStatus as any,
+            status: memberData.status as any,
           },
         });
 

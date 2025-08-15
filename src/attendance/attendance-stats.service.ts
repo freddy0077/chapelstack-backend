@@ -479,7 +479,7 @@ export class AttendanceStatsService {
         where: {
           ...where,
           member: {
-            gender: gender,
+            gender: gender as any,
           },
         },
       });

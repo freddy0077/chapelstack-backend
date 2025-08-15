@@ -75,6 +75,16 @@ export class GroupMemberFilterInput {
   @IsOptional()
   smallGroupId?: string;
 
+  @Field(() => ID, { nullable: true })
+  @IsUUID()
+  @IsOptional()
+  organisationId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsUUID()
+  @IsOptional()
+  branchId?: string;
+
   @Field({ nullable: true })
   @IsEnum(GroupMemberRole)
   @IsOptional()

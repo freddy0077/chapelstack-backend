@@ -15,6 +15,20 @@ import { UpdateEventInput } from './dto/update-event.input';
 import { Event as PrismaEvent } from '@prisma/client';
 import { Branch } from '../branches/entities/branch.entity';
 import { BranchesService } from '../branches/branches.service';
+import { EventRegistration } from './entities/event-registration.entity';
+import { EventRSVP } from './entities/event-rsvp.entity';
+import {
+  CreateEventRegistrationInput,
+  UpdateEventRegistrationInput,
+  EventRegistrationFilterInput,
+} from './dto/event-registration.input';
+import {
+  CreateEventRSVPInput,
+  UpdateEventRSVPInput,
+  EventRSVPFilterInput,
+} from './dto/event-rsvp.input';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => Event)
 export class EventsResolver {
@@ -23,198 +37,158 @@ export class EventsResolver {
     private readonly branchesService: BranchesService,
   ) {}
 
-  // Map Prisma event (with nulls) to GraphQL Event (with undefined)
-  private toGraphQLEvent(prismaEvent: PrismaEvent | null): Event {
-    if (!prismaEvent) {
-      throw new Error('Event not found');
-    }
-    return {
-      ...prismaEvent,
-      description: prismaEvent.description ?? undefined,
-      endDate: prismaEvent.endDate ?? undefined,
-      location: prismaEvent.location ?? undefined,
-      category: prismaEvent.category ?? undefined,
-      branchId: prismaEvent.branchId ?? undefined,
-      organisationId: prismaEvent.organisationId ?? undefined,
-      createdBy: prismaEvent.createdBy ?? undefined,
-      updatedBy: prismaEvent.updatedBy ?? undefined,
-    };
-  }
-
   @Mutation(() => Event)
+  @RequirePermissions({ action: 'create', subject: 'Event' })
   async createEvent(
-    @Args(
-      'input',
-      { type: () => CreateEventInput },
-      new ValidationPipe({
-        transform: true,
-        transformOptions: { enableImplicitConversion: true },
-        forbidNonWhitelisted: true,
-      }),
-    )
-    input: CreateEventInput,
+    @Args('createEventInput') createEventInput: CreateEventInput,
+    @CurrentUser() user: any,
   ): Promise<Event> {
-    console.log('EventsResolver.createEvent received input:', input);
-    console.log('Input type:', typeof input);
-    console.log('Input has title:', input?.title);
-    console.log('Input has startDate:', input?.startDate);
-    console.log(
-      'Input startDate type:',
-      input?.startDate ? typeof input.startDate : 'N/A',
-    );
-    console.log('Input keys:', Object.keys(input || {}));
-
-    // Ensure we have a valid input with required fields
-    if (!input || !input.title) {
-      console.error('Input validation failed: Missing title');
-      throw new Error('Event title is required');
-    }
-
-    // Ensure dates are properly converted to Date objects
-    if (input.startDate && typeof input.startDate === 'string') {
-      input.startDate = new Date(input.startDate);
-    }
-
-    if (input.endDate && typeof input.endDate === 'string') {
-      input.endDate = new Date(input.endDate);
-    }
-
-    const createdEvent = await this.eventsService.create(input);
-    return this.toGraphQLEvent(createdEvent);
+    const result = await this.eventsService.create(createEventInput);
+    return result as Event;
   }
 
   @Mutation(() => [Event])
+  @RequirePermissions({ action: 'create', subject: 'Event' })
   async createRecurringEvent(
-    @Args(
-      'input',
-      { type: () => CreateEventInput },
-      new ValidationPipe({
-        transform: true,
-        transformOptions: { enableImplicitConversion: true },
-        forbidNonWhitelisted: true,
-      }),
-    )
-    input: CreateEventInput,
+    @Args('createEventInput') createEventInput: CreateEventInput,
+    @CurrentUser() user: any,
   ): Promise<Event[]> {
-    console.log('🔥 EventsResolver.createRecurringEvent START');
-    console.log('📥 Input received:', JSON.stringify(input, null, 2));
-
-    // Ensure we have a valid input with required fields
-    if (!input || !input.title) {
-      console.error('❌ Input validation failed: Missing title');
-      throw new Error('Event title is required');
-    }
-
-    if (!input.isRecurring) {
-      console.log('📝 Creating single event (isRecurring = false)');
-      // If not recurring, create single event
-      const createdEvent = await this.eventsService.create(input);
-      const result = [this.toGraphQLEvent(createdEvent)];
-      console.log('✅ Single event created:', result);
-      return result;
-    }
-
-    // Validate recurring event fields
-    if (!input.recurrenceType || !input.recurrenceEndDate) {
-      console.error('❌ Recurring validation failed: Missing recurrenceType or recurrenceEndDate');
-      throw new Error('Recurrence type and end date are required for recurring events');
-    }
-
-    console.log('🔄 Creating recurring events...');
-    console.log('📅 Recurrence details:', {
-      type: input.recurrenceType,
-      interval: input.recurrenceInterval,
-      endDate: input.recurrenceEndDate,
-      daysOfWeek: input.recurrenceDaysOfWeek
-    });
-
-    // Ensure dates are properly converted to Date objects
-    if (input.startDate && typeof input.startDate === 'string') {
-      console.log('🔧 Converting startDate from string to Date');
-      input.startDate = new Date(input.startDate);
-    }
-
-    if (input.endDate && typeof input.endDate === 'string') {
-      console.log('🔧 Converting endDate from string to Date');
-      input.endDate = new Date(input.endDate);
-    }
-
-    if (input.recurrenceEndDate && typeof input.recurrenceEndDate === 'string') {
-      console.log('🔧 Converting recurrenceEndDate from string to Date');
-      input.recurrenceEndDate = new Date(input.recurrenceEndDate);
-    }
-
-    try {
-      console.log('🚀 Calling eventsService.createRecurringEvents...');
-      const createdEvents = await this.eventsService.createRecurringEvents(input);
-      console.log(`✅ Created ${createdEvents.length} recurring events`);
-      
-      const result = createdEvents.map(event => this.toGraphQLEvent(event));
-      console.log('📤 Returning GraphQL events:', result.length);
-      return result;
-    } catch (error) {
-      console.error('💥 Error in createRecurringEvents:', error);
-      throw error;
-    }
+    const results =
+      await this.eventsService.createRecurringEvents(createEventInput);
+    return results as Event[];
   }
 
   @Query(() => [Event], { name: 'events' })
+  @RequirePermissions({ action: 'read', subject: 'Event' })
   async findAll(
-    @Args('branchId', { nullable: true }) branchId?: string,
-    @Args('organisationId', { nullable: true }) organisationId?: string,
+    @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
+    @Args('organisationId', { type: () => ID, nullable: true })
+    organisationId?: string,
   ): Promise<Event[]> {
-    const events = await this.eventsService.findAll({
-      branchId,
-      organisationId,
-    });
-    return events.map((event) => this.toGraphQLEvent(event));
+    const results = await this.eventsService.findAll(branchId, organisationId);
+    return results as Event[];
   }
 
   @Query(() => Event, { name: 'event' })
+  @RequirePermissions({ action: 'read', subject: 'Event' })
   async findOne(@Args('id', { type: () => ID }) id: string): Promise<Event> {
-    const event = await this.eventsService.findOne(id);
-    return this.toGraphQLEvent(event);
+    const result = await this.eventsService.findOne(id);
+    return result as Event;
   }
 
   @Mutation(() => Event)
+  @RequirePermissions({ action: 'update', subject: 'Event' })
   async updateEvent(
-    @Args(
-      'input',
-      { type: () => UpdateEventInput },
-      new ValidationPipe({
-        transform: true,
-        transformOptions: { enableImplicitConversion: true },
-        forbidNonWhitelisted: true,
-      }),
-    )
-    input: UpdateEventInput,
+    @Args('updateEventInput') updateEventInput: UpdateEventInput,
+    @CurrentUser() user: any,
   ): Promise<Event> {
-    console.log('EventsResolver.updateEvent received input:', input);
-
-    // Ensure dates are properly converted to Date objects
-    if (input.startDate && typeof input.startDate === 'string') {
-      input.startDate = new Date(input.startDate);
-    }
-
-    if (input.endDate && typeof input.endDate === 'string') {
-      input.endDate = new Date(input.endDate);
-    }
-
-    const updated = await this.eventsService.update(input.id, input);
-    return this.toGraphQLEvent(updated);
+    const result = await this.eventsService.update(
+      updateEventInput.id,
+      updateEventInput,
+    );
+    return result as Event;
   }
 
-  @Mutation(() => Event)
+  @Mutation(() => Boolean)
+  @RequirePermissions({ action: 'delete', subject: 'Event' })
   async removeEvent(
     @Args('id', { type: () => ID }) id: string,
-  ): Promise<Event> {
-    const removed = await this.eventsService.remove(id);
-    return this.toGraphQLEvent(removed);
+  ): Promise<boolean> {
+    await this.eventsService.remove(id);
+    return true;
   }
 
   @ResolveField('branch', () => Branch, { nullable: true })
   async branch(@Parent() event: Event): Promise<Branch | null> {
     if (!event.branchId) return null;
     return this.branchesService.findOne(event.branchId);
+  }
+
+  // ===================================
+  // EVENT REGISTRATION RESOLVERS
+  // ===================================
+
+  @Mutation(() => EventRegistration)
+  async createEventRegistration(
+    @Args('createEventRegistrationInput')
+    createEventRegistrationInput: CreateEventRegistrationInput,
+  ): Promise<EventRegistration> {
+    const result = await this.eventsService.createEventRegistration(
+      createEventRegistrationInput,
+    );
+    return result as EventRegistration;
+  }
+
+  @Mutation(() => EventRegistration)
+  async updateEventRegistration(
+    @Args('updateEventRegistrationInput')
+    updateEventRegistrationInput: UpdateEventRegistrationInput,
+  ): Promise<EventRegistration> {
+    const result = await this.eventsService.updateEventRegistration(
+      updateEventRegistrationInput,
+    );
+    return result as EventRegistration;
+  }
+
+  @Query(() => [EventRegistration], { name: 'eventRegistrations' })
+  async findEventRegistrations(
+    @Args('filter') filter: EventRegistrationFilterInput,
+    @Args('skip', { type: () => Number, nullable: true }) skip?: number,
+    @Args('take', { type: () => Number, nullable: true }) take?: number,
+  ): Promise<EventRegistration[]> {
+    const results = await this.eventsService.findEventRegistrations(
+      filter,
+      skip,
+      take,
+    );
+    return results as EventRegistration[];
+  }
+
+  @Mutation(() => Boolean)
+  async removeEventRegistration(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<boolean> {
+    await this.eventsService.deleteEventRegistration(id);
+    return true;
+  }
+
+  // ===================================
+  // EVENT RSVP RESOLVERS
+  // ===================================
+
+  @Mutation(() => EventRSVP)
+  async createEventRSVP(
+    @Args('createEventRSVPInput') createEventRSVPInput: CreateEventRSVPInput,
+  ): Promise<EventRSVP> {
+    const result =
+      await this.eventsService.createEventRSVP(createEventRSVPInput);
+    return result as EventRSVP;
+  }
+
+  @Mutation(() => EventRSVP)
+  async updateEventRSVP(
+    @Args('updateEventRSVPInput') updateEventRSVPInput: UpdateEventRSVPInput,
+  ): Promise<EventRSVP> {
+    const result =
+      await this.eventsService.updateEventRSVP(updateEventRSVPInput);
+    return result as EventRSVP;
+  }
+
+  @Query(() => [EventRSVP], { name: 'eventRSVPs' })
+  async findEventRSVPs(
+    @Args('filter') filter: EventRSVPFilterInput,
+    @Args('skip', { type: () => Number, nullable: true }) skip?: number,
+    @Args('take', { type: () => Number, nullable: true }) take?: number,
+  ): Promise<EventRSVP[]> {
+    const results = await this.eventsService.findEventRSVPs(filter, skip, take);
+    return results as EventRSVP[];
+  }
+
+  @Mutation(() => Boolean)
+  async removeEventRSVP(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<boolean> {
+    await this.eventsService.deleteEventRSVP(id);
+    return true;
   }
 }
