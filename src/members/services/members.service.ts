@@ -28,7 +28,7 @@ import {
   BulkRemoveFromGroupInput,
   BulkRemoveFromMinistryInput,
 } from '../dto/bulk-actions.input';
-import {User} from "../../users/entities/user.entity";
+import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class MembersService {
@@ -443,8 +443,10 @@ export class MembersService {
               updatedMember.phoneNumber,
               updatedMember.alternatePhone,
             ].filter((phone): phone is string => Boolean(phone)),
-            emails: [updatedMember.email, (updatedMember as any).alternativeEmail]
-              .filter((email): email is string => Boolean(email)),
+            emails: [
+              updatedMember.email,
+              (updatedMember as any).alternativeEmail,
+            ].filter((email): email is string => Boolean(email)),
             addresses: [
               [
                 updatedMember.address,
@@ -934,7 +936,8 @@ export class MembersService {
     const genderStatsPromise = this.getGenderDistribution(baseWhere);
     const averageAgePromise = this.calculateAverageAge(baseWhere);
     const ageGroupsPromise = this.getAgeGroups(baseWhere);
-    const statusDistributionPromise = this.getMemberStatusDistribution(baseWhere);
+    const statusDistributionPromise =
+      this.getMemberStatusDistribution(baseWhere);
     const membershipStatusDistributionPromise =
       this.getMembershipStatusDistribution(baseWhere);
 

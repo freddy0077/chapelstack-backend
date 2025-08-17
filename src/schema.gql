@@ -737,6 +737,12 @@ input BulkUpdateStatusInput {
   status: MemberStatus!
 }
 
+"""Type of burial or cremation"""
+enum BurialType {
+  BURIAL
+  CREMATION
+}
+
 input CardScanInput {
   branchId: ID
   cardId: String!
@@ -1287,6 +1293,32 @@ input CreateDataImportInput {
   filePath: String
   metadata: JSON
   userId: ID
+}
+
+input CreateDeathRegisterInput {
+  additionalDocuments: [String!]
+  branchId: ID
+  burialCremation: BurialType!
+  causeOfDeath: String
+  cemeteryLocation: String
+  circumstances: String
+  dateOfDeath: String!
+  deathCertificateUrl: String
+  familyNotified: Boolean
+  funeralDate: String
+  funeralEventId: ID
+  funeralLocation: String
+  funeralOfficiant: String
+  memberId: ID!
+  nextOfKin: String!
+  nextOfKinEmail: String
+  nextOfKinPhone: String
+  notificationDate: String
+  obituaryUrl: String
+  organisationId: ID!
+  photoUrls: [String!]
+  placeOfDeath: String!
+  timeOfDeath: String
 }
 
 input CreateEmailTemplateInput {
@@ -1987,6 +2019,68 @@ input DateRangeInput {
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+type DeathRegister {
+  additionalDocuments: [String!]!
+  branch: Branch
+  branchId: ID
+  burialCremation: BurialType!
+  causeOfDeath: String
+  cemeteryLocation: String
+  circumstances: String
+  dateOfDeath: DateTime!
+  deathCertificateUrl: String
+  familyNotified: Boolean!
+  funeralDate: DateTime
+  funeralEvent: Event
+  funeralEventId: ID
+  funeralLocation: String
+  funeralOfficiant: String
+  id: ID!
+  lastUpdatedBy: String
+  lastUpdatedDate: DateTime
+  member: Member
+  memberId: ID!
+  nextOfKin: String!
+  nextOfKinEmail: String
+  nextOfKinPhone: String
+  notificationDate: DateTime
+  obituaryUrl: String
+  organisation: Organisation
+  organisationId: ID!
+  photoUrls: [String!]!
+  placeOfDeath: String!
+  recordedBy: String!
+  recordedDate: DateTime!
+  timeOfDeath: String
+}
+
+input DeathRegisterFilterInput {
+  branchId: ID
+  burialType: BurialType
+  dateFrom: String
+  dateTo: String
+  familyNotified: Boolean
+  hasFuneralEvent: Boolean
+  organisationId: ID
+  recordedBy: String
+  searchTerm: String
+  skip: Float
+  sortBy: String
+  sortOrder: String
+  take: Float
+}
+
+type DeathRegisterStats {
+  averageAge: Float!
+  burialCount: Float!
+  cremationCount: Float!
+  familyNotifiedCount: Float!
+  funeralServicesHeld: Float!
+  thisMonth: Float!
+  thisYear: Float!
+  total: Float!
+}
 
 input DisableOrganizationInput {
   organizationId: String!
@@ -3039,6 +3133,14 @@ enum MembershipType {
   YOUTH
 }
 
+type MemorialDate {
+  dateOfDeath: DateTime!
+  memberId: ID!
+  memberName: String!
+  photoUrl: String
+  yearsAgo: Float!
+}
+
 type MemoryUsage {
   external: Float!
   heapTotal: Float!
@@ -3194,6 +3296,7 @@ type Mutation {
   createCounselingSession(input: CreateCounselingSessionInput!): CounselingSession!
   createDataExport(input: CreateDataExportInput!): DataOperation!
   createDataImport(input: CreateDataImportInput!): DataOperation!
+  createDeathRegister(input: CreateDeathRegisterInput!): DeathRegister!
   createEmailTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
   createEvent(createEventInput: CreateEventInput!): Event!
   createEventRSVP(createEventRSVPInput: CreateEventRSVPInput!): EventRSVP!
@@ -3277,6 +3380,7 @@ type Mutation {
   login(input: SignInDto!): AuthPayload!
   logout(input: RefreshTokenInput!): SuccessMessage!
   markAllNotificationsAsRead(userId: ID!): Boolean!
+  markFamilyNotified(id: ID!): DeathRegister!
   markNotificationAsRead(notificationId: ID!): NotificationDto!
   processCardScan(input: CardScanInput!): AttendanceRecord!
   publishForm(id: String!): Form!
@@ -3293,6 +3397,7 @@ type Mutation {
   removeChildrenEvent(id: ID!): ChildrenEvent!
   removeChildrenMinistryVolunteer(id: ID!): ChildrenMinistryVolunteer!
   removeContribution(id: String!): Contribution!
+  removeDeathRegister(id: ID!): Boolean!
   removeEvent(id: ID!): Boolean!
   removeEventRSVP(id: ID!): Boolean!
   removeEventRegistration(id: ID!): Boolean!
@@ -3351,6 +3456,7 @@ type Mutation {
   updateCommunicationPrefs(memberId: String!, prefsData: String!): Boolean!
   updateContribution(updateContributionInput: UpdateContributionInput!): Contribution!
   updateCounselingSession(input: UpdateCounselingSessionInput!): CounselingSession!
+  updateDeathRegister(input: UpdateDeathRegisterInput!): DeathRegister!
   updateEmailTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
   updateEvent(updateEventInput: UpdateEventInput!): Event!
   updateEventRSVP(updateEventRSVPInput: UpdateEventRSVPInput!): EventRSVP!
@@ -3392,6 +3498,7 @@ type Mutation {
   updateUserActiveStatus(id: ID!, isActive: Boolean!): AuthUser!
   updateVendor(updateVendorInput: UpdateVendorInput!): Vendor!
   updateWorkflowTemplate(branchId: String, id: String!, input: UpdateWorkflowTemplateInput!, organisationId: String!): WorkflowTemplate!
+  uploadDeathDocument(input: UploadDeathDocumentInput!): DeathRegister!
   uploadMemberImage(file: Upload!, memberId: String!): String!
   uploadOrganisationBrandingFile(file: Upload!, organisationId: ID!): String!
   uploadSacramentalCertificate(file: Upload!, recordId: ID!): SacramentalRecord!
@@ -3899,6 +4006,10 @@ type Query {
   dashboardData(branchId: ID, dashboardType: DashboardType!, organisationId: ID): DashboardData!
   dataOperation(id: ID!): DataOperation!
   dataOperations(filter: DataOperationFilterInput): [DataOperation!]!
+  deathRegister(id: ID!): DeathRegister!
+  deathRegisterByMember(memberId: ID!): DeathRegister
+  deathRegisterStats(branchId: ID, organisationId: ID): DeathRegisterStats!
+  deathRegisters(filter: DeathRegisterFilterInput): [DeathRegister!]!
   dueTodayFollowUpReminders: [FollowUpReminder!]!
   emailById(id: ID!): EmailMessageDto!
   emails(branchId: ID, organisationId: ID): [EmailMessageDto!]!
@@ -3968,6 +4079,7 @@ type Query {
   memberStatistics(branchId: String, organisationId: String): MemberStatistics!
   members(branchId: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, isRegularAttendee: Boolean, joinedAfter: String, joinedBefore: String, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], minAge: Int, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
   membersCount(branchId: String, organisationId: String): Int!
+  memorialCalendar(branchId: ID, organisationId: ID, year: Int!): [MemorialDate!]!
   messagePerformanceMetrics(filter: CommunicationStatsFilterInput): MessagePerformanceEntity!
   ministries(filters: MinistryFilterInput): [Ministry!]!
   ministry(id: ID!): Ministry!
@@ -4935,6 +5047,30 @@ input UpdateCounselingSessionInput {
   totalSessions: Float
 }
 
+input UpdateDeathRegisterInput {
+  additionalDocuments: [String!]
+  burialCremation: BurialType
+  causeOfDeath: String
+  cemeteryLocation: String
+  circumstances: String
+  dateOfDeath: String
+  deathCertificateUrl: String
+  familyNotified: Boolean
+  funeralDate: String
+  funeralEventId: ID
+  funeralLocation: String
+  funeralOfficiant: String
+  id: ID!
+  nextOfKin: String
+  nextOfKinEmail: String
+  nextOfKinPhone: String
+  notificationDate: String
+  obituaryUrl: String
+  photoUrls: [String!]
+  placeOfDeath: String
+  timeOfDeath: String
+}
+
 input UpdateEmailTemplateInput {
   bodyHtml: String
   bodyText: String
@@ -5471,6 +5607,13 @@ input UpdateWorkflowTemplateInput {
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
+
+input UploadDeathDocumentInput {
+  deathRegisterId: ID!
+  description: String
+  documentType: String!
+  documentUrl: String!
+}
 
 type User {
   createdAt: DateTime!

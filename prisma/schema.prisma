@@ -151,6 +151,7 @@ model Branch {
   workflowExecutions         WorkflowExecution[]
   workflowTemplates          WorkflowTemplate[]
   workflowTriggers           WorkflowTrigger[]
+  deathRegisters             DeathRegister[]
 
   @@index([organisationId])
 }
@@ -502,6 +503,7 @@ model Member {
   transferRequests         TransferRequest[]
   workflowExecutions       WorkflowExecution[]
   families                 Family[]                   @relation("MemberFamilies")
+  deathRegister            DeathRegister?
 
   @@index([branchId])
   @@index([status])
@@ -1709,6 +1711,7 @@ model Organisation {
   workflowExecutions         WorkflowExecution[]
   workflowTemplates          WorkflowTemplate[]
   workflowTriggers           WorkflowTrigger[]
+  deathRegisters             DeathRegister[]
 
   @@index([email])
 }
@@ -1751,6 +1754,7 @@ model Event {
   eventRegistrations   EventRegistration[]
   transactions         Transaction[]
   workflowExecutions   WorkflowExecution[]
+  funeralDeathRegisters DeathRegister[]    @relation("DeathRegisterFuneralEvent")
 
   @@index([branchId])
   @@index([organisationId])
@@ -2725,4 +2729,65 @@ enum EventStatus {
   COMPLETED
   CANCELLED
   POSTPONED
+}
+
+// Death Register Enums
+enum BurialType {
+  BURIAL
+  CREMATION
+}
+
+// Death Register Model
+model DeathRegister {
+  id                   String        @id @default(uuid())
+  memberId             String        @unique
+  dateOfDeath          DateTime
+  timeOfDeath          String?
+  placeOfDeath         String
+  causeOfDeath         String?
+  circumstances        String?
+  
+  // Funeral Information
+  funeralDate          DateTime?
+  funeralLocation      String?
+  funeralOfficiant     String?
+  burialCremation      BurialType
+  cemeteryLocation     String?
+  
+  // Family & Contacts
+  nextOfKin            String
+  nextOfKinPhone       String?
+  nextOfKinEmail       String?
+  familyNotified       Boolean       @default(false)
+  notificationDate     DateTime?
+  
+  // Documentation
+  deathCertificateUrl  String?
+  obituaryUrl          String?
+  photoUrls            String[]      @default([])
+  additionalDocuments  String[]      @default([])
+  
+  // Administrative
+  recordedBy           String
+  recordedDate         DateTime      @default(now())
+  lastUpdatedBy        String?
+  lastUpdatedDate      DateTime?     @updatedAt
+  
+  // Foreign Keys
+  branchId             String?
+  organisationId       String
+  funeralEventId       String?
+  
+  // Relations
+  member               Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  branch               Branch?       @relation(fields: [branchId], references: [id])
+  organisation         Organisation  @relation(fields: [organisationId], references: [id])
+  funeralEvent         Event?        @relation("DeathRegisterFuneralEvent", fields: [funeralEventId], references: [id])
+  
+  @@index([memberId])
+  @@index([branchId])
+  @@index([organisationId])
+  @@index([dateOfDeath])
+  @@index([familyNotified])
+  @@index([recordedDate])
 }
