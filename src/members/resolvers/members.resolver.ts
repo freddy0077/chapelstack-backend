@@ -102,6 +102,9 @@ export class MembersResolver {
   ): Promise<Member[]> {
     const where: Prisma.MemberWhereInput = {};
 
+    // Exclude deactivated members by default
+    where.isDeactivated = false;
+
     if (branchId) {
       where.branchId = branchId;
     } else if (organisationId) {

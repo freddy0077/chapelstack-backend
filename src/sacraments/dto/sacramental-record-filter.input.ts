@@ -28,6 +28,11 @@ export class SacramentalRecordFilterInput {
   @Field({ nullable: true })
   @IsUUID()
   @IsOptional()
+  memberId?: string;
+
+  @Field({ nullable: true })
+  @IsUUID()
+  @IsOptional()
   branchId?: string;
 
   @Field({ nullable: true })

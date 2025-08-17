@@ -139,6 +139,8 @@ export class SacramentsService {
       sponsorName: record.sponsorName,
       witness1Name: record.witness1Name,
       witness2Name: record.witness2Name,
+      groomName: record.groomName,
+      brideName: record.brideName,
       certificateNumber: record.certificateNumber,
       certificateUrl: record.certificateUrl,
       notes: record.notes,
@@ -188,6 +190,9 @@ export class SacramentsService {
     const where: Prisma.SacramentalRecordFindManyArgs['where'] = {};
 
     if (filter) {
+      if (filter.memberId) {
+        where.memberId = filter.memberId;
+      }
       if (filter.sacramentType) {
         where.sacramentType = filter.sacramentType;
       }

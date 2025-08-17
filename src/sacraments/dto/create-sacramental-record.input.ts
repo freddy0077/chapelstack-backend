@@ -75,6 +75,16 @@ export class CreateSacramentalRecordInput {
   @Field({ nullable: true })
   @IsString()
   @IsOptional()
+  groomName?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  brideName?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
   certificateNumber?: string;
 
   @Field({ nullable: true })

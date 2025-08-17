@@ -885,6 +885,8 @@ model SacramentalRecord {
   sponsorName         String?
   witness1Name        String?
   witness2Name        String?
+  groomName           String?
+  brideName           String?
   certificateNumber   String?       @unique
   certificateUrl      String?
   notes               String?

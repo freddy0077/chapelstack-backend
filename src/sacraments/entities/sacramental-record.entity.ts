@@ -59,6 +59,12 @@ export class SacramentalRecord {
   witness2Name: string | null;
 
   @Field(() => String, { nullable: true })
+  groomName: string | null;
+
+  @Field(() => String, { nullable: true })
+  brideName: string | null;
+
+  @Field(() => String, { nullable: true })
   certificateNumber: string | null;
 
   @Field(() => String, { nullable: true })

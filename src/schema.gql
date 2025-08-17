@@ -1752,11 +1752,13 @@ input CreateRoleWithPermissionsInput {
 
 input CreateSacramentalRecordInput {
   branchId: String!
+  brideName: String
   certificateNumber: String
   certificateUrl: String
   dateOfSacrament: DateTime!
   godparent1Name: String
   godparent2Name: String
+  groomName: String
   locationOfSacrament: String!
   memberId: String!
   notes: String
@@ -4382,12 +4384,14 @@ enum SacramentType {
 
 type SacramentalRecord {
   branchId: String!
+  brideName: String
   certificateNumber: String
   certificateUrl: String
   createdAt: DateTime!
   dateOfSacrament: DateTime!
   godparent1Name: String
   godparent2Name: String
+  groomName: String
   id: ID!
   locationOfSacrament: String!
   memberId: String!
@@ -4408,6 +4412,7 @@ input SacramentalRecordFilterInput {
   dateFrom: DateTime
   dateTo: DateTime
   locationOfSacrament: String
+  memberId: String
   officiantName: String
   organisationId: String
   sacramentType: SacramentType
@@ -5478,11 +5483,13 @@ input UpdateRoleInput {
 
 input UpdateSacramentalRecordInput {
   branchId: String
+  brideName: String
   certificateNumber: String
   certificateUrl: String
   dateOfSacrament: DateTime
   godparent1Name: String
   godparent2Name: String
+  groomName: String
   id: String!
   locationOfSacrament: String
   memberId: String

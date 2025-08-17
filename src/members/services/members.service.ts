@@ -817,7 +817,10 @@ export class MembersService {
     branchId?: string,
     organisationId?: string,
   ): Promise<MemberStatistics> {
-    const baseWhere: Prisma.MemberWhereInput = {};
+    const baseWhere: Prisma.MemberWhereInput = {
+      isDeactivated: false,
+    };
+
     if (branchId) {
       baseWhere.branchId = branchId;
     } else if (organisationId) {
