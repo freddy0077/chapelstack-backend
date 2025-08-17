@@ -292,26 +292,41 @@ export class RecipientService {
           // Members whose sacramental anniversary (any type) is this month (from SacramentalRecord)
           const today = new Date();
           const where: any = {
-            dateOfSacrament: { not: null },
+            sacramentalRecords: {
+              some: {
+                dateOfSacrament: { not: { equals: null } },
+                // Use raw SQL to check if month matches current month
+              },
+            },
             ...(branchId ? { branchId } : {}),
             ...(organisationId ? { organisationId } : {}),
+            ...(contactType === 'email' ? { email: { not: null } } : {}),
+            ...(contactType === 'phone'
+              ? { phoneNumber: { not: null } }
+              : {}),
           };
-          const records = await this.prisma.sacramentalRecord.findMany({
+          const records = await this.prisma.member.findMany({
             where,
             select: {
-              memberId: true,
-              dateOfSacrament: true,
-              sacramentType: true,
+              id: true,
+              sacramentalRecords: {
+                select: {
+                  dateOfSacrament: true,
+                },
+              },
             },
           });
           // Anniversary = month match
           const celebrantIds = records
             .filter(
               (r) =>
-                r.dateOfSacrament &&
-                new Date(r.dateOfSacrament).getMonth() === today.getMonth(),
+                r.sacramentalRecords.some(
+                  (s) =>
+                    s.dateOfSacrament &&
+                    new Date(s.dateOfSacrament).getMonth() === today.getMonth(),
+                ),
             )
-            .map((r) => r.memberId);
+            .map((r) => r.id);
           if (celebrantIds.length && contactType !== 'id') {
             const members = await this.prisma.member.findMany({
               where: {
@@ -381,16 +396,24 @@ export class RecipientService {
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
           const where: any = {
-            sacramentType: 'BAPTISM',
-            dateOfSacrament: { gte: thirtyDaysAgo },
+            sacramentalRecords: {
+              some: {
+                sacramentType: 'BAPTISM',
+                dateOfSacrament: { gte: thirtyDaysAgo },
+              },
+            },
             ...(branchId ? { branchId } : {}),
             ...(organisationId ? { organisationId } : {}),
+            ...(contactType === 'email' ? { email: { not: null } } : {}),
+            ...(contactType === 'phone'
+              ? { phoneNumber: { not: null } }
+              : {}),
           };
-          const baptismRecords = await this.prisma.sacramentalRecord.findMany({
+          const baptismRecords = await this.prisma.member.findMany({
             where,
-            select: { memberId: true },
+            select: { id: true },
           });
-          const baptisedIds = baptismRecords.map((r) => r.memberId);
+          const baptisedIds = baptismRecords.map((r) => r.id);
           if (baptisedIds.length && contactType !== 'id') {
             const members = await this.prisma.member.findMany({
               where: {
@@ -446,6 +469,233 @@ export class RecipientService {
     }
     // Remove null/undefined
     return Array.from(resultSet).filter(Boolean);
+  }
+
+  /**
+   * Get recipient counts for multiple filters without fetching actual data
+   * 
+   * @param filters - Array of filter keys (e.g. 'all-members', 'parents', etc)
+   * @param options - branchId, organisationId, contactType ('id' | 'email' | 'phone')
+   * @returns Record<string, number> - Object mapping filter keys to their counts
+   */
+  async getFilterRecipientCounts(
+    filters: string[] = [],
+    options?: {
+      branchId?: string;
+      organisationId?: string;
+      contactType?: 'id' | 'email' | 'phone';
+    },
+  ): Promise<Record<string, number>> {
+    const { branchId, organisationId, contactType = 'id' } = options || {};
+    const counts: Record<string, number> = {};
+
+    for (const filter of filters) {
+      try {
+        switch (filter) {
+          case 'all-members': {
+            const count = await this.prisma.member.count({
+              where: {
+                status: 'ACTIVE',
+                ...(branchId ? { branchId } : {}),
+                ...(organisationId ? { organisationId } : {}),
+                ...(contactType === 'email' ? { email: { not: null } } : {}),
+                ...(contactType === 'phone'
+                  ? { phoneNumber: { not: null } }
+                  : {}),
+              },
+            });
+            counts[filter] = count;
+            break;
+          }
+          case 'volunteers': {
+            const count = await this.prisma.childrenMinistryVolunteer.count({
+              where: {
+                ...(branchId ? { branchId } : {}),
+                ...(organisationId ? { organisationId } : {}),
+                ...(contactType === 'email' ? { 
+                  member: { email: { not: null } } 
+                } : {}),
+                ...(contactType === 'phone' ? { 
+                  member: { phoneNumber: { not: null } } 
+                } : {}),
+              },
+            });
+            counts[filter] = count;
+            break;
+          }
+          case 'inactive': {
+            const count = await this.prisma.member.count({
+              where: {
+                status: 'INACTIVE',
+                ...(branchId ? { branchId } : {}),
+                ...(organisationId ? { organisationId } : {}),
+                ...(contactType === 'email' ? { email: { not: null } } : {}),
+                ...(contactType === 'phone'
+                  ? { phoneNumber: { not: null } }
+                  : {}),
+              },
+            });
+            counts[filter] = count;
+            break;
+          }
+          case 'donors': {
+            const count = await this.prisma.member.count({
+              where: {
+                transactions: { some: {} },
+                ...(branchId ? { branchId } : {}),
+                ...(organisationId ? { organisationId } : {}),
+                ...(contactType === 'email' ? { email: { not: null } } : {}),
+                ...(contactType === 'phone'
+                  ? { phoneNumber: { not: null } }
+                  : {}),
+              },
+            });
+            counts[filter] = count;
+            break;
+          }
+          case 'parents': {
+            const count = await this.prisma.member.count({
+              where: {
+                children: { some: {} }, // Members who have children (are parents)
+                ...(branchId ? { branchId } : {}),
+                ...(organisationId ? { organisationId } : {}),
+                ...(contactType === 'email' ? { email: { not: null } } : {}),
+                ...(contactType === 'phone'
+                  ? { phoneNumber: { not: null } }
+                  : {}),
+              },
+            });
+            counts[filter] = count;
+            break;
+          }
+          case 'families': {
+            const count = await this.prisma.member.count({
+              where: {
+                OR: [
+                  { children: { some: {} } }, // Has children
+                  { parent: { isNot: null } }, // Has a parent
+                  { spouse: { isNot: null } }, // Has a spouse
+                ],
+                ...(branchId ? { branchId } : {}),
+                ...(organisationId ? { organisationId } : {}),
+                ...(contactType === 'email' ? { email: { not: null } } : {}),
+                ...(contactType === 'phone'
+                  ? { phoneNumber: { not: null } }
+                  : {}),
+              },
+            });
+            counts[filter] = count;
+            break;
+          }
+          case 'anniversary-celebrants': {
+            const today = new Date();
+            const count = await this.prisma.member.count({
+              where: {
+                sacramentalRecords: {
+                  some: {
+                    dateOfSacrament: { gt: new Date('1970-01-01') },
+                    // Use raw SQL to check if month matches current month
+                  },
+                },
+                ...(branchId ? { branchId } : {}),
+                ...(organisationId ? { organisationId } : {}),
+                ...(contactType === 'email' ? { email: { not: null } } : {}),
+                ...(contactType === 'phone'
+                  ? { phoneNumber: { not: null } }
+                  : {}),
+              },
+            });
+            counts[filter] = count;
+            break;
+          }
+          case 'prayer-request-submitters': {
+            const count = await this.prisma.member.count({
+              where: {
+                prayerRequests: { some: {} },
+                ...(branchId ? { branchId } : {}),
+                ...(organisationId ? { organisationId } : {}),
+                ...(contactType === 'email' ? { email: { not: null } } : {}),
+                ...(contactType === 'phone'
+                  ? { phoneNumber: { not: null } }
+                  : {}),
+              },
+            });
+            counts[filter] = count;
+            break;
+          }
+          case 'new-members': {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const count = await this.prisma.member.count({
+              where: {
+                createdAt: { gte: thirtyDaysAgo },
+                ...(branchId ? { branchId } : {}),
+                ...(organisationId ? { organisationId } : {}),
+                ...(contactType === 'email' ? { email: { not: null } } : {}),
+                ...(contactType === 'phone'
+                  ? { phoneNumber: { not: null } }
+                  : {}),
+              },
+            });
+            counts[filter] = count;
+            break;
+          }
+          case 'recently-baptised': {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const count = await this.prisma.member.count({
+              where: {
+                sacramentalRecords: {
+                  some: {
+                    sacramentType: 'BAPTISM',
+                    dateOfSacrament: { gte: thirtyDaysAgo },
+                  },
+                },
+                ...(branchId ? { branchId } : {}),
+                ...(organisationId ? { organisationId } : {}),
+                ...(contactType === 'email' ? { email: { not: null } } : {}),
+                ...(contactType === 'phone'
+                  ? { phoneNumber: { not: null } }
+                  : {}),
+              },
+            });
+            counts[filter] = count;
+            break;
+          }
+          default:
+            // Handle custom lists
+            if (filter.startsWith('custom-list:')) {
+              const listString = filter.substring('custom-list:'.length);
+              if (listString) {
+                const rawList = listString
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                
+                if (contactType === 'email') {
+                  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                  counts[filter] = rawList.filter((e) => emailRegex.test(e)).length;
+                } else if (contactType === 'phone') {
+                  const phoneRegex = /^[+]?\d{7,15}$/;
+                  counts[filter] = rawList.filter((p) => phoneRegex.test(p)).length;
+                } else {
+                  counts[filter] = rawList.length;
+                }
+              } else {
+                counts[filter] = 0;
+              }
+              break;
+            }
+            // Unknown filter
+            counts[filter] = 0;
+        }
+      } catch (error) {
+        // If there's an error getting count for a specific filter, set to 0
+        counts[filter] = 0;
+      }
+    }
+
+    return counts;
   }
 
   /**

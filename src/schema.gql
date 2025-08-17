@@ -4111,6 +4111,7 @@ type Query {
   prayerRequest(id: ID!): PrayerRequest!
   prayerRequests(branchId: String, organisationId: String, status: PrayerRequestStatusEnum): [PrayerRequest!]!
   publicForm(slug: String!): Form!
+  recipientFilterCounts(input: RecipientCountInput!): [RecipientCountResult!]!
   recipientGroupStats(filter: CommunicationStatsFilterInput): [RecipientGroupStats!]!
   recipientGroups: [RecipientGroup!]!
   sacramentStats(branchId: ID, period: String): [SacramentStatsOutput!]!
@@ -4191,6 +4192,20 @@ type RecentSacramentsWidget {
   sacraments: [SacramentItem!]!
   title: String!
   widgetType: WidgetType!
+}
+
+input RecipientCountInput {
+  branchId: String
+
+  """Contact type: id, email, or phone"""
+  contactType: String
+  filters: [String!]!
+  organisationId: String
+}
+
+type RecipientCountResult {
+  count: Float!
+  filter: String!
 }
 
 type RecipientGroup {
@@ -5049,6 +5064,7 @@ input UpdateCounselingSessionInput {
 
 input UpdateDeathRegisterInput {
   additionalDocuments: [String!]
+  branchId: ID
   burialCremation: BurialType
   causeOfDeath: String
   cemeteryLocation: String
@@ -5061,11 +5077,13 @@ input UpdateDeathRegisterInput {
   funeralLocation: String
   funeralOfficiant: String
   id: ID!
+  memberId: ID
   nextOfKin: String
   nextOfKinEmail: String
   nextOfKinPhone: String
   notificationDate: String
   obituaryUrl: String
+  organisationId: ID!
   photoUrls: [String!]
   placeOfDeath: String
   timeOfDeath: String

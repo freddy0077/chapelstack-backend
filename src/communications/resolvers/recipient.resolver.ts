@@ -1,4 +1,4 @@
-import { Resolver, Query, Args } from '@nestjs/graphql';
+import { Resolver, Query, Args, Field, InputType, ObjectType } from '@nestjs/graphql';
 import {
   MemberFilterInput,
   BirthdayRangeEnum,
@@ -7,10 +7,38 @@ import { RecipientGroup } from '../entities/recipient-group.entity';
 import { Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Member } from '../../members/entities/member.entity';
+import { RecipientService } from '../services/recipient.service';
+
+@InputType()
+export class RecipientCountInput {
+  @Field(() => [String])
+  filters: string[];
+
+  @Field({ nullable: true })
+  branchId?: string;
+
+  @Field({ nullable: true })
+  organisationId?: string;
+
+  @Field({ nullable: true, description: 'Contact type: id, email, or phone' })
+  contactType?: string;
+}
+
+@ObjectType()
+export class RecipientCountResult {
+  @Field()
+  filter: string;
+
+  @Field()
+  count: number;
+}
 
 @Resolver()
 export class RecipientResolver {
-  constructor(@Inject(PrismaService) private prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private prisma: PrismaService,
+    private readonly recipientService: RecipientService,
+  ) {}
 
   @Query(() => [RecipientGroup])
   async recipientGroups(): Promise<RecipientGroup[]> {
@@ -115,5 +143,24 @@ export class RecipientResolver {
       },
       take: 20,
     }) as unknown as Member[];
+  }
+
+  @Query(() => [RecipientCountResult])
+  async recipientFilterCounts(
+    @Args('input') input: RecipientCountInput,
+  ): Promise<RecipientCountResult[]> {
+    const counts = await this.recipientService.getFilterRecipientCounts(
+      input.filters,
+      {
+        branchId: input.branchId,
+        organisationId: input.organisationId,
+        contactType: input.contactType as 'id' | 'email' | 'phone' | undefined,
+      },
+    );
+
+    return Object.entries(counts).map(([filter, count]) => ({
+      filter,
+      count,
+    }));
   }
 }

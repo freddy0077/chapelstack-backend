@@ -134,6 +134,11 @@ export class UpdateDeathRegisterInput {
   @IsString()
   id: string;
 
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsString()
+  memberId?: string;
+
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
@@ -235,6 +240,15 @@ export class UpdateDeathRegisterInput {
   additionalDocuments?: string[];
 
   // Foreign Keys
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsString()
+  branchId?: string;
+
+  @Field(() => ID)
+  @IsString()
+  organisationId: string;
+
   @Field(() => ID, { nullable: true })
   @IsOptional()
   @IsString()
