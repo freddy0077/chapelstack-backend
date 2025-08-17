@@ -28,48 +28,147 @@ export class BranchInfoDto {
 }
 
 @ObjectType()
+export class MemberMonthlyTrendDto {
+  @Field()
+  month: number;
+
+  @Field()
+  year: number;
+
+  @Field()
+  totalMembers: number;
+
+  @Field()
+  newMembers: number;
+}
+
+@ObjectType()
 export class MemberStatsDto {
   @Field()
   total: number;
 
   @Field()
   newMembersThisMonth: number;
+
+  @Field()
+  growthRate: number;
+
+  @Field(() => [MemberMonthlyTrendDto])
+  monthlyTrends: MemberMonthlyTrendDto[];
 }
 
 @ObjectType()
-export class FinanceStatsDto {
+export class FinanceMonthlyTrendDto {
   @Field()
-  totalContributions: number;
+  month: number;
 
   @Field()
-  tithes: number;
+  year: number;
+
+  @Field()
+  contributions: number;
 
   @Field()
   expenses: number;
 
   @Field()
-  pledge: number;
+  netIncome: number;
+}
 
-  @Field()
+@ObjectType()
+export class FinanceStatsDto {
+  @Field(() => Number)
+  totalContributions: number;
+
+  @Field(() => Number)
+  totalExpenses: number;
+
+  @Field(() => Number)
+  tithes: number;
+
+  @Field(() => Number)
   offering: number;
 
-  @Field()
+  @Field(() => Number)
   donation: number;
 
-  @Field()
+  @Field(() => Number)
+  pledge: number;
+
+  @Field(() => Number)
   specialContribution: number;
+
+  @Field(() => Number)
+  growthRate: number;
+
+  @Field(() => Number)
+  netIncome: number;
+
+  @Field(() => [FinanceMonthlyTrendDto])
+  monthlyTrends: FinanceMonthlyTrendDto[];
+}
+
+@ObjectType()
+export class AttendanceMonthlyTrendDto {
+  @Field()
+  month: number;
+
+  @Field()
+  year: number;
+
+  @Field()
+  totalAttendance: number;
+
+  @Field()
+  uniqueAttendees: number;
 }
 
 @ObjectType()
 export class AttendanceStatsDto {
   @Field()
   totalAttendance: number;
+
+  @Field()
+  uniqueAttendeesThisMonth: number;
+
+  @Field()
+  averageAttendance: number;
+
+  @Field()
+  growthRate: number;
+
+  @Field(() => [AttendanceMonthlyTrendDto])
+  monthlyTrends: AttendanceMonthlyTrendDto[];
+}
+
+@ObjectType()
+export class SacramentBreakdownDto {
+  @Field()
+  type: string;
+
+  @Field()
+  count: number;
+}
+
+@ObjectType()
+export class SacramentMonthlyTrendDto {
+  @Field()
+  month: number;
+
+  @Field()
+  count: number;
 }
 
 @ObjectType()
 export class SacramentStatsDto {
   @Field()
   totalSacraments: number;
+
+  @Field(() => [SacramentBreakdownDto])
+  breakdown: SacramentBreakdownDto[];
+
+  @Field(() => [SacramentMonthlyTrendDto])
+  monthlyTrends: SacramentMonthlyTrendDto[];
 }
 
 @ObjectType()
@@ -85,12 +184,84 @@ export class EventDto {
 }
 
 @ObjectType()
+export class RecentMemberDto {
+  @Field()
+  id: string;
+
+  @Field()
+  name: string;
+
+  @Field()
+  joinedAt: Date;
+}
+
+@ObjectType()
+export class RecentContributionDto {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => Number)
+  amount: number;
+
+  @Field(() => Date)
+  date: Date;
+
+  @Field(() => String)
+  type: string;
+}
+
+@ObjectType()
+export class RecentSacramentDto {
+  @Field()
+  id: string;
+
+  @Field()
+  type: string;
+
+  @Field()
+  date: Date;
+
+  @Field()
+  memberName: string;
+}
+
+@ObjectType()
+export class ActivitySummaryDto {
+  @Field()
+  newMembersCount: number;
+
+  @Field()
+  contributionsCount: number;
+
+  @Field()
+  sacramentsCount: number;
+
+  @Field()
+  attendanceRecordsCount: number;
+
+  @Field()
+  totalActivities: number;
+}
+
+@ObjectType()
 export class ActivityStatsDto {
   @Field(() => [EventDto])
   recentEvents: EventDto[];
 
   @Field(() => [EventDto])
   upcomingEvents: EventDto[];
+
+  @Field(() => [RecentMemberDto])
+  recentMembers: RecentMemberDto[];
+
+  @Field(() => [RecentContributionDto])
+  recentContributions: RecentContributionDto[];
+
+  @Field(() => [RecentSacramentDto])
+  recentSacraments: RecentSacramentDto[];
+
+  @Field(() => ActivitySummaryDto)
+  activitySummary: ActivitySummaryDto;
 }
 
 @ObjectType()

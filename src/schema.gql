@@ -36,8 +36,20 @@ type ActivityMetadata {
 }
 
 type ActivityStatsDto {
+  activitySummary: ActivitySummaryDto!
+  recentContributions: [RecentContributionDto!]!
   recentEvents: [EventDto!]!
+  recentMembers: [RecentMemberDto!]!
+  recentSacraments: [RecentSacramentDto!]!
   upcomingEvents: [EventDto!]!
+}
+
+type ActivitySummaryDto {
+  attendanceRecordsCount: Float!
+  contributionsCount: Float!
+  newMembersCount: Float!
+  sacramentsCount: Float!
+  totalActivities: Float!
 }
 
 type AgeDistribution {
@@ -131,6 +143,13 @@ input AttendanceFilterInput {
 type AttendanceFrequencyStat {
   count: Float!
   label: String!
+}
+
+type AttendanceMonthlyTrendDto {
+  month: Float!
+  totalAttendance: Float!
+  uniqueAttendees: Float!
+  year: Float!
 }
 
 type AttendanceOverview {
@@ -328,7 +347,11 @@ type AttendanceStats {
 }
 
 type AttendanceStatsDto {
+  averageAttendance: Float!
+  growthRate: Float!
+  monthlyTrends: [AttendanceMonthlyTrendDto!]!
   totalAttendance: Float!
+  uniqueAttendeesThisMonth: Float!
 }
 
 input AttendanceStatsInput {
@@ -2372,14 +2395,25 @@ type FileUploadResponse {
   uploadUrl: String!
 }
 
+type FinanceMonthlyTrendDto {
+  contributions: Float!
+  expenses: Float!
+  month: Float!
+  netIncome: Float!
+  year: Float!
+}
+
 type FinanceStatsDto {
   donation: Float!
-  expenses: Float!
+  growthRate: Float!
+  monthlyTrends: [FinanceMonthlyTrendDto!]!
+  netIncome: Float!
   offering: Float!
   pledge: Float!
   specialContribution: Float!
   tithes: Float!
   totalContributions: Float!
+  totalExpenses: Float!
 }
 
 type FinancialOverview {
@@ -2950,6 +2984,13 @@ type MemberMembershipStatusDistribution {
   status: String!
 }
 
+type MemberMonthlyTrendDto {
+  month: Float!
+  newMembers: Float!
+  totalMembers: Float!
+  year: Float!
+}
+
 type MemberPastoralHistory {
   careRequests: [CareRequest!]!
   reminders: [FollowUpReminder!]!
@@ -3082,6 +3123,8 @@ type MemberStatisticsPeriod {
 }
 
 type MemberStatsDto {
+  growthRate: Float!
+  monthlyTrends: [MemberMonthlyTrendDto!]!
   newMembersThisMonth: Float!
   total: Float!
 }
@@ -3976,7 +4019,7 @@ type Query {
   birthdayMembers(range: BirthdayRangeEnum!): [Member!]!
   branch(id: String!): Branch
   branchActivities(branchId: String!, limit: Float, skip: Float): [BranchActivity!]!
-  branchDashboard(branchId: String!): BranchDashboardDataDto!
+  branchDashboard(branchId: ID!): BranchDashboardDataDto!
   branchUpcomingEvents(branchId: String!, limit: Float): [Event!]!
   branchUsers(branchId: String!): [User!]!
   branches(filterInput: BranchFilterInput, paginationInput: PaginationInput): PaginatedBranches!
@@ -4190,6 +4233,26 @@ enum RSVPStatus {
   PENDING
 }
 
+type RecentContributionDto {
+  amount: Float!
+  date: DateTime!
+  id: String!
+  type: String!
+}
+
+type RecentMemberDto {
+  id: String!
+  joinedAt: DateTime!
+  name: String!
+}
+
+type RecentSacramentDto {
+  date: DateTime!
+  id: String!
+  memberName: String!
+  type: String!
+}
+
 type RecentSacramentsWidget {
   sacraments: [SacramentItem!]!
   title: String!
@@ -4349,6 +4412,11 @@ type SacramentAnniversaryOutput {
   timeUntil: String
 }
 
+type SacramentBreakdownDto {
+  count: Float!
+  type: String!
+}
+
 type SacramentItem {
   date: DateTime!
   id: String!
@@ -4356,7 +4424,14 @@ type SacramentItem {
   type: String!
 }
 
+type SacramentMonthlyTrendDto {
+  count: Float!
+  month: Float!
+}
+
 type SacramentStatsDto {
+  breakdown: [SacramentBreakdownDto!]!
+  monthlyTrends: [SacramentMonthlyTrendDto!]!
   totalSacraments: Float!
 }
 
