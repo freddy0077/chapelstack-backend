@@ -1,15 +1,13 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsOptional, IsDate } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 @InputType()
 export class DateRangeInput {
-  @Field(() => Date, { nullable: true })
-  @IsOptional()
-  @IsDate()
-  startDate?: Date;
+  @Field(() => Date)
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
+  startDate: Date;
 
-  @Field(() => Date, { nullable: true })
-  @IsOptional()
-  @IsDate()
-  endDate?: Date;
+  @Field(() => Date)
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
+  endDate: Date;
 }

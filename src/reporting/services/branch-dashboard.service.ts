@@ -41,9 +41,9 @@ export class BranchDashboardService {
   async getMemberSummary(branchId: string) {
     // Get total active members (excluding deactivated)
     const totalMembers = await this.prisma.member.count({
-      where: { 
+      where: {
         branchId,
-        isDeactivated: false
+        isDeactivated: false,
       },
     });
 
@@ -80,8 +80,20 @@ export class BranchDashboardService {
 
     for (let i = 11; i >= 0; i--) {
       const targetDate = new Date(currentYear, currentMonth - i, 1);
-      const startOfTargetMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-      const endOfTargetMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
+      const startOfTargetMonth = new Date(
+        targetDate.getFullYear(),
+        targetDate.getMonth(),
+        1,
+      );
+      const endOfTargetMonth = new Date(
+        targetDate.getFullYear(),
+        targetDate.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
 
       const membersCount = await this.prisma.member.count({
         where: {
@@ -108,9 +120,21 @@ export class BranchDashboardService {
     }
 
     // Calculate growth rate (current month vs previous month)
-    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-    
+    const previousMonthStart = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      1,
+    );
+    const previousMonthEnd = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+
     const previousMonthTotal = await this.prisma.member.count({
       where: {
         branchId,
@@ -119,12 +143,13 @@ export class BranchDashboardService {
       },
     });
 
-    const growthRate = previousMonthTotal > 0 
-      ? ((totalMembers - previousMonthTotal) / previousMonthTotal) * 100 
-      : 0;
+    const growthRate =
+      previousMonthTotal > 0
+        ? ((totalMembers - previousMonthTotal) / previousMonthTotal) * 100
+        : 0;
 
-    return { 
-      total: totalMembers, 
+    return {
+      total: totalMembers,
       newMembersThisMonth,
       growthRate: Math.round(growthRate * 100) / 100, // Round to 2 decimal places
       monthlyTrends,
@@ -135,7 +160,15 @@ export class BranchDashboardService {
   async getFinancialOverview(branchId: string) {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
 
     // Get total contributions (CONTRIBUTION type transactions) for current month
     const currentMonthContributions = await this.prisma.transaction.aggregate({
@@ -157,7 +190,9 @@ export class BranchDashboardService {
       _sum: { amount: true },
     });
 
-    const totalContributions = Number(currentMonthContributions._sum.amount || 0);
+    const totalContributions = Number(
+      currentMonthContributions._sum.amount || 0,
+    );
     const totalExpenses = Number(currentMonthExpenses._sum.amount || 0);
 
     // Get breakdown by transaction categories/descriptions
@@ -174,8 +209,8 @@ export class BranchDashboardService {
 
     // Map common contribution types
     const getContributionByType = (type: string) => {
-      const found = contributionBreakdown.find(item => 
-        item.description?.toLowerCase().includes(type.toLowerCase())
+      const found = contributionBreakdown.find((item) =>
+        item.description?.toLowerCase().includes(type.toLowerCase()),
       );
       return Number(found?._sum?.amount || 0);
     };
@@ -188,7 +223,15 @@ export class BranchDashboardService {
 
     // Calculate previous month for growth rate
     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    const endOfPrevMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
 
     const previousMonthContributions = await this.prisma.transaction.aggregate({
       where: {
@@ -200,9 +243,10 @@ export class BranchDashboardService {
     });
 
     const previousTotal = Number(previousMonthContributions._sum.amount || 0);
-    const growthRate = previousTotal > 0 
-      ? ((totalContributions - previousTotal) / previousTotal) * 100 
-      : 0;
+    const growthRate =
+      previousTotal > 0
+        ? ((totalContributions - previousTotal) / previousTotal) * 100
+        : 0;
 
     // Get 12-month trends using Transaction model
     const currentYear = now.getFullYear();
@@ -217,8 +261,20 @@ export class BranchDashboardService {
 
     for (let i = 11; i >= 0; i--) {
       const targetDate = new Date(currentYear, currentMonth - i, 1);
-      const startOfTargetMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-      const endOfTargetMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
+      const startOfTargetMonth = new Date(
+        targetDate.getFullYear(),
+        targetDate.getMonth(),
+        1,
+      );
+      const endOfTargetMonth = new Date(
+        targetDate.getFullYear(),
+        targetDate.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
 
       const [monthlyContributions, monthlyExpenses] = await Promise.all([
         this.prisma.transaction.aggregate({
@@ -281,22 +337,24 @@ export class BranchDashboardService {
 
     // Total attendance records for current month
     const totalAttendance = await this.prisma.attendanceRecord.count({
-      where: { 
+      where: {
         branchId,
         checkInTime: { gte: startOfMonth, lte: endOfMonth },
       },
     });
 
     // Get unique attendees for current month
-    const uniqueAttendeesThisMonth = await this.prisma.attendanceRecord.groupBy({
-      by: ['memberId'],
-      where: {
-        branchId,
-        checkInTime: { gte: startOfMonth, lte: endOfMonth },
-        memberId: { not: null },
+    const uniqueAttendeesThisMonth = await this.prisma.attendanceRecord.groupBy(
+      {
+        by: ['memberId'],
+        where: {
+          branchId,
+          checkInTime: { gte: startOfMonth, lte: endOfMonth },
+          memberId: { not: null },
+        },
+        _count: { memberId: true },
       },
-      _count: { memberId: true },
-    });
+    );
 
     // Get historical trends for the past 12 months
     const currentYear = now.getFullYear();
@@ -310,8 +368,20 @@ export class BranchDashboardService {
 
     for (let i = 11; i >= 0; i--) {
       const targetDate = new Date(currentYear, currentMonth - i, 1);
-      const startOfTargetMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-      const endOfTargetMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
+      const startOfTargetMonth = new Date(
+        targetDate.getFullYear(),
+        targetDate.getMonth(),
+        1,
+      );
+      const endOfTargetMonth = new Date(
+        targetDate.getFullYear(),
+        targetDate.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
 
       const monthlyAttendance = await this.prisma.attendanceRecord.count({
         where: {
@@ -339,13 +409,31 @@ export class BranchDashboardService {
     }
 
     // Calculate average attendance over the past 12 months
-    const totalAttendanceRecords = monthlyTrends.reduce((sum, trend) => sum + trend.totalAttendance, 0);
-    const averageAttendance = monthlyTrends.length > 0 ? Math.round(totalAttendanceRecords / monthlyTrends.length) : 0;
+    const totalAttendanceRecords = monthlyTrends.reduce(
+      (sum, trend) => sum + trend.totalAttendance,
+      0,
+    );
+    const averageAttendance =
+      monthlyTrends.length > 0
+        ? Math.round(totalAttendanceRecords / monthlyTrends.length)
+        : 0;
 
     // Calculate growth rate (current month vs previous month)
-    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-    
+    const previousMonthStart = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      1,
+    );
+    const previousMonthEnd = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+
     const previousMonthAttendance = await this.prisma.attendanceRecord.count({
       where: {
         branchId,
@@ -353,11 +441,14 @@ export class BranchDashboardService {
       },
     });
 
-    const growthRate = previousMonthAttendance > 0 
-      ? ((totalAttendance - previousMonthAttendance) / previousMonthAttendance) * 100 
-      : 0;
+    const growthRate =
+      previousMonthAttendance > 0
+        ? ((totalAttendance - previousMonthAttendance) /
+            previousMonthAttendance) *
+          100
+        : 0;
 
-    return { 
+    return {
       totalAttendance,
       uniqueAttendeesThisMonth: uniqueAttendeesThisMonth.length,
       averageAttendance,
@@ -370,18 +461,18 @@ export class BranchDashboardService {
   async getSacramentsOverview(branchId: string) {
     // Get total sacraments count (excluding deactivated members)
     const totalSacraments = await this.prisma.sacramentalRecord.count({
-      where: { 
+      where: {
         branchId,
-        member: { isDeactivated: false }
+        member: { isDeactivated: false },
       },
     });
 
     // Get breakdown by sacrament type
     const sacramentsByType = await this.prisma.sacramentalRecord.groupBy({
       by: ['sacramentType'],
-      where: { 
+      where: {
         branchId,
-        member: { isDeactivated: false }
+        member: { isDeactivated: false },
       },
       _count: { id: true },
     });
@@ -404,8 +495,8 @@ export class BranchDashboardService {
     // Process monthly trends data
     const monthlyData = Array.from({ length: 12 }, (_, index) => {
       const month = index + 1;
-      const monthRecords = monthlyTrends.filter(record => 
-        record.dateOfSacrament.getMonth() + 1 === month
+      const monthRecords = monthlyTrends.filter(
+        (record) => record.dateOfSacrament.getMonth() + 1 === month,
       );
       return {
         month: month,
@@ -414,12 +505,12 @@ export class BranchDashboardService {
     });
 
     // Format sacrament breakdown
-    const breakdown = sacramentsByType.map(item => ({
+    const breakdown = sacramentsByType.map((item) => ({
       type: item.sacramentType,
       count: item._count.id,
     }));
 
-    return { 
+    return {
       totalSacraments,
       breakdown,
       monthlyTrends: monthlyData,
@@ -446,7 +537,12 @@ export class BranchDashboardService {
     });
 
     // Get recent activities from the past 7 days
-    const [recentMembers, recentContributions, recentSacraments, recentAttendance] = await Promise.all([
+    const [
+      recentMembers,
+      recentContributions,
+      recentSacraments,
+      recentAttendance,
+    ] = await Promise.all([
       // New members in the past 7 days
       this.prisma.member.findMany({
         where: {
@@ -518,7 +614,10 @@ export class BranchDashboardService {
       contributionsCount: recentContributions.length,
       sacramentsCount: recentSacraments.length,
       attendanceRecordsCount: recentAttendance,
-      totalActivities: recentMembers.length + recentContributions.length + recentSacraments.length,
+      totalActivities:
+        recentMembers.length +
+        recentContributions.length +
+        recentSacraments.length,
     };
 
     return {
@@ -541,7 +640,7 @@ export class BranchDashboardService {
         id: c.id,
         amount: c.amount,
         date: c.date,
-        type: c.description,
+        type: c.description || 'Contribution',
       })),
       recentSacraments: recentSacraments.map((s) => ({
         id: s.id,

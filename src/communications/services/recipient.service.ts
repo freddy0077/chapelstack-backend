@@ -301,9 +301,7 @@ export class RecipientService {
             ...(branchId ? { branchId } : {}),
             ...(organisationId ? { organisationId } : {}),
             ...(contactType === 'email' ? { email: { not: null } } : {}),
-            ...(contactType === 'phone'
-              ? { phoneNumber: { not: null } }
-              : {}),
+            ...(contactType === 'phone' ? { phoneNumber: { not: null } } : {}),
           };
           const records = await this.prisma.member.findMany({
             where,
@@ -318,13 +316,12 @@ export class RecipientService {
           });
           // Anniversary = month match
           const celebrantIds = records
-            .filter(
-              (r) =>
-                r.sacramentalRecords.some(
-                  (s) =>
-                    s.dateOfSacrament &&
-                    new Date(s.dateOfSacrament).getMonth() === today.getMonth(),
-                ),
+            .filter((r) =>
+              r.sacramentalRecords.some(
+                (s) =>
+                  s.dateOfSacrament &&
+                  new Date(s.dateOfSacrament).getMonth() === today.getMonth(),
+              ),
             )
             .map((r) => r.id);
           if (celebrantIds.length && contactType !== 'id') {
@@ -405,9 +402,7 @@ export class RecipientService {
             ...(branchId ? { branchId } : {}),
             ...(organisationId ? { organisationId } : {}),
             ...(contactType === 'email' ? { email: { not: null } } : {}),
-            ...(contactType === 'phone'
-              ? { phoneNumber: { not: null } }
-              : {}),
+            ...(contactType === 'phone' ? { phoneNumber: { not: null } } : {}),
           };
           const baptismRecords = await this.prisma.member.findMany({
             where,
@@ -473,7 +468,7 @@ export class RecipientService {
 
   /**
    * Get recipient counts for multiple filters without fetching actual data
-   * 
+   *
    * @param filters - Array of filter keys (e.g. 'all-members', 'parents', etc)
    * @param options - branchId, organisationId, contactType ('id' | 'email' | 'phone')
    * @returns Record<string, number> - Object mapping filter keys to their counts
@@ -512,12 +507,16 @@ export class RecipientService {
               where: {
                 ...(branchId ? { branchId } : {}),
                 ...(organisationId ? { organisationId } : {}),
-                ...(contactType === 'email' ? { 
-                  member: { email: { not: null } } 
-                } : {}),
-                ...(contactType === 'phone' ? { 
-                  member: { phoneNumber: { not: null } } 
-                } : {}),
+                ...(contactType === 'email'
+                  ? {
+                      member: { email: { not: null } },
+                    }
+                  : {}),
+                ...(contactType === 'phone'
+                  ? {
+                      member: { phoneNumber: { not: null } },
+                    }
+                  : {}),
               },
             });
             counts[filter] = count;
@@ -671,13 +670,18 @@ export class RecipientService {
                   .split(',')
                   .map((s) => s.trim())
                   .filter(Boolean);
-                
+
                 if (contactType === 'email') {
-                  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-                  counts[filter] = rawList.filter((e) => emailRegex.test(e)).length;
+                  const emailRegex =
+                    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                  counts[filter] = rawList.filter((e) =>
+                    emailRegex.test(e),
+                  ).length;
                 } else if (contactType === 'phone') {
                   const phoneRegex = /^[+]?\d{7,15}$/;
-                  counts[filter] = rawList.filter((p) => phoneRegex.test(p)).length;
+                  counts[filter] = rawList.filter((p) =>
+                    phoneRegex.test(p),
+                  ).length;
                 } else {
                   counts[filter] = rawList.length;
                 }

@@ -47,6 +47,28 @@ export class CreateSacramentalRecordInput {
   @IsOptional()
   officiantId?: string;
 
+  // NEW: Marriage-specific member relationship fields
+  @Field({ nullable: true })
+  @IsUUID()
+  @IsOptional()
+  groomMemberId?: string;
+
+  @Field({ nullable: true })
+  @IsUUID()
+  @IsOptional()
+  brideMemberId?: string;
+
+  // NEW: Witness member relationship fields
+  @Field({ nullable: true })
+  @IsUUID()
+  @IsOptional()
+  witness1MemberId?: string;
+
+  @Field({ nullable: true })
+  @IsUUID()
+  @IsOptional()
+  witness2MemberId?: string;
+
   @Field({ nullable: true })
   @IsString()
   @IsOptional()

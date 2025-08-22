@@ -51,7 +51,7 @@ export class CounselingSessionService {
         title: input.title,
         description: input.description,
         scheduledDate: new Date(input.scheduledDate),
-        duration: input.duration,
+        duration: input.duration || 60, // Default 60 minutes
         sessionType: input.sessionType,
         status: input.status || CounselingSessionStatus.SCHEDULED,
         location: input.location,
@@ -62,6 +62,8 @@ export class CounselingSessionService {
         sessionNumber: input.sessionNumber,
         totalSessions: input.totalSessions,
         progressNotes: input.progressNotes,
+        isConfidential: input.isConfidential ?? true,
+        followUpDate: input.followUpDate ? new Date(input.followUpDate) : null,
         organisationId: input.organisationId,
         branchId: input.branchId,
         createdBy,

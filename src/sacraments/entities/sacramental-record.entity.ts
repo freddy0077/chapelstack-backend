@@ -1,5 +1,6 @@
 import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { SacramentType } from '@prisma/client';
+import { Member } from '../../members/entities/member.entity';
 
 // Define the enum values explicitly
 export enum SacramentTypeEnum {
@@ -28,6 +29,9 @@ export class SacramentalRecord {
   @Field(() => String)
   memberId: string;
 
+  @Field(() => Member, { nullable: true })
+  member?: Member;
+
   @Field(() => SacramentTypeEnum)
   sacramentType: SacramentType;
 
@@ -42,6 +46,18 @@ export class SacramentalRecord {
 
   @Field(() => String, { nullable: true })
   officiantId: string | null;
+
+  @Field(() => String, { nullable: true })
+  groomMemberId: string | null;
+
+  @Field(() => String, { nullable: true })
+  brideMemberId: string | null;
+
+  @Field(() => String, { nullable: true })
+  witness1MemberId: string | null;
+
+  @Field(() => String, { nullable: true })
+  witness2MemberId: string | null;
 
   @Field(() => String, { nullable: true })
   godparent1Name: string | null;

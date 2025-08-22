@@ -200,6 +200,9 @@ export class Member {
   alternativeEmail?: string | null;
 
   @Field(() => String, { nullable: true })
+  profileImageUrl?: string | null;
+
+  @Field(() => String, { nullable: true })
   phoneNumber?: string | null;
 
   @Field(() => String, { nullable: true })
@@ -313,9 +316,6 @@ export class Member {
   @Field(() => String, { nullable: true })
   statusChangeReason?: string | null;
 
-  @Field(() => String, { nullable: true })
-  profileImageUrl?: string | null;
-
   @Field(() => GraphQLJSON, { nullable: true })
   customFields?: any;
 
@@ -403,6 +403,10 @@ export class Member {
 
   @Field(() => GraphQLISODateTime, { nullable: true })
   dataRetentionDate?: Date | null;
+
+  // Special Gifts and Talents
+  @Field(() => String, { nullable: true })
+  specialGifts?: string | null;
 
   // Soft Delete
   @Field(() => GraphQLISODateTime, { nullable: true })

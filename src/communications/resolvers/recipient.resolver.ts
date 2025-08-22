@@ -1,4 +1,11 @@
-import { Resolver, Query, Args, Field, InputType, ObjectType } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Args,
+  Field,
+  InputType,
+  ObjectType,
+} from '@nestjs/graphql';
 import {
   MemberFilterInput,
   BirthdayRangeEnum,

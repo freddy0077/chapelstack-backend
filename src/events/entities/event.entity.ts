@@ -78,6 +78,19 @@ export class Event {
   @Field(() => String, { nullable: true })
   currency?: string | null;
 
+  // Post-event notes fields
+  @Field(() => String, { nullable: true })
+  postEventNotes?: string | null;
+
+  @Field(() => String, { nullable: true })
+  postEventNotesBy?: string | null;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  postEventNotesDate?: Date | null;
+
+  @Field(() => User, { nullable: true })
+  postEventNotesAuthor?: User | null;
+
   // Existing fields
   @Field(() => String, { nullable: true })
   branchId?: string | null;

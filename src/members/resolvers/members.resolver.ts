@@ -363,14 +363,174 @@ export class MembersResolver {
     @Args('branchId', { type: () => String, nullable: true }) branchId?: string,
     @Args('organisationId', { type: () => String, nullable: true })
     organisationId?: string,
+    @Args('search', { type: () => String, nullable: true }) search?: string,
+    @Args('membershipStatus', { type: () => [String], nullable: true })
+    membershipStatus?: string[],
+    @Args('membershipType', { type: () => [String], nullable: true })
+    membershipType?: string[],
+    @Args('gender', { type: () => [String], nullable: true }) gender?: string[],
+    @Args('maritalStatus', { type: () => [String], nullable: true })
+    maritalStatus?: string[],
+    @Args('memberStatus', { type: () => [String], nullable: true })
+    memberStatus?: string[],
+    @Args('minAge', { type: () => Int, nullable: true }) minAge?: number,
+    @Args('maxAge', { type: () => Int, nullable: true }) maxAge?: number,
+    @Args('startDate', { type: () => String, nullable: true })
+    startDate?: string,
+    @Args('endDate', { type: () => String, nullable: true }) endDate?: string,
+    @Args('hasMemberId', { type: () => Boolean, nullable: true })
+    hasMemberId?: boolean,
+    @Args('hasProfileImage', { type: () => Boolean, nullable: true })
+    hasProfileImage?: boolean,
+    @Args('hasEmail', { type: () => Boolean, nullable: true })
+    hasEmail?: boolean,
+    @Args('hasPhone', { type: () => Boolean, nullable: true })
+    hasPhone?: boolean,
+    @Args('isRegularAttendee', { type: () => Boolean, nullable: true })
+    isRegularAttendee?: boolean,
   ): Promise<number> {
     const where: Prisma.MemberWhereInput = {};
+
+    // Exclude deactivated members by default (same as members query)
+    where.isDeactivated = false;
+
     if (branchId) {
       where.branchId = branchId;
-    }
-    if (organisationId) {
+    } else if (organisationId) {
       where.organisationId = organisationId;
     }
+
+    if (hasMemberId === true) {
+      where.memberId = { not: null };
+    } else if (hasMemberId === false) {
+      where.memberId = null;
+    }
+
+    // Apply the same server-side filters as members query
+    if (gender && gender.length > 0) {
+      where.gender = { in: gender as any };
+    }
+
+    if (maritalStatus && maritalStatus.length > 0) {
+      where.maritalStatus = { in: maritalStatus as any };
+    }
+
+    if (membershipStatus && membershipStatus.length > 0) {
+      where.membershipStatus = { in: membershipStatus as any };
+    }
+
+    if (memberStatus && memberStatus.length > 0) {
+      where.status = { in: memberStatus as any };
+    }
+
+    // Age range filtering (same logic as members query)
+    if (minAge !== undefined || maxAge !== undefined) {
+      const now = new Date();
+      const conditions: Prisma.MemberWhereInput[] = [];
+
+      if (maxAge !== undefined) {
+        const minBirthDate = new Date(
+          now.getFullYear() - maxAge - 1,
+          now.getMonth(),
+          now.getDate(),
+        );
+        conditions.push({ dateOfBirth: { gte: minBirthDate } });
+      }
+
+      if (minAge !== undefined) {
+        const maxBirthDate = new Date(
+          now.getFullYear() - minAge,
+          now.getMonth(),
+          now.getDate(),
+        );
+        conditions.push({ dateOfBirth: { lte: maxBirthDate } });
+      }
+
+      if (conditions.length > 0) {
+        where.AND = conditions;
+      }
+    }
+
+    // Date range filtering
+    if (startDate || endDate) {
+      const dateConditions: any = {};
+      if (startDate) {
+        dateConditions.gte = new Date(startDate);
+      }
+      if (endDate) {
+        dateConditions.lte = new Date(endDate);
+      }
+      where.membershipDate = dateConditions;
+    }
+
+    if (hasProfileImage === true) {
+      where.profileImageUrl = { not: null };
+    } else if (hasProfileImage === false) {
+      where.profileImageUrl = null;
+    }
+
+    if (hasEmail === true) {
+      where.email = { not: null };
+    } else if (hasEmail === false) {
+      where.email = null;
+    }
+
+    if (hasPhone === true) {
+      where.phoneNumber = { not: null };
+    } else if (hasPhone === false) {
+      where.phoneNumber = null;
+    }
+
+    if (isRegularAttendee !== undefined) {
+      where.isRegularAttendee = isRegularAttendee;
+    }
+
+    // Apply search filtering if provided (same logic as members query)
+    if (search && search.trim().length > 0) {
+      const searchFilter: Prisma.MemberWhereInput = {
+        OR: [
+          {
+            firstName: {
+              contains: search,
+              mode: Prisma.QueryMode.insensitive,
+            },
+          },
+          {
+            lastName: {
+              contains: search,
+              mode: Prisma.QueryMode.insensitive,
+            },
+          },
+          {
+            email: {
+              contains: search,
+              mode: Prisma.QueryMode.insensitive,
+            },
+          },
+          {
+            phoneNumber: {
+              contains: search,
+            },
+          },
+          {
+            memberId: {
+              contains: search,
+              mode: Prisma.QueryMode.insensitive,
+            },
+          },
+        ],
+      };
+
+      where.AND = [
+        ...(Array.isArray(where.AND)
+          ? where.AND
+          : where.AND
+            ? [where.AND]
+            : []),
+        searchFilter,
+      ];
+    }
+
     return this.membersService.count(where);
   }
 

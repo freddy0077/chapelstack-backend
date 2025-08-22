@@ -10,6 +10,7 @@ import {
   SessionStatus,
 } from './dto/create-attendance-session.input';
 import { UpdateAttendanceSessionInput } from './dto/update-attendance-session.input';
+import { UpdateAttendanceRecordInput } from './dto/update-attendance-record.input';
 import { RecordAttendanceInput } from './dto/record-attendance.input';
 import { RecordBulkAttendanceInput } from './dto/record-bulk-attendance.input';
 import { CheckOutInput } from './dto/check-out.input';
@@ -80,6 +81,9 @@ export class AttendanceService {
 
     return await this.prisma.attendanceSession.findMany({
       where,
+      include: {
+        attendanceRecords: true,
+      },
       orderBy: {
         date: 'desc',
       },
@@ -696,5 +700,98 @@ export class AttendanceService {
     );
 
     return attendanceRecord;
+  }
+
+  async findAttendanceRecordById(id: string) {
+    const attendanceRecord = await this.prisma.attendanceRecord.findUnique({
+      where: { id },
+      include: {
+        member: true,
+        session: true,
+        event: true,
+        recordedBy: true,
+        branch: true,
+        organisation: true,
+      },
+    });
+
+    if (!attendanceRecord) {
+      throw new NotFoundException(`Attendance record with ID ${id} not found`);
+    }
+
+    return attendanceRecord;
+  }
+
+  async updateAttendanceRecord(id: string, data: UpdateAttendanceRecordInput) {
+    // First, verify the record exists
+    const existingRecord = await this.prisma.attendanceRecord.findUnique({
+      where: { id },
+    });
+
+    if (!existingRecord) {
+      throw new NotFoundException(`Attendance record with ID ${id} not found`);
+    }
+
+    // Update the record
+    const updatedRecord = await this.prisma.attendanceRecord.update({
+      where: { id },
+      data: {
+        ...(data.checkInTime && { checkInTime: data.checkInTime }),
+        ...(data.checkOutTime && { checkOutTime: data.checkOutTime }),
+        ...(data.checkInMethod && { checkInMethod: data.checkInMethod }),
+        ...(data.notes !== undefined && { notes: data.notes }),
+        ...(data.visitorName !== undefined && {
+          visitorName: data.visitorName,
+        }),
+        ...(data.visitorEmail !== undefined && {
+          visitorEmail: data.visitorEmail,
+        }),
+        ...(data.visitorPhone !== undefined && {
+          visitorPhone: data.visitorPhone,
+        }),
+        updatedAt: new Date(),
+      },
+      include: {
+        member: true,
+        session: true,
+        event: true,
+        recordedBy: true,
+        branch: true,
+        organisation: true,
+      },
+    });
+
+    return updatedRecord;
+  }
+
+  async deleteAttendanceRecord(id: string) {
+    // First, verify the record exists
+    const existingRecord = await this.prisma.attendanceRecord.findUnique({
+      where: { id },
+      include: {
+        member: true,
+        session: true,
+        event: true,
+      },
+    });
+
+    if (!existingRecord) {
+      throw new NotFoundException(`Attendance record with ID ${id} not found`);
+    }
+
+    // Delete the record
+    await this.prisma.attendanceRecord.delete({
+      where: { id },
+    });
+
+    return {
+      id,
+      success: true,
+      message: `Attendance record for ${
+        existingRecord.member
+          ? `${existingRecord.member.firstName} ${existingRecord.member.lastName}`
+          : existingRecord.visitorName || 'Unknown'
+      } has been deleted successfully`,
+    };
   }
 }

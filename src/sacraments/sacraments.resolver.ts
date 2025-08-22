@@ -1,4 +1,13 @@
-import { Resolver, Query, Mutation, Args, ID, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  ID,
+  Int,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
 import { SacramentsService } from './sacraments.service';
 import { SacramentalRecord } from './entities/sacramental-record.entity';
 import { CreateSacramentalRecordInput } from './dto/create-sacramental-record.input';
@@ -11,10 +20,23 @@ import { FileUpload, GraphQLUpload } from 'graphql-upload';
 import { createWriteStream } from 'fs';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  MarriageAnalytics,
+  MemberMarriageHistory,
+} from './dto/marriage-analytics.output';
+import {
+  MarriageAnalyticsInput,
+  MemberMarriageHistoryInput,
+} from './dto/marriage-analytics.input';
+import { Member } from '../members/entities/member.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Resolver(() => SacramentalRecord)
 export class SacramentsResolver {
-  constructor(private readonly sacramentsService: SacramentsService) {}
+  constructor(
+    private readonly sacramentsService: SacramentsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Query(() => [SacramentStatsOutput], { name: 'sacramentStats' })
   async sacramentStats(
@@ -185,6 +207,55 @@ export class SacramentsResolver {
         'Failed to upload certificate: ' +
           (err instanceof Error ? err.message : String(err)),
       );
+    }
+  }
+
+  @Query(() => MarriageAnalytics, { name: 'marriageAnalytics' })
+  async getMarriageAnalytics(
+    @Args('input') input: MarriageAnalyticsInput,
+  ): Promise<MarriageAnalytics> {
+    try {
+      const result = await this.sacramentsService.getMarriageAnalytics(input);
+      return result;
+    } catch (err) {
+      throw new Error(
+        'Failed to get marriage analytics: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
+  }
+
+  @Query(() => MemberMarriageHistory, {
+    name: 'memberMarriageHistory',
+    nullable: true,
+  })
+  async getMemberMarriageHistory(
+    @Args('input') input: MemberMarriageHistoryInput,
+  ): Promise<MemberMarriageHistory | null> {
+    try {
+      const result =
+        await this.sacramentsService.getMemberMarriageHistory(input);
+      return result;
+    } catch (err) {
+      throw new Error(
+        'Failed to get member marriage history: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
+  }
+
+  @ResolveField(() => Member, { nullable: true })
+  async member(
+    @Parent() sacramentalRecord: SacramentalRecord,
+  ): Promise<Member | null> {
+    try {
+      const member = await this.prisma.member.findUnique({
+        where: { id: sacramentalRecord.memberId },
+      });
+      return member as Member | null;
+    } catch (err) {
+      console.error('Failed to fetch member for sacramental record:', err);
+      return null;
     }
   }
 }

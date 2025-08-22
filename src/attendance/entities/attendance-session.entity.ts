@@ -1,5 +1,6 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { GraphQLISODateTime } from '@nestjs/graphql';
+import { AttendanceRecord } from './attendance-record.entity';
 
 @ObjectType()
 export class AttendanceSession {
@@ -47,4 +48,7 @@ export class AttendanceSession {
 
   @Field(() => GraphQLISODateTime)
   updatedAt: Date;
+
+  @Field(() => [AttendanceRecord], { nullable: true })
+  attendanceRecords?: AttendanceRecord[];
 }

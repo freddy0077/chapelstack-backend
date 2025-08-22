@@ -11,6 +11,7 @@ import { AttendanceReport } from './entities/attendance-report.entity';
 import { AbsenceAlertResult } from './entities/absence-alert.entity';
 import { CreateAttendanceSessionInput } from './dto/create-attendance-session.input';
 import { UpdateAttendanceSessionInput } from './dto/update-attendance-session.input';
+import { UpdateAttendanceRecordInput } from './dto/update-attendance-record.input';
 import { RecordAttendanceInput } from './dto/record-attendance.input';
 import { RecordBulkAttendanceInput } from './dto/record-bulk-attendance.input';
 import { CheckOutInput } from './dto/check-out.input';
@@ -60,6 +61,13 @@ export class AttendanceResolver {
     return this.attendanceService.findAttendanceSessionById(id);
   }
 
+  @Query(() => AttendanceRecord, { name: 'attendanceRecord' })
+  async findAttendanceRecordById(
+    @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
+  ) {
+    return this.attendanceService.findAttendanceRecordById(id);
+  }
+
   @Mutation(() => AttendanceSession)
   async updateAttendanceSession(
     @Args('input') updateAttendanceSessionInput: UpdateAttendanceSessionInput,
@@ -96,6 +104,25 @@ export class AttendanceResolver {
   @Mutation(() => AttendanceRecord)
   async checkOut(@Args('input') checkOutInput: CheckOutInput) {
     return this.attendanceService.checkOut(checkOutInput);
+  }
+
+  @Mutation(() => AttendanceRecord)
+  async updateAttendanceRecord(
+    @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
+    @Args('input') updateAttendanceRecordInput: UpdateAttendanceRecordInput,
+  ) {
+    return this.attendanceService.updateAttendanceRecord(
+      id,
+      updateAttendanceRecordInput,
+    );
+  }
+
+  @Mutation(() => Boolean)
+  async deleteAttendanceRecord(
+    @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
+  ) {
+    const result = await this.attendanceService.deleteAttendanceRecord(id);
+    return result.success;
   }
 
   @Query(() => [AttendanceRecord], { name: 'attendanceRecords' })

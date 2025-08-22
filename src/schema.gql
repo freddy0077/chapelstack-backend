@@ -52,6 +52,11 @@ type ActivitySummaryDto {
   totalActivities: Float!
 }
 
+input AddEventNotesInput {
+  eventId: ID!
+  postEventNotes: String!
+}
+
 type AgeDistribution {
   ageGroup: String!
   count: Float!
@@ -311,6 +316,7 @@ enum AttendanceReportType {
 }
 
 type AttendanceSession {
+  attendanceRecords: [AttendanceRecord!]
   branchId: String
   createdAt: DateTime!
   date: DateTime!
@@ -488,10 +494,29 @@ enum BackupType {
   SCHEDULED
 }
 
+type BalanceSheet {
+  asOfDate: DateTime!
+  assets: [FinancialLineItem!]!
+  branchId: String!
+  liabilities: [FinancialLineItem!]!
+  netAssets: [FinancialLineItem!]!
+  organisationId: String!
+  totalAssets: Float!
+  totalLiabilities: Float!
+  totalNetAssets: Float!
+}
+
 enum BirthdayRangeEnum {
   THIS_MONTH
   THIS_WEEK
   TODAY
+}
+
+enum BorderStyle {
+  CLASSIC
+  MODERN
+  ORNATE
+  SIMPLE
 }
 
 type Branch {
@@ -717,6 +742,55 @@ type Budget {
   totalSpent: Float!
 }
 
+type BudgetLineItem {
+  actualAmount: Float!
+  budgetedAmount: Float!
+  category: String!
+  description: String!
+  fundName: String
+  period: String
+  status: String!
+  variance: Float!
+  variancePercent: Float!
+}
+
+"""The period type for budget analysis"""
+enum BudgetPeriodType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+type BudgetSummary {
+  budgetUtilization: Float!
+  overallStatus: String!
+  totalActual: Float!
+  totalBudgeted: Float!
+  totalVariance: Float!
+  totalVariancePercent: Float!
+}
+
+type BudgetVsActual {
+  branchId: String
+  expenseItems: [BudgetLineItem!]!
+  generatedAt: DateTime!
+  notes: String
+  organisationId: String!
+  periodEnd: DateTime!
+  periodStart: DateTime!
+  periodType: BudgetPeriodType!
+  revenueItems: [BudgetLineItem!]!
+  summary: BudgetSummary!
+}
+
+input BudgetVsActualInput {
+  branchId: String
+  dateRange: DateRangeInput
+  fundId: String
+  organisationId: String!
+  periodType: BudgetPeriodType! = MONTHLY
+}
+
 input BulkAddToGroupInput {
   groupId: String!
   memberIds: [String!]!
@@ -729,6 +803,25 @@ input BulkAddToMinistryInput {
 
 input BulkAssignRfidInput {
   memberIds: [String!]!
+}
+
+type BulkCertificateGeneration {
+  batchId: ID!
+  certificates: [CertificateGeneration!]!
+  completedAt: DateTime
+  errors: [String!]!
+  failureCount: Float!
+  startedAt: DateTime!
+  successCount: Float!
+  totalRecords: Float!
+}
+
+input BulkCertificateGenerationInput {
+  format: CertificateFormat! = PDF
+  includeBranchLetterhead: Boolean
+  includeChurchLogo: Boolean
+  sacramentalRecordIds: [ID!]!
+  templateId: ID!
 }
 
 input BulkDeactivateInput {
@@ -778,6 +871,7 @@ input CardScanInput {
 
 type CareRequest {
   assignedPastorId: String
+  assistantId: String
   branchId: String
   completionDate: DateTime
   createdAt: DateTime!
@@ -838,11 +932,143 @@ enum CareRequestType {
   SPIRITUAL_GUIDANCE
 }
 
+type CashFlowAnalysis {
+  averageMonthlyExpenses: Float!
+  averageMonthlyIncome: Float!
+  branchId: String!
+  data: [CashFlowData!]!
+  organisationId: String!
+  periodEnd: DateTime!
+  periodStart: DateTime!
+  periodType: PeriodType!
+  totalExpenses: Float!
+  totalIncome: Float!
+  totalNetFlow: Float!
+}
+
+input CashFlowAnalysisInput {
+  branchId: String
+  dateRange: DateRangeInput!
+  fundId: String
+  organisationId: String!
+  periodType: PeriodType!
+}
+
+type CashFlowData {
+  cumulativeFlow: Float!
+  expenseBreakdown: JSON
+  expenses: Float!
+  income: Float!
+  incomeBreakdown: JSON
+  netFlow: Float!
+  period: String!
+}
+
+type CashFlowStatement {
+  beginningCashBalance: Float!
+  branchId: String!
+  endingCashBalance: Float!
+  financingActivities: [FinancialLineItem!]!
+  investingActivities: [FinancialLineItem!]!
+  netCashFromFinancing: Float!
+  netCashFromInvesting: Float!
+  netCashFromOperating: Float!
+  netChangeInCash: Float!
+  operatingActivities: [FinancialLineItem!]!
+  organisationId: String!
+  periodEnd: DateTime!
+  periodStart: DateTime!
+}
+
 type Category {
   createdAt: String!
   id: ID!
   name: String!
   updatedAt: String!
+}
+
+input CertificateFieldValue {
+  fieldId: String!
+  value: String!
+}
+
+enum CertificateFormat {
+  JPEG
+  PDF
+  PNG
+}
+
+type CertificateGeneration {
+  certificateNumber: String!
+  createdAt: DateTime!
+  downloadUrl: String
+  downloadedAt: DateTime
+  errorMessage: String
+  expiresAt: DateTime!
+  fileUrl: String
+  format: CertificateFormat!
+  generatedAt: DateTime!
+  generatedBy: String!
+  id: ID!
+  previewUrl: String
+  sacramentalRecordId: ID!
+  status: CertificateStatus!
+  templateId: ID!
+  updatedAt: DateTime!
+}
+
+type CertificateGenerationStats {
+  averageGenerationTime: Float!
+  completed: Float!
+  failed: Float!
+  monthlyGrowth: Float!
+  mostUsedTemplate: String!
+  pending: Float!
+  thisMonth: Float!
+  totalDownloads: Float!
+  totalGenerated: Float!
+}
+
+enum CertificateSacramentType {
+  ADULT_BAPTISM
+  ANOINTING_OF_THE_SICK
+  BAPTISM
+  BLESSING
+  CONFIRMATION
+  DEDICATION
+  EUCHARIST_FIRST_COMMUNION
+  IMMERSION_BAPTISM
+  INFANT_BAPTISM
+  MATRIMONY
+  MEMBERSHIP
+  ORDINATION
+  RECONCILIATION
+}
+
+enum CertificateStatus {
+  COMPLETED
+  DOWNLOADED
+  FAILED
+  GENERATING
+  PENDING
+}
+
+type CertificateTemplate {
+  createdAt: DateTime!
+  customFields: [TemplateField!]!
+  denomination: ChurchDenomination!
+  description: String!
+  id: ID!
+  isDefault: Boolean!
+  language: String!
+  liturgicalElements: [LiturgicalElement!]!
+  name: String!
+  previewUrl: String!
+  region: String
+  sacramentType: CertificateSacramentType!
+  styling: TemplateStyle!
+  templateUrl: String!
+  updatedAt: DateTime!
 }
 
 type ChartData {
@@ -963,6 +1189,26 @@ type ChildrenMinistryVolunteer {
   updatedAt: DateTime!
 }
 
+enum ChurchDenomination {
+  ADVENTIST
+  ANGLICAN
+  BAPTIST
+  CATHOLIC
+  CONGREGATIONAL
+  EPISCOPAL
+  EVANGELICAL
+  INTERDENOMINATIONAL
+  LUTHERAN
+  MENNONITE
+  METHODIST
+  NONDENOMINATIONAL
+  ORTHODOX
+  PENTECOSTAL
+  PRESBYTERIAN
+  QUAKER
+  REFORMED
+}
+
 type CommunicationChannelStats {
   channel: String!
   deliveryRate: Int!
@@ -1014,6 +1260,49 @@ input CommunicationStatsFilterInput {
   statuses: [String!]
 }
 
+type ComparativePeriodAnalysis {
+  averageExpenseGrowthRate: Float!
+  averageIncomeGrowthRate: Float!
+  averageNetGrowthRate: Float!
+  branchId: String!
+  comparisonType: ComparisonType!
+  data: [ComparativePeriodData!]!
+  insights: String
+  organisationId: String!
+  trend: String
+}
+
+input ComparativePeriodAnalysisInput {
+  branchId: String
+  comparisonType: ComparisonType!
+  fundId: String
+  organisationId: String!
+  periods: Int! = 12
+}
+
+type ComparativePeriodData {
+  currentExpenses: Float!
+  currentIncome: Float!
+  currentNet: Float!
+  expenseGrowthRate: Float!
+  expenseVariance: Float!
+  incomeGrowthRate: Float!
+  incomeVariance: Float!
+  netGrowthRate: Float!
+  netVariance: Float!
+  period: String!
+  previousExpenses: Float!
+  previousIncome: Float!
+  previousNet: Float!
+}
+
+"""Comparison type for period analysis"""
+enum ComparisonType {
+  MONTH_OVER_MONTH
+  QUARTER_OVER_QUARTER
+  YEAR_OVER_YEAR
+}
+
 input CompleteOnboardingStepInput {
   address: String
   branchId: ID!
@@ -1056,6 +1345,15 @@ type Contribution {
   pledgeId: String
 }
 
+type ContributionDetail {
+  amount: Float!
+  date: DateTime!
+  description: String
+  fundName: String
+  id: String!
+  reference: String
+}
+
 type ContributionType {
   branchId: String
   description: String
@@ -1063,6 +1361,36 @@ type ContributionType {
   isActive: Boolean!
   name: String!
   organisationId: String
+}
+
+type ContributionTypeFundMapping {
+  branchId: String
+  contributionType: ContributionTypeInfo
+  contributionTypeId: String!
+  createdAt: String!
+  createdBy: String
+  fund: FundInfo
+  fundId: String!
+  id: ID!
+  isActive: Boolean!
+  organisationId: String
+  updatedAt: String!
+  updatedBy: String
+}
+
+input ContributionTypeFundMappingFilterInput {
+  branchId: String
+  contributionTypeId: String
+  fundId: String
+  isActive: Boolean
+  organisationId: String
+}
+
+type ContributionTypeInfo {
+  description: String
+  id: ID!
+  isActive: Boolean!
+  name: String!
 }
 
 type CounselingSession {
@@ -1214,6 +1542,7 @@ input CreateBudgetInput {
 
 input CreateCareRequestInput {
   assignedPastorId: String
+  assistantId: String
   branchId: String
   description: String!
   memberId: String!
@@ -1274,6 +1603,14 @@ input CreateContributionInput {
   organisationId: String
   paymentMethodId: String!
   pledgeId: String
+}
+
+input CreateContributionTypeFundMappingInput {
+  branchId: String
+  contributionTypeId: String!
+  fundId: String!
+  isActive: Boolean
+  organisationId: String
 }
 
 input CreateCounselingSessionInput {
@@ -1594,6 +1931,7 @@ input CreateMemberInput {
   fatherOccupation: String
   firstName: String!
   gender: Gender! = NOT_SPECIFIED
+  groupIds: [String!]
   headOfHousehold: Boolean! = false
   isRegularAttendee: Boolean! = false
   landmark: String
@@ -1622,6 +1960,7 @@ input CreateMemberInput {
   region: String
   rfidCardId: String
   salvationDate: DateTime
+  specialGifts: String
   spouseId: String
   state: String
   status: MemberStatus! = ACTIVE
@@ -1775,12 +2114,14 @@ input CreateRoleWithPermissionsInput {
 
 input CreateSacramentalRecordInput {
   branchId: String!
+  brideMemberId: String
   brideName: String
   certificateNumber: String
   certificateUrl: String
   dateOfSacrament: DateTime!
   godparent1Name: String
   godparent2Name: String
+  groomMemberId: String
   groomName: String
   locationOfSacrament: String!
   memberId: String!
@@ -1790,7 +2131,9 @@ input CreateSacramentalRecordInput {
   organisationId: String
   sacramentType: SacramentType!
   sponsorName: String
+  witness1MemberId: String
   witness1Name: String
+  witness2MemberId: String
   witness2Name: String
 }
 
@@ -2036,8 +2379,8 @@ type DatabaseHealth {
 }
 
 input DateRangeInput {
-  endDate: DateTime
-  startDate: DateTime
+  endDate: DateTime!
+  startDate: DateTime!
 }
 
 """
@@ -2170,6 +2513,10 @@ type Event {
   organizerEmail: String
   organizerName: String
   organizerPhone: String
+  postEventNotes: String
+  postEventNotesAuthor: User
+  postEventNotesBy: String
+  postEventNotesDate: DateTime
   registrationDeadline: DateTime
   registrationRequired: Boolean!
   requiresApproval: Boolean!
@@ -2380,6 +2727,18 @@ enum FamilyRelationshipType {
   SPOUSE
 }
 
+type FieldPosition {
+  x: Float!
+  y: Float!
+}
+
+type FieldStyle {
+  alignment: TextAlignment!
+  color: String!
+  fontSize: Float!
+  fontWeight: FontWeight!
+}
+
 input FileUploadInput {
   branchId: String!
   contentType: String!
@@ -2416,6 +2775,16 @@ type FinanceStatsDto {
   totalExpenses: Float!
 }
 
+type FinancialLineItem {
+  category: String!
+  currentPeriod: Float!
+  description: String!
+  previousPeriod: Float
+  subItems: [FinancialLineItem!]
+  variance: Float
+  variancePercent: Float
+}
+
 type FinancialOverview {
   donation: Float!
   expenses: Float!
@@ -2425,6 +2794,29 @@ type FinancialOverview {
   tithes: Float!
   topGivingBranches: [TopGivingBranch!]!
   totalContributions: Float!
+}
+
+type FinancialStatements {
+  balanceSheet: BalanceSheet
+  branchId: String!
+  cashFlowStatement: CashFlowStatement
+  generatedAt: DateTime!
+  incomeStatement: IncomeStatement
+  notes: String
+  organisationId: String!
+  periodEnd: DateTime!
+  periodStart: DateTime!
+  statementOfNetAssets: StatementOfNetAssets
+  statementType: StatementType!
+}
+
+input FinancialStatementsInput {
+  branchId: String
+  dateRange: DateRangeInput
+  fundId: String
+  includeComparative: Boolean! = false
+  organisationId: String!
+  statementType: StatementType!
 }
 
 type FirstTimeVisitorsStat {
@@ -2476,6 +2868,12 @@ enum FollowUpType {
   EVENT_FOLLOW_UP
   MEMBER_CONTACT
   PASTORAL_VISIT
+}
+
+enum FontWeight {
+  BOLD
+  LIGHT
+  NORMAL
 }
 
 input ForgotPasswordInput {
@@ -2607,6 +3005,30 @@ type Fund {
   status: String!
 }
 
+type FundGiving {
+  contributionCount: Int!
+  fundId: String!
+  fundName: String!
+  percentage: Float!
+  totalAmount: Float!
+}
+
+type FundInfo {
+  description: String
+  id: ID!
+  isActive: Boolean!
+  name: String!
+}
+
+type FundMappingConfiguration {
+  availableContributionTypes: [ContributionTypeInfo!]!
+  availableFunds: [FundInfo!]!
+  branchId: String!
+  lastUpdated: String!
+  mappings: [ContributionTypeFundMapping!]!
+  organisationId: String!
+}
+
 """Gender options for members"""
 enum Gender {
   FEMALE
@@ -2624,9 +3046,25 @@ type GenderDistribution {
   otherPercentage: Float!
 }
 
+input GenerateCertificateInput {
+  customMessage: String
+  fieldValues: [CertificateFieldValue!]!
+  format: CertificateFormat! = PDF
+  includeBranchLetterhead: Boolean
+  includeChurchLogo: Boolean
+  sacramentalRecordId: ID!
+  templateId: ID!
+}
+
 input GenerateQRTokenInput {
   expiresInMinutes: Float = 60
   sessionId: ID!
+}
+
+type GivingTrend {
+  changePercent: Float!
+  consistency: Float!
+  direction: TrendDirection!
 }
 
 type GroupItem {
@@ -2701,6 +3139,21 @@ type ImportResult {
   message: String
   success: Boolean!
   totalRecords: Float!
+}
+
+type IncomeStatement {
+  branchId: String!
+  expenses: [FinancialLineItem!]!
+  netIncome: Float!
+  organisationId: String!
+  periodEnd: DateTime!
+  periodStart: DateTime!
+  previousNetIncome: Float
+  previousTotalExpenses: Float
+  previousTotalRevenue: Float
+  revenue: [FinancialLineItem!]!
+  totalExpenses: Float!
+  totalRevenue: Float!
 }
 
 input InitialBranchSetupInput {
@@ -2779,6 +3232,34 @@ enum LicenseType {
   STANDARD
 }
 
+type LiturgicalElement {
+  content: String!
+  optional: Boolean!
+  position: LiturgicalElementPosition!
+  type: LiturgicalElementType!
+}
+
+enum LiturgicalElementPosition {
+  BODY
+  FOOTER
+  HEADER
+}
+
+enum LiturgicalElementType {
+  BLESSING
+  CREED
+  HYMN
+  PRAYER
+  SCRIPTURE
+}
+
+enum LogoPosition {
+  BOTTOM_CENTER
+  TOP_CENTER
+  TOP_LEFT
+  TOP_RIGHT
+}
+
 """Marital status options"""
 enum MaritalStatus {
   DIVORCED
@@ -2788,6 +3269,27 @@ enum MaritalStatus {
   SINGLE
   UNKNOWN
   WIDOWED
+}
+
+type MarriageAnalytics {
+  averageAge: Float!
+  externalMarriages: Int!
+  growthPercentage: Float!
+  lastYearMarriages: Int!
+  memberMarriages: Int!
+  mixedMarriages: Int!
+  monthlyTrends: [MonthlyMarriageData!]!
+  thisYearMarriages: Int!
+  topOfficiants: [OfficiantStats!]!
+  totalMarriages: Int!
+  upcomingAnniversaries: Int!
+}
+
+input MarriageAnalyticsInput {
+  branchId: ID!
+  endDate: String
+  organisationId: ID
+  startDate: String
 }
 
 type MediaItem {
@@ -2899,6 +3401,7 @@ type Member {
   rfidCardId: String
   sacramentalRecords: [JSON!]
   salvationDate: DateTime
+  specialGifts: String
   spouse: Member
   spouseId: String
   state: String
@@ -2976,6 +3479,53 @@ type MemberGeographic {
   memberCount: Int!
   percentage: Float!
   primaryGender: String
+}
+
+type MemberGivingAnalysis {
+  averageGift: Float!
+  contributionCount: Int!
+  firstGift: DateTime
+  fundBreakdown: [FundGiving!]!
+  givingRank: Int!
+  givingTrend: GivingTrend!
+  lastGift: DateTime
+  memberEmail: String
+  memberId: String!
+  memberName: String!
+  monthlyBreakdown: [MonthlyGiving!]!
+  percentileRank: Float!
+  periodEnd: DateTime!
+  periodStart: DateTime!
+  recentContributions: [ContributionDetail!]!
+  totalGiving: Float!
+  yearOverYearChange: Float!
+}
+
+input MemberGivingAnalysisInput {
+  branchId: String
+  dateRange: DateRangeInput!
+  includeRecentContributions: Boolean! = true
+  memberId: String!
+  organisationId: String!
+  recentContributionsLimit: Int! = 10
+}
+
+type MemberMarriageHistory {
+  certificateUrl: String
+  marriageDate: DateTime!
+  marriageLocation: String!
+  memberId: String!
+  memberName: String!
+  nextAnniversary: DateTime!
+  officiantName: String!
+  spouseMemberId: String
+  spouseName: String!
+  yearsMarried: Float!
+}
+
+input MemberMarriageHistoryInput {
+  branchId: ID
+  memberId: ID!
 }
 
 type MemberMembershipStatusDistribution {
@@ -3288,7 +3838,23 @@ type MinistryMember {
   role: String
 }
 
+type MonthlyGiving {
+  amount: Float!
+  averageGift: Float!
+  contributionCount: Int!
+  month: String!
+}
+
+type MonthlyMarriageData {
+  count: Int!
+  externalMarriages: Int!
+  memberMarriages: Int!
+  mixedMarriages: Int!
+  month: String!
+}
+
 type Mutation {
+  addEventNotes(addEventNotesInput: AddEventNotesInput!): Event!
   addFamilyConnection(familyId: String!, memberId: String!, relatedMemberId: String!, relationship: String!): Family!
   addMemberToBranch(branchId: String!, memberId: String!): Member!
   addMemberToFamily(familyId: String!, memberId: String!): Family!
@@ -3310,6 +3876,7 @@ type Mutation {
   bulkAssignRfidCards(bulkAssignRfidInput: BulkAssignRfidInput!): Boolean!
   bulkDeactivateMembers(bulkDeactivateInput: BulkDeactivateInput!): Boolean!
   bulkExportMembers(bulkExportInput: BulkExportInput!): String!
+  bulkGenerateCertificates(input: BulkCertificateGenerationInput!): BulkCertificateGeneration!
   bulkRemoveFromGroup(bulkRemoveFromGroupInput: BulkRemoveFromGroupInput!): Boolean!
   bulkRemoveFromMinistry(bulkRemoveFromMinistryInput: BulkRemoveFromMinistryInput!): Boolean!
   bulkTransferMembers(bulkTransferInput: BulkTransferInput!): Boolean!
@@ -3338,10 +3905,12 @@ type Mutation {
   createChildrenEvent(input: CreateChildrenEventInput!): ChildrenEvent!
   createChildrenMinistryVolunteer(input: CreateVolunteerInput!): ChildrenMinistryVolunteer!
   createContribution(createContributionInput: CreateContributionInput!): Contribution!
+  createContributionTypeFundMapping(input: CreateContributionTypeFundMappingInput!): ContributionTypeFundMapping!
   createCounselingSession(input: CreateCounselingSessionInput!): CounselingSession!
   createDataExport(input: CreateDataExportInput!): DataOperation!
   createDataImport(input: CreateDataImportInput!): DataOperation!
   createDeathRegister(input: CreateDeathRegisterInput!): DeathRegister!
+  createDefaultFundMappings(branchId: ID!, organisationId: ID!): [ContributionTypeFundMapping!]!
   createEmailTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
   createEvent(createEventInput: CreateEventInput!): Event!
   createEventRSVP(createEventRSVPInput: CreateEventRSVPInput!): EventRSVP!
@@ -3392,9 +3961,11 @@ type Mutation {
   createVendor(createVendorInput: CreateVendorInput!): Vendor!
   createWorkflowTemplate(branchId: String, input: CreateWorkflowTemplateInput!, organisationId: String!): WorkflowTemplate!
   deleteAnnouncement(id: ID!): Announcement!
+  deleteAttendanceRecord(id: ID!): Boolean!
   deleteAttendanceSession(id: ID!): AttendanceSession!
   deleteCareRequest(id: String!): Boolean!
   deleteCategory(id: ID!): Category!
+  deleteContributionTypeFundMapping(id: ID!): ContributionTypeFundMapping!
   deleteCounselingSession(id: String!): Boolean!
   deleteEmailTemplate(id: ID!): Boolean!
   deleteFile(id: String!): Boolean!
@@ -3416,6 +3987,7 @@ type Mutation {
   enableOrganization(id: String!): OrganizationWithSubscription!
   forgotPassword(input: ForgotPasswordInput!): SuccessMessage!
   generateAbsenceAlerts(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
+  generateCertificate(input: GenerateCertificateInput!): CertificateGeneration!
   generateQRToken(input: GenerateQRTokenInput!): QRCodeToken!
   getPresignedUploadUrl(input: FileUploadInput!): FileUploadResponse!
   importFinancialData(branchId: ID!, file: Upload!, mapping: String!, type: String!): ImportResult!
@@ -3489,6 +4061,7 @@ type Mutation {
   triggerWorkflow(input: TriggerWorkflowInput!): WorkflowExecution!
   update(updateSermonInput: UpdateSermonInput!): Sermon!
   updateAnnouncement(id: ID!, input: UpdateAnnouncementInput!): Announcement!
+  updateAttendanceRecord(id: ID!, input: UpdateAttendanceRecordInput!): AttendanceRecord!
   updateAttendanceSession(input: UpdateAttendanceSessionInput!): AttendanceSession!
   updateBranch(id: ID!, updateBranchInput: UpdateBranchInput!): Branch!
   updateBranchSettings(branchId: ID!, input: UpdateBranchSettingsInput!): BranchSettings!
@@ -3500,6 +4073,7 @@ type Mutation {
   updateChildrenMinistryVolunteer(input: UpdateVolunteerInput!): ChildrenMinistryVolunteer!
   updateCommunicationPrefs(memberId: String!, prefsData: String!): Boolean!
   updateContribution(updateContributionInput: UpdateContributionInput!): Contribution!
+  updateContributionTypeFundMapping(input: UpdateContributionTypeFundMappingInput!): ContributionTypeFundMapping!
   updateCounselingSession(input: UpdateCounselingSessionInput!): CounselingSession!
   updateDeathRegister(input: UpdateDeathRegisterInput!): DeathRegister!
   updateEmailTemplate(id: ID!, input: UpdateEmailTemplateInput!): EmailTemplateDto!
@@ -3607,6 +4181,13 @@ type NotificationsWidget {
   notifications: [NotificationItem!]!
   title: String!
   widgetType: WidgetType!
+}
+
+type OfficiantStats {
+  marriageCount: Int!
+  memberOfficiant: Boolean
+  officiantId: String!
+  officiantName: String!
 }
 
 type OnboardingProgress {
@@ -3752,6 +4333,11 @@ type PaginatedBranches {
   totalCount: Int!
 }
 
+type PaginatedContributionTypeFundMappings {
+  mappings: [ContributionTypeFundMapping!]!
+  total: Float!
+}
+
 type PaginatedTransaction {
   hasNextPage: Boolean!
   items: [Transaction!]
@@ -3762,6 +4348,13 @@ type PaginatedTransaction {
 type PaginatedTransferRequests {
   hasNextPage: Boolean!
   items: [TransferRequest!]!
+  totalCount: Int!
+}
+
+type PaginatedUserResponse {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  items: [User!]!
   totalCount: Int!
 }
 
@@ -3909,6 +4502,13 @@ enum PaymentStatus {
   SUCCESSFUL
 }
 
+"""Period type for cash flow analysis"""
+enum PeriodType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
 type Permission {
   action: String!
   createdAt: DateTime!
@@ -4007,6 +4607,7 @@ type Query {
   allMessages(filter: AllMessagesFilterInput): [MessageUnion!]!
   announcements(branchId: ID): [Announcement!]!
   assigneeFollowUpReminders(assignedToId: String!, status: String): [FollowUpReminder!]!
+  attendanceRecord(id: ID!): AttendanceRecord!
   attendanceRecords(filter: AttendanceFilterInput, sessionId: ID): [AttendanceRecord!]!
   attendanceSession(id: ID!): AttendanceSession!
   attendanceSessions(branchId: ID, organisationId: ID): [AttendanceSession!]!
@@ -4024,12 +4625,18 @@ type Query {
   branchUsers(branchId: String!): [User!]!
   branches(filterInput: BranchFilterInput, paginationInput: PaginationInput): PaginatedBranches!
   budget(id: String!): Budget!
+  budgetVsActual(input: BudgetVsActualInput!): BudgetVsActual!
   budgets(organisationId: String): [Budget!]!
   careRequest(id: String!): CareRequest!
   careRequests(filter: CareRequestFilterInput!, skip: Int! = 0, take: Int! = 50): [CareRequest!]!
   careRequestsCount(filter: CareRequestFilterInput!): Int!
+  cashFlowAnalysis(input: CashFlowAnalysisInput!): CashFlowAnalysis!
   categories: [Category!]!
   category(id: ID!): Category
+  certificateGenerationStats(branchId: ID): CertificateGenerationStats!
+  certificateTemplate(id: ID!): CertificateTemplate!
+  certificateTemplatePreview(sacramentalRecordId: ID!, templateId: ID!): String!
+  certificateTemplates(denomination: ChurchDenomination, sacramentType: CertificateSacramentType): [CertificateTemplate!]!
   checkInHistory(branchId: String!, childId: String, dateFrom: DateTime, dateTo: DateTime, eventId: String): [CheckInRecord!]!
   checkInStats(branchId: String!, dateFrom: DateTime, dateTo: DateTime): CheckInStatsOutput!
   child(id: ID!): Child!
@@ -4041,7 +4648,9 @@ type Query {
   childrenMinistryVolunteers(branchId: String, trainingCompleted: Boolean): [ChildrenMinistryVolunteer!]!
   communicationChannelStats(filter: CommunicationStatsFilterInput): [CommunicationChannelStats!]!
   communicationStats(filter: CommunicationStatsFilterInput): CommunicationStatsEntity!
+  comparativePeriodAnalysis(input: ComparativePeriodAnalysisInput!): ComparativePeriodAnalysis!
   contribution(id: String!): Contribution!
+  contributionTypeFundMappings(filter: ContributionTypeFundMappingFilterInput!): PaginatedContributionTypeFundMappings!
   contributionTypes: [ContributionType!]!
   contributions(organisationId: String): [Contribution!]!
   counselingSession(id: String!): CounselingSession!
@@ -4055,6 +4664,7 @@ type Query {
   deathRegisterByMember(memberId: ID!): DeathRegister
   deathRegisterStats(branchId: ID, organisationId: ID): DeathRegisterStats!
   deathRegisters(filter: DeathRegisterFilterInput): [DeathRegister!]!
+  defaultCertificateTemplate(denomination: ChurchDenomination!, sacramentType: CertificateSacramentType!): CertificateTemplate!
   dueTodayFollowUpReminders: [FollowUpReminder!]!
   emailById(id: ID!): EmailMessageDto!
   emails(branchId: ID, organisationId: ID): [EmailMessageDto!]!
@@ -4063,13 +4673,13 @@ type Query {
   eventAttendanceRecords(eventId: ID!, filter: AttendanceFilterInput): [AttendanceRecord!]!
   eventRSVPs(filter: EventRSVPFilterInput!, skip: Float, take: Float): [EventRSVP!]!
   eventRegistrations(filter: EventRegistrationFilterInput!, skip: Float, take: Float): [EventRegistration!]!
-  events(branchId: ID, organisationId: ID): [Event!]!
+  events(branchId: String, organisationId: String): [Event!]!
   expense(id: String!): Expense!
   expenseCategories(organisationId: String): [ExpenseCategory!]!
   expenseCategory(id: String!): ExpenseCategory!
   expenses(organisationId: String): [Expense!]!
   exportFormSubmissions(formId: String!): JSON!
-  exportTransactions(branchId: String, dateRange: DateRangeInput, eventId: String, exportFormat: String!, fundId: String, organisationId: String, searchTerm: String, type: TransactionType): String!
+  exportTransactions(branchId: String, dateRange: DateRangeInput, eventId: String, format: String! = "csv", fundId: String, organisationId: String!, type: TransactionType): String!
   families(skip: Int = 0, take: Int = 10): [Family!]!
   familiesCount: Int!
   family(id: String!): Family!
@@ -4078,6 +4688,7 @@ type Query {
   familyRelationshipsByMember(memberId: String!): [FamilyRelationship!]!
   familyRelationshipsCount: Int!
   filteredMembers(filter: MemberFilterInput): [Member!]!
+  financialStatements(input: FinancialStatementsInput!): FinancialStatements!
   findAbsentMembers(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
   findByMember(memberId: ID!): Speaker
   findByType(branchId: String, type: String!): [MediaItem!]!
@@ -4093,6 +4704,8 @@ type Query {
   formSubmissions(filter: SubmissionFilterInput!): [FormSubmission!]!
   forms(filter: FormFilterInput): [Form!]!
   fund(id: String!): Fund!
+  fundBalance(fundId: String!, organisationId: String!): Float!
+  fundMappingConfiguration(branchId: ID!, organisationId: ID!): FundMappingConfiguration!
   funds(branchId: String, organisationId: String!): [Fund!]!
   generateAttendanceReport(generatedBy: String! = "system", input: AttendanceReportInput!): AttendanceReport!
   generateFundsImportTemplate: String!
@@ -4101,6 +4714,8 @@ type Query {
   generateMemberReport(input: MemberReportInput!): MemberReport!
   generateReport(input: ReportRequestInput!): ReportOutput!
   getActiveSeries(branchId: String): [Series!]!
+  getFundForContributionType(branchId: ID!, contributionTypeId: ID!, organisationId: ID!): String
+  getFundForContributionTypeName(branchId: ID!, contributionTypeName: String!, organisationId: ID!): String
   getSubscriptions(filter: SubscriptionFilterInput): [Subscription!]!
   groupMember(id: ID!): GroupMember!
   groupMembers(filters: GroupMemberFilterInput): [GroupMember!]!
@@ -4110,6 +4725,7 @@ type Query {
   license(id: ID!): License!
   licenseByKey(key: String!): License!
   licenses(filter: LicenseFilterInput): [License!]!
+  marriageAnalytics(input: MarriageAnalyticsInput!): MarriageAnalytics!
   me: UserProfile!
   mediaItem(id: ID!): MediaItem!
   mediaItems(branchId: String, type: String): [MediaItem!]!
@@ -4119,11 +4735,13 @@ type Query {
   memberCounselingSessions(includeConfidential: Boolean! = false, memberId: String!): [CounselingSession!]!
   memberDashboard(memberId: String!): MemberDashboard!
   memberDemographicsReport(branchId: ID, dateRange: DateRangeInput, organisationId: ID): MemberDemographicsData!
+  memberGivingAnalysis(input: MemberGivingAnalysisInput!): MemberGivingAnalysis!
+  memberMarriageHistory(input: MemberMarriageHistoryInput!): MemberMarriageHistory
   memberPastoralHistory(memberId: String!): MemberPastoralHistory!
   memberSearch(query: String!): [Member!]!
   memberStatistics(branchId: String, organisationId: String): MemberStatistics!
   members(branchId: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, isRegularAttendee: Boolean, joinedAfter: String, joinedBefore: String, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], minAge: Int, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
-  membersCount(branchId: String, organisationId: String): Int!
+  membersCount(branchId: String, endDate: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, isRegularAttendee: Boolean, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], membershipType: [String!], minAge: Int, organisationId: String, search: String, startDate: String): Int!
   memorialCalendar(branchId: ID, organisationId: ID, year: Int!): [MemorialDate!]!
   messagePerformanceMetrics(filter: CommunicationStatsFilterInput): MessagePerformanceEntity!
   ministries(filters: MinistryFilterInput): [Ministry!]!
@@ -4156,15 +4774,21 @@ type Query {
   prayerRequest(id: ID!): PrayerRequest!
   prayerRequests(branchId: String, organisationId: String, status: PrayerRequestStatusEnum): [PrayerRequest!]!
   publicForm(slug: String!): Form!
+  recentCertificates(branchId: ID, limit: Float! = 10): [RecentCertificate!]!
   recipientFilterCounts(input: RecipientCountInput!): [RecipientCountResult!]!
   recipientGroupStats(filter: CommunicationStatsFilterInput): [RecipientGroupStats!]!
   recipientGroups: [RecipientGroup!]!
+  recommendedCertificateTemplates(branchId: ID!, limit: Float = 5, sacramentType: CertificateSacramentType): [CertificateTemplate!]!
   sacramentStats(branchId: ID, period: String): [SacramentStatsOutput!]!
   sacramentalRecord(id: ID!): SacramentalRecord!
   sacramentalRecords(filter: SacramentalRecordFilterInput): [SacramentalRecord!]!
   sacramentsByMember(memberId: ID!): [SacramentalRecord!]!
   search(branchId: String, query: String!, type: String): [MediaItem!]!
+  searchCertificateTemplates(denomination: ChurchDenomination, sacramentType: CertificateSacramentType, searchTerm: String!): [CertificateTemplate!]!
   searchMembers(ageGroup: String, branchId: String, gender: String, membershipStatus: String, query: String!, skip: Int! = 0, take: Int! = 20): [Member!]!
+  searchPastoralStaff(branchId: ID, organisationId: ID!, pagination: PaginationInput, search: String): PaginatedUserResponse!
+  searchPastors(branchId: ID, organisationId: ID!, pagination: PaginationInput, search: String): PaginatedUserResponse!
+  searchUsersByRole(filter: UserRoleFilterInput!, pagination: PaginationInput): PaginatedUserResponse!
   series(branchId: String): [Series!]!
   seriesById(id: ID!): Series!
   sermons(branchId: String, seriesId: String, speakerId: String, status: String): [Sermon!]!
@@ -4186,9 +4810,14 @@ type Query {
   subscriptionPlan(id: ID!): SubscriptionPlan!
   subscriptionPlans(filter: PlanFilterInput): [SubscriptionPlan!]!
   superAdminDashboardData(organisationId: ID): SuperAdminDashboardData!
+  supportedCertificateSacramentTypes: [CertificateSacramentType!]!
+  supportedDenominations: [ChurchDenomination!]!
   systemHealth: SystemHealth!
   template(id: ID!): EmailTemplateDto!
   templates(branchId: ID, organisationId: ID): [EmailTemplateDto!]!
+  totalCertificateTemplates(denomination: ChurchDenomination): Float!
+  totalSupportedDenominations: Float!
+  totalSupportedSacramentTypes: Float!
   transaction(id: ID!): Transaction!
   transactionStats(branchId: String, contributionTypeId: String, dateRange: DateRangeInput, eventId: String, fundId: String, organisationId: String): TransactionStats!
   transactions(branchId: String, dateRange: DateRangeInput, eventId: String, fundId: String, organisationId: String, paginationInput: PaginationInput, type: TransactionType, userId: String): PaginatedTransaction!
@@ -4231,6 +4860,17 @@ enum RSVPStatus {
   MAYBE
   NOT_ATTENDING
   PENDING
+}
+
+type RecentCertificate {
+  certificateNumber: String!
+  downloadUrl: String
+  generatedAt: DateTime!
+  id: ID!
+  memberName: String!
+  sacramentType: String!
+  status: CertificateStatus!
+  templateName: String!
 }
 
 type RecentContributionDto {
@@ -4459,6 +5099,7 @@ enum SacramentType {
 
 type SacramentalRecord {
   branchId: String!
+  brideMemberId: String
   brideName: String
   certificateNumber: String
   certificateUrl: String
@@ -4466,9 +5107,11 @@ type SacramentalRecord {
   dateOfSacrament: DateTime!
   godparent1Name: String
   godparent2Name: String
+  groomMemberId: String
   groomName: String
   id: ID!
   locationOfSacrament: String!
+  member: Member
   memberId: String!
   notes: String
   officiantId: String
@@ -4477,7 +5120,9 @@ type SacramentalRecord {
   sacramentType: SacramentType!
   sponsorName: String
   updatedAt: DateTime!
+  witness1MemberId: String
   witness1Name: String
+  witness2MemberId: String
   witness2Name: String
 }
 
@@ -4661,6 +5306,28 @@ type SpiritualMilestone {
   performedBy: String
   type: MilestoneType!
   updatedAt: DateTime!
+}
+
+type StatementOfNetAssets {
+  branchId: String!
+  organisationId: String!
+  periodEnd: DateTime!
+  periodStart: DateTime!
+  permanentlyRestricted: [FinancialLineItem!]!
+  temporarilyRestricted: [FinancialLineItem!]!
+  totalNetAssets: Float!
+  totalPermanentlyRestricted: Float!
+  totalTemporarilyRestricted: Float!
+  totalUnrestricted: Float!
+  unrestricted: [FinancialLineItem!]!
+}
+
+"""Type of financial statement"""
+enum StatementType {
+  BALANCE_SHEET
+  CASH_FLOW_STATEMENT
+  INCOME_STATEMENT
+  STATEMENT_OF_NET_ASSETS
 }
 
 input SubmissionFilterInput {
@@ -4868,6 +5535,42 @@ type TasksWidget {
   widgetType: WidgetType!
 }
 
+type TemplateField {
+  defaultValue: String
+  id: ID!
+  label: String!
+  position: FieldPosition!
+  required: Boolean!
+  styling: FieldStyle!
+  type: TemplateFieldType!
+}
+
+enum TemplateFieldType {
+  DATE
+  IMAGE
+  SEAL
+  SIGNATURE
+  TEXT
+}
+
+type TemplateStyle {
+  accentColor: String!
+  backgroundPattern: String
+  bodyFont: String!
+  borderStyle: BorderStyle!
+  fontFamily: String!
+  headerFont: String!
+  logoPosition: LogoPosition!
+  primaryColor: String!
+  secondaryColor: String!
+}
+
+enum TextAlignment {
+  CENTER
+  LEFT
+  RIGHT
+}
+
 type TokenPayloadDto {
   accessToken: String!
   refreshToken: String!
@@ -4913,6 +5616,7 @@ type TransactionStats {
   totalTithes: Float!
 }
 
+"""The type of transaction"""
 enum TransactionType {
   CONTRIBUTION
   EXPENSE
@@ -4963,6 +5667,13 @@ enum TransferStatus {
   REJECTED
 }
 
+"""Direction of giving trend"""
+enum TrendDirection {
+  DECREASING
+  INCREASING
+  STABLE
+}
+
 input TriggerWorkflowInput {
   targetData: String
   targetEventId: String
@@ -4990,6 +5701,16 @@ input UpdateAnnouncementInput {
   targetBranchIds: [ID!]
   targetRoleIds: [ID!]
   title: String
+}
+
+input UpdateAttendanceRecordInput {
+  checkInMethod: String
+  checkInTime: DateTime
+  checkOutTime: DateTime
+  notes: String
+  visitorEmail: String
+  visitorName: String
+  visitorPhone: String
 }
 
 input UpdateAttendanceSessionInput {
@@ -5056,6 +5777,7 @@ input UpdateBudgetInput {
 
 input UpdateCareRequestInput {
   assignedPastorId: String
+  assistantId: String
   completionDate: String
   description: String
   id: String!
@@ -5112,6 +5834,12 @@ input UpdateContributionInput {
   organisationId: String
   paymentMethodId: String
   pledgeId: String
+}
+
+input UpdateContributionTypeFundMappingInput {
+  fundId: String
+  id: ID!
+  isActive: Boolean
 }
 
 input UpdateCounselingSessionInput {
@@ -5409,6 +6137,7 @@ input UpdateMemberInput {
   fatherOccupation: String
   firstName: String
   gender: Gender = NOT_SPECIFIED
+  groupIds: [String!]
   headOfHousehold: Boolean = false
   id: ID!
   isRegularAttendee: Boolean = false
@@ -5438,6 +6167,7 @@ input UpdateMemberInput {
   region: String
   rfidCardId: String
   salvationDate: DateTime
+  specialGifts: String
   spouseId: String
   state: String
   status: MemberStatus = ACTIVE
@@ -5558,12 +6288,14 @@ input UpdateRoleInput {
 
 input UpdateSacramentalRecordInput {
   branchId: String
+  brideMemberId: String
   brideName: String
   certificateNumber: String
   certificateUrl: String
   dateOfSacrament: DateTime
   godparent1Name: String
   godparent2Name: String
+  groomMemberId: String
   groomName: String
   id: String!
   locationOfSacrament: String
@@ -5574,7 +6306,9 @@ input UpdateSacramentalRecordInput {
   organisationId: String
   sacramentType: SacramentType
   sponsorName: String
+  witness1MemberId: String
   witness1Name: String
+  witness2MemberId: String
   witness2Name: String
 }
 
@@ -5791,6 +6525,13 @@ type UserProfile {
   roles: [RoleProfile!]
   updatedAt: DateTime!
   userBranches: [UserBranchProfile!]
+}
+
+input UserRoleFilterInput {
+  branchId: ID
+  organisationId: ID!
+  roles: [String!]!
+  search: String
 }
 
 type Vendor {

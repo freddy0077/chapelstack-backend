@@ -28,12 +28,14 @@ model User {
   auditLogs                     AuditLog[]
   backups                       Backup[]
   careRequestsAssigned          CareRequest[]             @relation("CareRequestAssignedPastor")
+  careRequestsAsAssistant       CareRequest[]             @relation("CareRequestAssistant")
   careRequestsCreated           CareRequest[]             @relation("CareRequestCreator")
   counselingSessionsAsCounselor CounselingSession[]       @relation("CounselingSessionCounselor")
   counselingSessionsCreated     CounselingSession[]       @relation("CounselingSessionCreator")
   dataOperations                DataOperation[]
   eventsCreated                 Event[]                   @relation("EventCreatedBy")
   eventsUpdated                 Event[]                   @relation("EventUpdatedBy")
+  eventPostEventNotes           Event[]                   @relation("EventPostEventNotesBy")
   followUpRemindersAssigned     FollowUpReminder[]        @relation("FollowUpReminderAssignedTo")
   followUpRemindersCreated      FollowUpReminder[]        @relation("FollowUpReminderCreator")
   member                        Member?                   @relation("UserToMember")
@@ -52,6 +54,7 @@ model User {
   triggeredWorkflowExecutions   WorkflowExecution[]
   createdWorkflowTemplates      WorkflowTemplate[]
   roles                         Role[]                    @relation("UserRoles")
+  certificateGenerations        CertificateGeneration[]
 
   @@index([organisationId])
 }
@@ -82,76 +85,79 @@ model Permission {
 }
 
 model Branch {
-  id                         String                      @id @default(uuid())
-  name                       String
-  createdAt                  DateTime                    @default(now())
-  updatedAt                  DateTime                    @updatedAt
-  address                    String?
-  city                       String?
-  country                    String?
-  email                      String?                     @unique
-  establishedAt              DateTime?
-  isActive                   Boolean                     @default(true)
-  phoneNumber                String?
-  postalCode                 String?
-  state                      String?
-  website                    String?
-  organisationId             String?
-  attendanceRecords          AttendanceRecord[]          @relation("BranchAttendanceRecords")
-  attendanceSessions         AttendanceSession[]
-  auditLogs                  AuditLog[]
-  batches                    Batch[]
-  organisation               Organisation?               @relation(fields: [organisationId], references: [id])
-  settings                   BranchSetting[]
-  budgets                    Budget[]
-  careRequests               CareRequest[]
-  checkInRecords             CheckInRecord[]
-  children                   Child[]
-  childrenEvents             ChildrenEvent[]
-  childrenMinistryVolunteers ChildrenMinistryVolunteer[]
-  contributions              Contribution[]
-  contributionTypes          ContributionType[]
-  counselingSessions         CounselingSession[]
-  EmailMessage               EmailMessage[]
-  EmailTemplate              EmailTemplate[]
-  events                     Event[]                     @relation("BranchEvents")
-  expenses                   Expense[]
-  expenseCategories          ExpenseCategory[]
-  followUpReminders          FollowUpReminder[]
-  forms                      Form[]
-  formSubmissions            FormSubmission[]
-  funds                      Fund[]
-  guardians                  Guardian[]
-  mediaItems                 MediaItem[]
-  members                    Member[]
-  memberIdSequences          MemberIdSequence[]
-  fromBranchHistory          MembershipHistory[]         @relation("FromBranchHistory")
-  toBranchHistory            MembershipHistory[]         @relation("ToBranchHistory")
-  Ministry                   Ministry[]
-  notifications              Notification[]
-  onboardingProgress         OnboardingProgress?
-  pastoralVisits             PastoralVisit[]
-  paymentMethods             PaymentMethod[]
-  pledges                    Pledge[]
-  prayerRequests             PrayerRequest[]
-  sacramentalRecords         SacramentalRecord[]
-  scheduledReports           ScheduledReport[]
-  series                     Series[]
-  sermons                    Sermon[]
-  settingsModuleEntries      Setting[]                   @relation("SettingsModuleBranchSpecific")
-  SmallGroup                 SmallGroup[]
-  SmsMessage                 SmsMessage[]
-  speakers                   Speaker[]
-  transactions               Transaction[]               @relation("BranchTransactions")
-  destinationTransfers       TransferRequest[]           @relation("DestinationBranchTransfers")
-  sourceTransfers            TransferRequest[]           @relation("SourceBranchTransfers")
-  userBranches               UserBranch[]
-  userDashboardPreferences   UserDashboardPreference[]
-  vendors                    Vendor[]                    @relation("VendorExpenses")
-  workflowExecutions         WorkflowExecution[]
-  workflowTemplates          WorkflowTemplate[]
-  workflowTriggers           WorkflowTrigger[]
-  deathRegisters             DeathRegister[]
+  id                           String                        @id @default(uuid())
+  name                         String
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
+  address                      String?
+  city                         String?
+  country                      String?
+  email                        String?                       @unique
+  establishedAt                DateTime?
+  isActive                     Boolean                       @default(true)
+  phoneNumber                  String?
+  postalCode                   String?
+  state                        String?
+  website                      String?
+  organisationId               String?
+  attendanceRecords            AttendanceRecord[]            @relation("BranchAttendanceRecords")
+  attendanceSessions           AttendanceSession[]
+  auditLogs                    AuditLog[]
+  batches                      Batch[]
+  organisation                 Organisation?                 @relation(fields: [organisationId], references: [id])
+  settings                     BranchSetting[]
+  budgets                      Budget[]
+  careRequests                 CareRequest[]
+  checkInRecords               CheckInRecord[]
+  children                     Child[]
+  childrenEvents               ChildrenEvent[]
+  childrenMinistryVolunteers   ChildrenMinistryVolunteer[]
+  contributions                Contribution[]
+  ContributionType             ContributionType[]
+  contributionTypeFundMappings ContributionTypeFundMapping[]
+  counselingSessions           CounselingSession[]
+  EmailMessage                 EmailMessage[]
+  EmailTemplate                EmailTemplate[]
+  events                       Event[]                       @relation("BranchEvents")
+  expenses                     Expense[]
+  expenseCategories            ExpenseCategory[]
+  followUpReminders            FollowUpReminder[]
+  forms                        Form[]
+  formSubmissions              FormSubmission[]
+  funds                        Fund[]
+  guardians                    Guardian[]
+  mediaItems                   MediaItem[]
+  members                      Member[]
+  memberIdSequences            MemberIdSequence[]
+  fromBranchHistory            MembershipHistory[]           @relation("FromBranchHistory")
+  toBranchHistory              MembershipHistory[]           @relation("ToBranchHistory")
+  Ministry                     Ministry[]
+  notifications                Notification[]
+  onboardingProgress           OnboardingProgress?
+  pastoralVisits               PastoralVisit[]
+  paymentMethods               PaymentMethod[]
+  pledges                      Pledge[]
+  prayerRequests               PrayerRequest[]
+  sacramentalRecords           SacramentalRecord[]
+  scheduledReports             ScheduledReport[]
+  series                       Series[]
+  sermons                      Sermon[]
+  settingsModuleEntries        Setting[]                     @relation("SettingsModuleBranchSpecific")
+  SmallGroup                   SmallGroup[]
+  SmsMessage                   SmsMessage[]
+  speakers                     Speaker[]
+  transactions                 Transaction[]                 @relation("BranchTransactions")
+  destinationTransfers         TransferRequest[]             @relation("DestinationBranchTransfers")
+  sourceTransfers              TransferRequest[]             @relation("SourceBranchTransfers")
+  userBranches                 UserBranch[]
+  userDashboardPreferences     UserDashboardPreference[]
+  vendors                      Vendor[]                      @relation("VendorExpenses")
+  workflowExecutions           WorkflowExecution[]
+  workflowTemplates            WorkflowTemplate[]
+  workflowTriggers             WorkflowTrigger[]
+  deathRegisters               DeathRegister[]
+  certificateTemplates         CertificateTemplate[]
+  certificateGenerations       CertificateGeneration[]
 
   @@index([organisationId])
 }
@@ -462,6 +468,7 @@ model Member {
   privacyLevel             PrivacyLevel               @default(STANDARD)
   region                   String?
   salvationDate            DateTime?
+  specialGifts             String?
   title                    String?
   maritalStatus            MaritalStatus              @default(UNKNOWN)
   status                   MemberStatus               @default(ACTIVE)
@@ -496,7 +503,12 @@ model Member {
   paystackCustomer         PaystackCustomer?
   pledges                  Pledge[]
   prayerRequests           PrayerRequest[]
-  sacramentalRecords       SacramentalRecord[]
+  sacramentalRecords       SacramentalRecord[]        @relation("PrimarySacramentMember")
+  groomSacraments          SacramentalRecord[]        @relation("GroomSacraments")
+  brideSacraments          SacramentalRecord[]        @relation("BrideSacraments")
+  officiantSacraments      SacramentalRecord[]        @relation("OfficiantSacraments")
+  witness1Sacraments       SacramentalRecord[]        @relation("Witness1Sacraments")
+  witness2Sacraments       SacramentalRecord[]        @relation("Witness2Sacraments")
   speakerProfile           Speaker?                   @relation("MemberSpeaker")
   spiritualMilestones      SpiritualMilestone[]
   transactions             Transaction[]
@@ -880,23 +892,43 @@ model SacramentalRecord {
   locationOfSacrament String
   officiantName       String
   officiantId         String?
-  godparent1Name      String?
-  godparent2Name      String?
-  sponsorName         String?
-  witness1Name        String?
-  witness2Name        String?
-  groomName           String?
-  brideName           String?
-  certificateNumber   String?       @unique
-  certificateUrl      String?
-  notes               String?
-  branchId            String
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  organisationId      String?
-  branch              Branch        @relation(fields: [branchId], references: [id])
-  member              Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  organisation        Organisation? @relation(fields: [organisationId], references: [id])
+
+  // Marriage-specific member relationships
+  groomMemberId String? // Optional groom member reference
+  brideMemberId String? // Optional bride member reference
+
+  // Witness member relationships
+  witness1MemberId String? // Optional witness 1 member reference
+  witness2MemberId String? // Optional witness 2 member reference
+
+  godparent1Name    String?
+  godparent2Name    String?
+  sponsorName       String?
+  witness1Name      String?
+  witness2Name      String?
+  groomName         String?
+  brideName         String?
+  certificateNumber String?  @unique
+  certificateUrl    String?
+  notes             String?
+  branchId          String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  organisationId    String?
+
+  // Relations
+  branch       Branch        @relation(fields: [branchId], references: [id])
+  member       Member        @relation("PrimarySacramentMember", fields: [memberId], references: [id], onDelete: Cascade)
+  organisation Organisation? @relation(fields: [organisationId], references: [id])
+
+  // Member relationship relations
+  groomMember    Member? @relation("GroomSacraments", fields: [groomMemberId], references: [id])
+  brideMember    Member? @relation("BrideSacraments", fields: [brideMemberId], references: [id])
+  officiant      Member? @relation("OfficiantSacraments", fields: [officiantId], references: [id])
+  witness1Member Member? @relation("Witness1Sacraments", fields: [witness1MemberId], references: [id])
+  witness2Member Member? @relation("Witness2Sacraments", fields: [witness2MemberId], references: [id])
+
+  certificateGenerations CertificateGeneration[]
 
   @@index([memberId])
   @@index([branchId])
@@ -904,24 +936,156 @@ model SacramentalRecord {
   @@index([sacramentType])
   @@index([dateOfSacrament])
   @@index([certificateNumber])
+  @@index([groomMemberId])
+  @@index([brideMemberId])
+  @@index([officiantId])
+  @@index([sacramentType, branchId])
+}
+
+// Certificate Management Models
+model CertificateTemplate {
+  id                 String                   @id @default(uuid())
+  name               String
+  denomination       ChurchDenomination
+  sacramentType      CertificateSacramentType
+  description        String
+  previewUrl         String
+  templateUrl        String
+  isDefault          Boolean                  @default(false)
+  liturgicalElements Json // JSON array of LiturgicalElement objects
+  customFields       Json // JSON array of TemplateField objects
+  styling            Json // JSON object of TemplateStyle
+  language           String                   @default("en")
+  region             String?
+  isActive           Boolean                  @default(true)
+  branchId           String? // Optional branch-specific template
+  organisationId     String?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  // Relations
+  branch       Branch?                 @relation(fields: [branchId], references: [id])
+  organisation Organisation?           @relation(fields: [organisationId], references: [id])
+  generations  CertificateGeneration[]
+
+  @@unique([denomination, sacramentType, isDefault, branchId])
+  @@index([denomination])
+  @@index([sacramentType])
+  @@index([isDefault])
+  @@index([branchId])
+  @@index([organisationId])
+}
+
+model CertificateGeneration {
+  id                      String            @id @default(uuid())
+  sacramentalRecordId     String
+  templateId              String
+  certificateNumber       String            @unique
+  status                  CertificateStatus @default(PENDING)
+  format                  CertificateFormat @default(PDF)
+  fieldValues             Json // JSON array of field values
+  fileUrl                 String? // URL to generated certificate file
+  downloadUrl             String? // Secure download URL
+  previewUrl              String? // Preview image URL
+  errorMessage            String? // Error message if generation failed
+  customMessage           String? // Custom message from user
+  includeChurchLogo       Boolean           @default(true)
+  includeBranchLetterhead Boolean           @default(true)
+  generatedBy             String // User ID who generated
+  generatedAt             DateTime          @default(now())
+  downloadedAt            DateTime? // When certificate was downloaded
+  downloadCount           Int               @default(0)
+  expiresAt               DateTime // When download link expires
+  branchId                String
+  organisationId          String?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  // Relations
+  sacramentalRecord SacramentalRecord   @relation(fields: [sacramentalRecordId], references: [id], onDelete: Cascade)
+  template          CertificateTemplate @relation(fields: [templateId], references: [id])
+  branch            Branch              @relation(fields: [branchId], references: [id])
+  organisation      Organisation?       @relation(fields: [organisationId], references: [id])
+  generatedByUser   User                @relation(fields: [generatedBy], references: [id])
+
+  @@index([sacramentalRecordId])
+  @@index([templateId])
+  @@index([status])
+  @@index([generatedBy])
+  @@index([branchId])
+  @@index([organisationId])
+  @@index([generatedAt])
+  @@index([expiresAt])
+}
+
+// Enums for Certificate Management
+enum ChurchDenomination {
+  CATHOLIC
+  ORTHODOX
+  ANGLICAN
+  LUTHERAN
+  METHODIST
+  BAPTIST
+  PRESBYTERIAN
+  PENTECOSTAL
+  EVANGELICAL
+  REFORMED
+  EPISCOPAL
+  ADVENTIST
+  CONGREGATIONAL
+  MENNONITE
+  QUAKER
+  NONDENOMINATIONAL
+  INTERDENOMINATIONAL
+}
+
+enum CertificateSacramentType {
+  BAPTISM
+  INFANT_BAPTISM
+  ADULT_BAPTISM
+  IMMERSION_BAPTISM
+  EUCHARIST_FIRST_COMMUNION
+  CONFIRMATION
+  MATRIMONY
+  ORDINATION
+  RECONCILIATION
+  ANOINTING_OF_THE_SICK
+  DEDICATION
+  MEMBERSHIP
+  BLESSING
+}
+
+enum CertificateStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+  DOWNLOADED
+}
+
+enum CertificateFormat {
+  PDF
+  PNG
+  JPEG
 }
 
 model Fund {
-  id             String         @id @default(uuid())
+  id             String                        @id @default(uuid())
   name           String
   description    String?
-  isActive       Boolean        @default(true)
+  isActive       Boolean                       @default(true)
   branchId       String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime                      @default(now())
+  updatedAt      DateTime                      @updatedAt
   organisationId String?
   budgets        Budget[]
   contributions  Contribution[]
   expenses       Expense[]
-  branch         Branch?        @relation(fields: [branchId], references: [id])
-  organisation   Organisation?  @relation(fields: [organisationId], references: [id])
+  fundMappings   ContributionTypeFundMapping[]
+  branch         Branch?                       @relation(fields: [branchId], references: [id])
+  organisation   Organisation?                 @relation(fields: [organisationId], references: [id])
   pledges        Pledge[]
-  transactions   Transaction[]  @relation("FundTransactions")
+  transactions   Transaction[]                 @relation("FundTransactions")
 
   @@unique([name, organisationId, branchId], name: "fund_unique_constraint")
   @@index([branchId])
@@ -929,19 +1093,44 @@ model Fund {
 }
 
 model ContributionType {
-  id             String         @id @default(uuid())
+  id             String                        @id @default(uuid())
   name           String
   description    String?
-  isActive       Boolean        @default(true)
+  isActive       Boolean                       @default(true)
   branchId       String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime                      @default(now())
+  updatedAt      DateTime                      @updatedAt
   organisationId String?
   contributions  Contribution[]
-  branch         Branch?        @relation(fields: [branchId], references: [id])
-  organisation   Organisation?  @relation(fields: [organisationId], references: [id])
+  fundMappings   ContributionTypeFundMapping[]
+  branch         Branch?                       @relation(fields: [branchId], references: [id])
+  organisation   Organisation?                 @relation(fields: [organisationId], references: [id])
 
   @@unique([name, organisationId, branchId], name: "contribution_type_unique_constraint")
+  @@index([branchId])
+  @@index([organisationId])
+}
+
+model ContributionTypeFundMapping {
+  id                 String   @id @default(uuid())
+  contributionTypeId String
+  fundId             String
+  branchId           String?
+  organisationId     String?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  createdBy          String?
+  updatedBy          String?
+
+  contributionType ContributionType @relation(fields: [contributionTypeId], references: [id], onDelete: Cascade)
+  fund             Fund             @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  branch           Branch?          @relation(fields: [branchId], references: [id])
+  organisation     Organisation?    @relation(fields: [organisationId], references: [id])
+
+  @@unique([contributionTypeId, branchId, organisationId], name: "contribution_type_fund_mapping_unique")
+  @@index([contributionTypeId])
+  @@index([fundId])
   @@index([branchId])
   @@index([organisationId])
 }
@@ -1629,134 +1818,142 @@ model OnboardingProgress {
 }
 
 model Organisation {
-  id                         String                      @id @default(uuid())
-  name                       String
-  email                      String?                     @unique
-  phoneNumber                String?
-  website                    String?
-  address                    String?
-  city                       String?
-  state                      String?
-  country                    String?
-  zipCode                    String?
-  denomination               String?
-  foundingYear               Int?
-  size                       String?
-  vision                     String?
-  missionStatement           String?
-  description                String?
-  timezone                   String?
-  currency                   String?
-  primaryColor               String
-  secondaryColor             String
-  createdAt                  DateTime                    @default(now())
-  updatedAt                  DateTime                    @updatedAt
-  accentColor                String?
-  brandFont                  String?
-  faviconUrl                 String?
-  logoUrl                    String?
-  slogan                     String?
-  socialHandle               String?
-  status                     OrganisationStatus          @default(ACTIVE)
-  suspendedAt                DateTime?
-  suspendedBy                String?
-  suspensionReason           String?
-  attendanceRecords          AttendanceRecord[]
-  attendanceSessions         AttendanceSession[]
-  Batch                      Batch[]
-  branches                   Branch[]
-  budgets                    Budget[]
-  careRequests               CareRequest[]
-  checkInRecords             CheckInRecord[]
-  children                   Child[]
-  childrenEvents             ChildrenEvent[]
-  childrenMinistryVolunteers ChildrenMinistryVolunteer[]
-  contributions              Contribution[]
-  ContributionType           ContributionType[]
-  counselingSessions         CounselingSession[]
-  emailMessages              EmailMessage[]
-  emailTemplates             EmailTemplate[]
-  events                     Event[]
-  expenses                   Expense[]
-  expenseCategories          ExpenseCategory[]
-  followUpReminders          FollowUpReminder[]
-  forms                      Form[]
-  formSubmissions            FormSubmission[]
-  funds                      Fund[]
-  guardians                  Guardian[]
-  mediaItems                 MediaItem[]
-  members                    Member[]
-  memberIdConfigs            MemberIdConfig?
-  memberIdSequences          MemberIdSequence[]
-  ministries                 Ministry[]
-  notifications              Notification[]
-  onboardingProgress         OnboardingProgress?
-  suspendedByUser            User?                       @relation("OrganizationSuspendedBy", fields: [suspendedBy], references: [id])
-  pastoralVisits             PastoralVisit[]
-  PaymentMethod              PaymentMethod[]
-  pledges                    Pledge[]
-  prayerRequests             PrayerRequest[]
-  sacramentalRecords         SacramentalRecord[]
-  scheduledReports           ScheduledReport[]
-  series                     Series[]
-  sermons                    Sermon[]
-  smallGroups                SmallGroup[]
-  smsMessages                SmsMessage[]
-  speakers                   Speaker[]
-  subscriptionsAsCustomer    Subscription[]              @relation("SubscriptionCustomer")
-  subscriptions              Subscription[]              @relation("SubscriptionOrganisation")
-  transactions               Transaction[]               @relation("OrganisationTransactions")
-  users                      User[]
-  userDashboardPreferences   UserDashboardPreference[]
-  vendors                    Vendor[]
-  webhookEvents              WebhookEvent[]
-  workflowExecutions         WorkflowExecution[]
-  workflowTemplates          WorkflowTemplate[]
-  workflowTriggers           WorkflowTrigger[]
-  deathRegisters             DeathRegister[]
+  id                           String                        @id @default(uuid())
+  name                         String
+  email                        String?                       @unique
+  phoneNumber                  String?
+  website                      String?
+  address                      String?
+  city                         String?
+  state                        String?
+  country                      String?
+  zipCode                      String?
+  denomination                 String?
+  foundingYear                 Int?
+  size                         String?
+  vision                       String?
+  missionStatement             String?
+  description                  String?
+  timezone                     String?
+  currency                     String?
+  primaryColor                 String
+  secondaryColor               String
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
+  accentColor                  String?
+  brandFont                    String?
+  faviconUrl                   String?
+  logoUrl                      String?
+  slogan                       String?
+  socialHandle                 String?
+  status                       OrganisationStatus            @default(ACTIVE)
+  suspendedAt                  DateTime?
+  suspendedBy                  String?
+  suspensionReason             String?
+  attendanceRecords            AttendanceRecord[]
+  attendanceSessions           AttendanceSession[]
+  Batch                        Batch[]
+  branches                     Branch[]
+  budgets                      Budget[]
+  careRequests                 CareRequest[]
+  checkInRecords               CheckInRecord[]
+  children                     Child[]
+  childrenEvents               ChildrenEvent[]
+  childrenMinistryVolunteers   ChildrenMinistryVolunteer[]
+  contributions                Contribution[]
+  ContributionType             ContributionType[]
+  contributionTypeFundMappings ContributionTypeFundMapping[]
+  counselingSessions           CounselingSession[]
+  emailMessages                EmailMessage[]
+  emailTemplates               EmailTemplate[]
+  events                       Event[]
+  expenses                     Expense[]
+  expenseCategories            ExpenseCategory[]
+  followUpReminders            FollowUpReminder[]
+  forms                        Form[]
+  formSubmissions              FormSubmission[]
+  funds                        Fund[]
+  guardians                    Guardian[]
+  mediaItems                   MediaItem[]
+  members                      Member[]
+  memberIdConfigs              MemberIdConfig?
+  memberIdSequences            MemberIdSequence[]
+  ministries                   Ministry[]
+  notifications                Notification[]
+  onboardingProgress           OnboardingProgress?
+  suspendedByUser              User?                         @relation("OrganizationSuspendedBy", fields: [suspendedBy], references: [id])
+  pastoralVisits               PastoralVisit[]
+  PaymentMethod                PaymentMethod[]
+  pledges                      Pledge[]
+  prayerRequests               PrayerRequest[]
+  sacramentalRecords           SacramentalRecord[]
+  scheduledReports             ScheduledReport[]
+  series                       Series[]
+  sermons                      Sermon[]
+  smallGroups                  SmallGroup[]
+  smsMessages                  SmsMessage[]
+  speakers                     Speaker[]
+  subscriptionsAsCustomer      Subscription[]                @relation("SubscriptionCustomer")
+  subscriptions                Subscription[]                @relation("SubscriptionOrganisation")
+  transactions                 Transaction[]                 @relation("OrganisationTransactions")
+  users                        User[]
+  userDashboardPreferences     UserDashboardPreference[]
+  vendors                      Vendor[]
+  webhookEvents                WebhookEvent[]
+  workflowExecutions           WorkflowExecution[]
+  workflowTemplates            WorkflowTemplate[]
+  workflowTriggers             WorkflowTrigger[]
+  deathRegisters               DeathRegister[]
+  certificateTemplates         CertificateTemplate[]
+  certificateGenerations       CertificateGeneration[]
 
   @@index([email])
 }
 
 model Event {
-  id                   String              @id @default(uuid())
-  title                String
-  description          String?
-  startDate            DateTime
-  endDate              DateTime?
-  location             String?
-  category             String?
-  branchId             String?
-  createdBy            String?
-  updatedBy            String?
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
-  organisationId       String?
-  capacity             Int?
-  currency             String?             @default("GHS")
-  eventImageUrl        String?
-  eventType            EventType           @default(OTHER)
-  isFree               Boolean             @default(true)
-  isPublic             Boolean             @default(true)
-  organizerEmail       String?
-  organizerName        String?
-  organizerPhone       String?
-  registrationDeadline DateTime?
-  registrationRequired Boolean             @default(false)
-  requiresApproval     Boolean             @default(false)
-  status               EventStatus         @default(DRAFT)
-  tags                 String[]
-  ticketPrice          Decimal?            @db.Decimal(10, 2)
-  attendanceRecords    AttendanceRecord[]
-  branch               Branch?             @relation("BranchEvents", fields: [branchId], references: [id])
-  creator              User?               @relation("EventCreatedBy", fields: [createdBy], references: [id])
-  organisation         Organisation?       @relation(fields: [organisationId], references: [id])
-  updater              User?               @relation("EventUpdatedBy", fields: [updatedBy], references: [id])
-  eventRSVPs           EventRSVP[]
-  eventRegistrations   EventRegistration[]
-  transactions         Transaction[]
-  workflowExecutions   WorkflowExecution[]
-  funeralDeathRegisters DeathRegister[]    @relation("DeathRegisterFuneralEvent")
+  id                    String              @id @default(uuid())
+  title                 String
+  description           String?
+  startDate             DateTime
+  endDate               DateTime?
+  location              String?
+  category              String?
+  branchId              String?
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  organisationId        String?
+  capacity              Int?
+  currency              String?             @default("GHS")
+  eventImageUrl         String?
+  eventType             EventType           @default(OTHER)
+  isFree                Boolean             @default(true)
+  isPublic              Boolean             @default(true)
+  organizerEmail        String?
+  organizerName         String?
+  organizerPhone        String?
+  registrationDeadline  DateTime?
+  registrationRequired  Boolean             @default(false)
+  requiresApproval      Boolean             @default(false)
+  status                EventStatus         @default(DRAFT)
+  tags                  String[]
+  ticketPrice           Decimal?            @db.Decimal(10, 2)
+  // Post-event notes fields
+  postEventNotes        String?             @db.Text
+  postEventNotesBy      String?
+  postEventNotesDate    DateTime?
+  attendanceRecords     AttendanceRecord[]
+  branch                Branch?             @relation("BranchEvents", fields: [branchId], references: [id])
+  creator               User?               @relation("EventCreatedBy", fields: [createdBy], references: [id])
+  organisation          Organisation?       @relation(fields: [organisationId], references: [id])
+  updater               User?               @relation("EventUpdatedBy", fields: [updatedBy], references: [id])
+  postEventNotesAuthor  User?               @relation("EventPostEventNotesBy", fields: [postEventNotesBy], references: [id])
+  eventRSVPs            EventRSVP[]
+  eventRegistrations    EventRegistration[]
+  transactions          Transaction[]
+  workflowExecutions    WorkflowExecution[]
+  funeralDeathRegisters DeathRegister[]     @relation("DeathRegisterFuneralEvent")
 
   @@index([branchId])
   @@index([organisationId])
@@ -2095,6 +2292,8 @@ model CounselingSession {
   sessionNumber     Int                     @default(1)
   totalSessions     Int?
   progressNotes     String?
+  isConfidential    Boolean                 @default(true)
+  followUpDate      DateTime?
   organisationId    String
   branchId          String?
   createdBy         String
@@ -2128,6 +2327,7 @@ model CareRequest {
   preferredContactMethod String?
   requesterId            String?
   assignedPastorId       String?
+  assistantId            String?
   assignedDate           DateTime?
   requestDate            DateTime            @default(now())
   responseDate           DateTime?
@@ -2141,6 +2341,7 @@ model CareRequest {
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
   assignedPastor         User?               @relation("CareRequestAssignedPastor", fields: [assignedPastorId], references: [id])
+  assistant              User?               @relation("CareRequestAssistant", fields: [assistantId], references: [id])
   branch                 Branch?             @relation(fields: [branchId], references: [id])
   creator                User                @relation("CareRequestCreator", fields: [createdBy], references: [id])
   organisation           Organisation        @relation(fields: [organisationId], references: [id])
@@ -2149,6 +2350,7 @@ model CareRequest {
 
   @@index([requesterId])
   @@index([assignedPastorId])
+  @@index([assistantId])
   @@index([organisationId])
   @@index([branchId])
   @@index([status])
@@ -2741,51 +2943,51 @@ enum BurialType {
 
 // Death Register Model
 model DeathRegister {
-  id                   String        @id @default(uuid())
-  memberId             String        @unique
-  dateOfDeath          DateTime
-  timeOfDeath          String?
-  placeOfDeath         String
-  causeOfDeath         String?
-  circumstances        String?
-  
+  id            String   @id @default(uuid())
+  memberId      String   @unique
+  dateOfDeath   DateTime
+  timeOfDeath   String?
+  placeOfDeath  String
+  causeOfDeath  String?
+  circumstances String?
+
   // Funeral Information
-  funeralDate          DateTime?
-  funeralLocation      String?
-  funeralOfficiant     String?
-  burialCremation      BurialType
-  cemeteryLocation     String?
-  
+  funeralDate      DateTime?
+  funeralLocation  String?
+  funeralOfficiant String?
+  burialCremation  BurialType
+  cemeteryLocation String?
+
   // Family & Contacts
-  nextOfKin            String
-  nextOfKinPhone       String?
-  nextOfKinEmail       String?
-  familyNotified       Boolean       @default(false)
-  notificationDate     DateTime?
-  
+  nextOfKin        String
+  nextOfKinPhone   String?
+  nextOfKinEmail   String?
+  familyNotified   Boolean   @default(false)
+  notificationDate DateTime?
+
   // Documentation
-  deathCertificateUrl  String?
-  obituaryUrl          String?
-  photoUrls            String[]      @default([])
-  additionalDocuments  String[]      @default([])
-  
+  deathCertificateUrl String?
+  obituaryUrl         String?
+  photoUrls           String[] @default([])
+  additionalDocuments String[] @default([])
+
   // Administrative
-  recordedBy           String
-  recordedDate         DateTime      @default(now())
-  lastUpdatedBy        String?
-  lastUpdatedDate      DateTime?     @updatedAt
-  
+  recordedBy      String
+  recordedDate    DateTime  @default(now())
+  lastUpdatedBy   String?
+  lastUpdatedDate DateTime? @updatedAt
+
   // Foreign Keys
-  branchId             String?
-  organisationId       String
-  funeralEventId       String?
-  
+  branchId       String?
+  organisationId String
+  funeralEventId String?
+
   // Relations
-  member               Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  branch               Branch?       @relation(fields: [branchId], references: [id])
-  organisation         Organisation  @relation(fields: [organisationId], references: [id])
-  funeralEvent         Event?        @relation("DeathRegisterFuneralEvent", fields: [funeralEventId], references: [id])
-  
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  funeralEvent Event?       @relation("DeathRegisterFuneralEvent", fields: [funeralEventId], references: [id])
+
   @@index([memberId])
   @@index([branchId])
   @@index([organisationId])

@@ -394,4 +394,143 @@ export class UserAdminService {
       },
     });
   }
+
+  /**
+   * Search users by specific roles with enhanced filtering
+   */
+  async searchUsersByRole(
+    filter: {
+      organisationId: string;
+      branchId?: string;
+      search?: string;
+      roles: string[];
+    },
+    pagination: PaginationInput = { skip: 0, take: 20 },
+  ) {
+    const { organisationId, branchId, search, roles } = filter;
+    const { skip = 0, take = 20 } = pagination;
+
+    // Build search conditions for name, email, phone
+    const searchConditions = search
+      ? {
+          OR: [
+            {
+              firstName: {
+                contains: search,
+                mode: 'insensitive' as const,
+              },
+            },
+            {
+              lastName: {
+                contains: search,
+                mode: 'insensitive' as const,
+              },
+            },
+            {
+              email: {
+                contains: search,
+                mode: 'insensitive' as const,
+              },
+            },
+            {
+              phoneNumber: {
+                contains: search,
+              },
+            },
+          ],
+        }
+      : {};
+
+    // Build role filter conditions
+    const roleConditions = {
+      userBranches: {
+        some: {
+          ...(branchId && { branchId }),
+          role: {
+            name: { in: roles },
+          },
+        },
+      },
+    };
+
+    // Build base where clause
+    const where = {
+      organisationId,
+      isActive: true, // Only return active users
+      ...searchConditions,
+      ...roleConditions,
+    };
+
+    // Execute query with pagination
+    const [users, totalCount] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        where,
+        include: {
+          userBranches: {
+            include: {
+              branch: true,
+              role: true,
+            },
+            where: {
+              ...(branchId && { branchId }),
+            },
+          },
+        },
+        skip,
+        take,
+        orderBy: [
+          { firstName: 'asc' },
+          { lastName: 'asc' },
+        ],
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      items: users,
+      totalCount,
+      hasNextPage: skip + take < totalCount,
+      hasPreviousPage: skip > 0,
+    };
+  }
+
+  /**
+   * Search specifically for pastors
+   */
+  async searchPastors(
+    filter: {
+      organisationId: string;
+      branchId?: string;
+      search?: string;
+    },
+    pagination: PaginationInput = { skip: 0, take: 20 },
+  ) {
+    return this.searchUsersByRole(
+      {
+        ...filter,
+        roles: ['PASTOR'],
+      },
+      pagination,
+    );
+  }
+
+  /**
+   * Search for pastoral staff (pastors, branch admins, staff)
+   */
+  async searchPastoralStaff(
+    filter: {
+      organisationId: string;
+      branchId?: string;
+      search?: string;
+    },
+    pagination: PaginationInput = { skip: 0, take: 20 },
+  ) {
+    return this.searchUsersByRole(
+      {
+        ...filter,
+        roles: ['PASTOR', 'BRANCH_ADMIN', 'STAFF'],
+      },
+      pagination,
+    );
+  }
 }

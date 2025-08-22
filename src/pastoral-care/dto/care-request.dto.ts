@@ -70,6 +70,11 @@ export class CreateCareRequestInput {
 
   @Field({ nullable: true })
   @IsOptional()
+  @IsUUID()
+  assistantId?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
   @IsString()
   notes?: string;
 
@@ -118,6 +123,11 @@ export class UpdateCareRequestInput {
   @IsOptional()
   @IsUUID()
   assignedPastorId?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsUUID()
+  assistantId?: string;
 
   @Field({ nullable: true })
   @IsOptional()
@@ -210,6 +220,9 @@ export class CareRequest {
 
   @Field({ nullable: true })
   assignedPastorId?: string;
+
+  @Field({ nullable: true })
+  assistantId?: string;
 
   @Field({ nullable: true })
   notes?: string;

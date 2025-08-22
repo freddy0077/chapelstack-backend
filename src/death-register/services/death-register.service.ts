@@ -26,7 +26,10 @@ export class DeathRegisterService {
     createDeathRegisterInput: CreateDeathRegisterInput,
     userId: string,
   ): Promise<DeathRegister> {
-    console.log('Received death register input:', JSON.stringify(createDeathRegisterInput, null, 2));
+    console.log(
+      'Received death register input:',
+      JSON.stringify(createDeathRegisterInput, null, 2),
+    );
 
     // Check if member exists
     const member = await this.prisma.member.findUnique({
@@ -216,7 +219,10 @@ export class DeathRegisterService {
   ): Promise<DeathRegister> {
     const existingRecord = await this.findOne(id);
 
-    console.log('Updating death register with input:', JSON.stringify(updateDeathRegisterInput, null, 2));
+    console.log(
+      'Updating death register with input:',
+      JSON.stringify(updateDeathRegisterInput, null, 2),
+    );
 
     // Let Prisma handle the date conversion automatically
     const deathRegister = await this.prisma.deathRegister.update({

@@ -12,6 +12,7 @@ import { EventsService } from './events.service';
 import { Event } from './entities/event.entity';
 import { CreateEventInput } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
+import { AddEventNotesInput } from './dto/add-event-notes.input';
 import { Event as PrismaEvent } from '@prisma/client';
 import { Branch } from '../branches/entities/branch.entity';
 import { BranchesService } from '../branches/branches.service';
@@ -61,8 +62,8 @@ export class EventsResolver {
   @Query(() => [Event], { name: 'events' })
   @RequirePermissions({ action: 'read', subject: 'Event' })
   async findAll(
-    @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
-    @Args('organisationId', { type: () => ID, nullable: true })
+    @Args('branchId', { type: () => String, nullable: true }) branchId?: string,
+    @Args('organisationId', { type: () => String, nullable: true })
     organisationId?: string,
   ): Promise<Event[]> {
     const results = await this.eventsService.findAll(branchId, organisationId);
@@ -96,6 +97,22 @@ export class EventsResolver {
   ): Promise<boolean> {
     await this.eventsService.remove(id);
     return true;
+  }
+
+  @Mutation(() => Event)
+  @RequirePermissions({ action: 'update', subject: 'Event' })
+  async addEventNotes(
+    @Args('addEventNotesInput') addEventNotesInput: AddEventNotesInput,
+    @CurrentUser() user: any,
+  ): Promise<Event> {
+    // Pass user ID if available, otherwise let service handle fallback
+    const userId = user?.id || undefined;
+
+    const result = await this.eventsService.addEventNotes(
+      addEventNotesInput,
+      userId,
+    );
+    return result as Event;
   }
 
   @ResolveField('branch', () => Branch, { nullable: true })

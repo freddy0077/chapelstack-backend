@@ -92,7 +92,10 @@ export class DeathRegisterResolver {
     @Args('input') uploadDocumentInput: UploadDeathDocumentInput,
     @CurrentUser() user: User,
   ): Promise<DeathRegister> {
-    return this.deathRegisterService.uploadDocument(uploadDocumentInput, user.id);
+    return this.deathRegisterService.uploadDocument(
+      uploadDocumentInput,
+      user.id,
+    );
   }
 
   @Query(() => DeathRegisterStats, { name: 'deathRegisterStats' })

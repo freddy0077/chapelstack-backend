@@ -22,9 +22,32 @@ import { FundsService } from '../funds/funds.service';
 import { FundsModule } from '../funds/funds.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { Event } from '../events/entities/event.entity';
+import { CashFlowAnalysis } from './dto/cash-flow-analysis.dto';
+import { ComparativePeriodAnalysis } from './dto/comparative-period-analysis.dto';
+import { MemberGivingAnalysis } from './dto/member-giving-analysis.dto';
+import {
+  CashFlowAnalysisInput,
+  ComparativePeriodAnalysisInput,
+  MemberGivingAnalysisInput,
+} from './dto/analytics-inputs.dto';
+import {
+  FinancialStatementsInput,
+  FinancialStatements,
+} from './dto/financial-statements.dto';
+import {
+  BudgetVsActualInput,
+  BudgetVsActual,
+  BudgetPeriodType,
+} from './dto/budget-vs-actual.dto';
 
 registerEnumType(TransactionType, {
   name: 'TransactionType',
+  description: 'The type of transaction',
+});
+
+registerEnumType(BudgetPeriodType, {
+  name: 'BudgetPeriodType',
+  description: 'The period type for budget analysis',
 });
 
 @Resolver(() => Transaction)
@@ -113,17 +136,16 @@ export class TransactionResolver {
   }
 
   @Query(() => String, { name: 'exportTransactions' })
-  async exportTransactions(
-    @Args('exportFormat', { nullable: false }) exportFormat: string,
-    @Args('organisationId', { nullable: true }) organisationId?: string,
+  exportTransactions(
+    @Args('organisationId') organisationId: string,
+    @Args('format', { defaultValue: 'csv' }) format: string,
     @Args('branchId', { nullable: true }) branchId?: string,
     @Args('fundId', { nullable: true }) fundId?: string,
     @Args('eventId', { nullable: true }) eventId?: string,
     @Args('type', { type: () => TransactionType, nullable: true })
     type?: TransactionType,
     @Args('dateRange', { nullable: true }) dateRange?: DateRangeInput,
-    @Args('searchTerm', { nullable: true }) searchTerm?: string,
-  ): Promise<string> {
+  ) {
     return this.transactionService.exportTransactions({
       organisationId,
       branchId,
@@ -131,9 +153,93 @@ export class TransactionResolver {
       eventId,
       type,
       dateRange,
-      searchTerm,
-      exportFormat,
+      format,
     });
+  }
+
+  @Query(() => FinancialStatements, { name: 'financialStatements' })
+  getFinancialStatements(@Args('input') input: FinancialStatementsInput) {
+    console.log(
+      'Resolver getFinancialStatements - Raw input:',
+      JSON.stringify(input, null, 2),
+    );
+    console.log(
+      'Resolver getFinancialStatements - organisationId:',
+      input.organisationId,
+      'type:',
+      typeof input.organisationId,
+    );
+    console.log(
+      'Resolver getFinancialStatements - dateRange:',
+      input.dateRange,
+      'type:',
+      typeof input.dateRange,
+    );
+    console.log(
+      'Resolver getFinancialStatements - dateRange.startDate:',
+      input.dateRange?.startDate,
+      'type:',
+      typeof input.dateRange?.startDate,
+    );
+    console.log(
+      'Resolver getFinancialStatements - dateRange.endDate:',
+      input.dateRange?.endDate,
+      'type:',
+      typeof input.dateRange?.endDate,
+    );
+    return this.transactionService.getFinancialStatements(input);
+  }
+
+  @Query(() => BudgetVsActual, { name: 'budgetVsActual' })
+  getBudgetVsActual(@Args('input') input: BudgetVsActualInput) {
+    return this.transactionService.getBudgetVsActual(input);
+  }
+
+  // ==================== ANALYTICS QUERIES ====================
+
+  @Query(() => CashFlowAnalysis, { name: 'cashFlowAnalysis' })
+  getCashFlowAnalysis(@Args('input') input: CashFlowAnalysisInput) {
+    console.log(
+      'Resolver getCashFlowAnalysis - Raw input:',
+      JSON.stringify(input, null, 2),
+    );
+    console.log(
+      'Resolver getCashFlowAnalysis - organisationId:',
+      input.organisationId,
+      'type:',
+      typeof input.organisationId,
+    );
+    console.log(
+      'Resolver getCashFlowAnalysis - dateRange:',
+      input.dateRange,
+      'type:',
+      typeof input.dateRange,
+    );
+    console.log(
+      'Resolver getCashFlowAnalysis - dateRange.startDate:',
+      input.dateRange?.startDate,
+      'type:',
+      typeof input.dateRange?.startDate,
+    );
+    console.log(
+      'Resolver getCashFlowAnalysis - dateRange.endDate:',
+      input.dateRange?.endDate,
+      'type:',
+      typeof input.dateRange?.endDate,
+    );
+    return this.transactionService.getCashFlowAnalysis(input);
+  }
+
+  @Query(() => ComparativePeriodAnalysis, { name: 'comparativePeriodAnalysis' })
+  getComparativePeriodAnalysis(
+    @Args('input') input: ComparativePeriodAnalysisInput,
+  ) {
+    return this.transactionService.getComparativePeriodAnalysis(input);
+  }
+
+  @Query(() => MemberGivingAnalysis, { name: 'memberGivingAnalysis' })
+  getMemberGivingAnalysis(@Args('input') input: MemberGivingAnalysisInput) {
+    return this.transactionService.getMemberGivingAnalysis(input);
   }
 
   @ResolveField(() => Fund, { nullable: true })

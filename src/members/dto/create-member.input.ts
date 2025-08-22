@@ -337,4 +337,15 @@ export class CreateMemberInput {
   @IsDate()
   @Type(() => Date)
   dataRetentionDate?: Date;
+
+  // Special Gifts and Group Memberships
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  specialGifts?: string;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsUUID('4', { each: true })
+  groupIds?: string[];
 }

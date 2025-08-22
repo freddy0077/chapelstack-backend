@@ -4,7 +4,7 @@ import { PrismaClient, Permission } from '@prisma/client';
 
 /**
  * Death Register Permissions Seeder
- * 
+ *
  * This seeder creates the necessary permissions for the Death Register feature
  * and assigns them to appropriate roles.
  */
@@ -61,7 +61,9 @@ class DeathRegisterPermissionsSeeder {
           create: permissionData,
         });
         createdPermissions.push(permission);
-        console.log(`✅ Created/Updated permission: ${permission.action} ${permission.subject}`);
+        console.log(
+          `✅ Created/Updated permission: ${permission.action} ${permission.subject}`,
+        );
       }
 
       // Get roles that should have death register permissions
@@ -81,16 +83,22 @@ class DeathRegisterPermissionsSeeder {
       // Assign permissions to roles using the many-to-many relationship
       for (const role of roles) {
         const permissionIdsToConnect: { id: string }[] = [];
-        
+
         for (const permission of createdPermissions) {
           // Check if the role already has this permission
-          const hasPermission = role.permissions.some(p => p.id === permission.id);
-          
+          const hasPermission = role.permissions.some(
+            (p) => p.id === permission.id,
+          );
+
           if (!hasPermission) {
             permissionIdsToConnect.push({ id: permission.id });
-            console.log(`✅ Will assign ${permission.action} ${permission.subject} to ${role.name}`);
+            console.log(
+              `✅ Will assign ${permission.action} ${permission.subject} to ${role.name}`,
+            );
           } else {
-            console.log(`⚠️  ${role.name} already has ${permission.action} ${permission.subject}`);
+            console.log(
+              `⚠️  ${role.name} already has ${permission.action} ${permission.subject}`,
+            );
           }
         }
 
@@ -107,14 +115,19 @@ class DeathRegisterPermissionsSeeder {
         }
       }
 
-      console.log('✅ Death Register Permissions Seeder completed successfully!');
+      console.log(
+        '✅ Death Register Permissions Seeder completed successfully!',
+      );
       console.log('📊 Summary:');
       console.log(`   • Created ${createdPermissions.length} permissions`);
       console.log(`   • Assigned permissions to ${roles.length} roles`);
-      console.log('   • Roles with Death Register access: SUPER_ADMIN, ADMIN, MODERATOR');
+      console.log(
+        '   • Roles with Death Register access: SUPER_ADMIN, ADMIN, MODERATOR',
+      );
       console.log('');
-      console.log('🎯 Death Register feature is now accessible to users with appropriate roles!');
-
+      console.log(
+        '🎯 Death Register feature is now accessible to users with appropriate roles!',
+      );
     } catch (error) {
       console.error('❌ Death Register Permissions Seeder failed:', error);
       throw error;

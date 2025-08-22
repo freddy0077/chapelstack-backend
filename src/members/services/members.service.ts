@@ -381,14 +381,73 @@ export class MembersService {
         updateMemberInput.membershipStatus &&
         updateMemberInput.membershipStatus !== existingMember.membershipStatus;
 
+      // Extract relation fields that need special handling (excluding id from input)
+      const {
+        id: inputId,
+        branchId,
+        organisationId,
+        groupIds,
+        ...memberData
+      } = updateMemberInput as any;
+
+      // Filter out undefined values and prepare update data
+      const cleanMemberData = Object.fromEntries(
+        Object.entries(memberData).filter(([_, value]) => value !== undefined),
+      );
+
+      // Prepare update data with proper relation handling
+      const updateData: any = {
+        ...cleanMemberData,
+      };
+
+      // Ensure status is always provided - use input status or default to ACTIVE
+      updateData.status = updateMemberInput.status || 'ACTIVE';
+
+      // Only add lastModifiedBy if userId is provided
+      if (userId) {
+        updateData.lastModifiedBy = userId;
+      }
+
+      // Handle branch relation if branchId is provided
+      if (branchId) {
+        updateData.branch = {
+          connect: { id: branchId },
+        };
+      }
+
+      // Handle organisation relation if organisationId is provided
+      if (organisationId) {
+        updateData.organisation = {
+          connect: { id: organisationId },
+        };
+      }
+
+      // Handle group memberships if groupIds is provided
+      if (groupIds && Array.isArray(groupIds)) {
+        // First, disconnect all existing group memberships
+        await this.prisma.groupMember.deleteMany({
+          where: { memberId: id },
+        });
+
+        // Then create new group memberships
+        if (groupIds.length > 0) {
+          updateData.groupMemberships = {
+            create: groupIds.map((groupId: string) => ({
+              smallGroup: {
+                connect: { id: groupId },
+              },
+              role: 'MEMBER', // Default role
+              joinDate: new Date(),
+              status: 'ACTIVE', // Required status field for GroupMember
+            })),
+          };
+        }
+      }
+
       // Update member with enhanced fields
       const updatedMember = await this.prisma.member.update({
         where: { id },
-        data: {
-          ...updateMemberInput,
-          // Set audit fields
-          lastModifiedBy: userId,
-        },
+        data: updateData,
         include: {
           communicationPrefs: true,
           searchIndex: true,
@@ -398,6 +457,15 @@ export class MembersService {
             take: 5,
           },
           branch: true,
+          groupMemberships: {
+            include: {
+              smallGroup: {
+                include: {
+                  ministry: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -1065,6 +1133,8 @@ export class MembersService {
     });
 
     const ageGroups = {
+      '0-14': 0,
+      '15-17': 0,
       '18-25': 0,
       '26-35': 0,
       '36-50': 0,
@@ -1075,7 +1145,11 @@ export class MembersService {
       if (member.dateOfBirth) {
         const age =
           new Date().getFullYear() - new Date(member.dateOfBirth).getFullYear();
-        if (age >= 18 && age <= 25) {
+        if (age >= 0 && age <= 14) {
+          ageGroups['0-14']++;
+        } else if (age >= 15 && age <= 17) {
+          ageGroups['15-17']++;
+        } else if (age >= 18 && age <= 25) {
           ageGroups['18-25']++;
         } else if (age >= 26 && age <= 35) {
           ageGroups['26-35']++;

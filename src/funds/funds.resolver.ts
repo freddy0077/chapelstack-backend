@@ -26,6 +26,14 @@ export class FundsResolver {
     return this.fundsService.findOne(id);
   }
 
+  @Query(() => Number, { name: 'fundBalance' })
+  getFundBalance(
+    @Args('organisationId', { type: () => String }) organisationId: string,
+    @Args('fundId', { type: () => String }) fundId: string,
+  ) {
+    return this.fundsService.calculateFundBalance(organisationId, fundId);
+  }
+
   @Mutation(() => Fund)
   updateFund(@Args('updateFundInput') updateFundInput: UpdateFundInput) {
     return this.fundsService.update(updateFundInput.id, updateFundInput);

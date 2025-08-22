@@ -10,6 +10,8 @@ import { UserFilterInput } from '../dto/user-filter.input';
 import { PaginatedUsers } from '../entities/paginated-users.entity';
 import { UserBranch } from '../../auth/entities/user-branch.entity';
 import { CreateBranchAdminInput } from '../dto/create-branch-admin.input';
+import { UserRoleFilterInput } from '../dto/user-role-search.input';
+import { PaginatedUserResponse } from '../dto/paginated-user-response.dto';
 
 @Resolver()
 @UseGuards(GqlAuthGuard, RolesGuard)
@@ -174,6 +176,46 @@ export class UserAdminResolver {
       userId,
       branchId,
       roleId,
+    );
+  }
+
+  @Query(() => PaginatedUserResponse, { name: 'searchUsersByRole' })
+  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
+  async searchUsersByRole(
+    @Args('filter') filter: UserRoleFilterInput,
+    @Args('pagination', { nullable: true })
+    pagination: PaginationInput = { skip: 0, take: 20 },
+  ) {
+    return this.userAdminService.searchUsersByRole(filter, pagination);
+  }
+
+  @Query(() => PaginatedUserResponse, { name: 'searchPastors' })
+  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
+  async searchPastors(
+    @Args('organisationId', { type: () => ID }) organisationId: string,
+    @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
+    @Args('search', { nullable: true }) search?: string,
+    @Args('pagination', { nullable: true })
+    pagination: PaginationInput = { skip: 0, take: 20 },
+  ) {
+    return this.userAdminService.searchPastors(
+      { organisationId, branchId, search },
+      pagination,
+    );
+  }
+
+  @Query(() => PaginatedUserResponse, { name: 'searchPastoralStaff' })
+  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
+  async searchPastoralStaff(
+    @Args('organisationId', { type: () => ID }) organisationId: string,
+    @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
+    @Args('search', { nullable: true }) search?: string,
+    @Args('pagination', { nullable: true })
+    pagination: PaginationInput = { skip: 0, take: 20 },
+  ) {
+    return this.userAdminService.searchPastoralStaff(
+      { organisationId, branchId, search },
+      pagination,
     );
   }
 }

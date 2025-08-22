@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventInput, RecurrenceType } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
+import { AddEventNotesInput } from './dto/add-event-notes.input';
 import {
   CreateEventRegistrationInput,
   UpdateEventRegistrationInput,
@@ -296,7 +297,12 @@ export class EventsService {
     if (organisationId) {
       where.organisationId = organisationId;
     }
-    const events = await this.prisma.event.findMany({ where });
+    const events = await this.prisma.event.findMany({
+      where,
+      include: {
+        attendanceRecords: true,
+      },
+    });
     return events.map((event) => this.convertDecimalFields(event));
   }
 
@@ -307,14 +313,89 @@ export class EventsService {
   }
 
   async update(id: string, input: UpdateEventInput): Promise<PrismaEvent> {
+    // First check if event exists
+    const existingEvent = await this.prisma.event.findUnique({
+      where: { id },
+    });
+
+    if (!existingEvent) {
+      throw new NotFoundException('Event not found');
+    }
+
+    // Extract relation fields that need special handling
+    const {
+      id: inputId,
+      branchId,
+      organisationId,
+      createdBy,
+      updatedBy,
+      ...eventData
+    } = input as any;
+
+    // Remove recurring fields that don't exist in the Prisma Event model
+    const recurringFields = [
+      'isRecurring',
+      'recurrenceType',
+      'recurrenceInterval',
+      'recurrenceEndDate',
+      'recurrenceDaysOfWeek',
+      'recurrencePattern',
+    ];
+
+    // Filter out undefined values and recurring fields from event data
+    const cleanEventData = Object.fromEntries(
+      Object.entries(eventData).filter(
+        ([key, value]) => value !== undefined && !recurringFields.includes(key),
+      ),
+    );
+
+    // Prepare update data with proper relation handling
+    const updateData: any = {
+      ...cleanEventData,
+    };
+
+    // Handle branchId as a direct field (not relation) since it's a foreign key
+    if (branchId !== undefined) {
+      updateData.branchId = branchId;
+    }
+
+    // Handle organisationId as a direct field (not relation) since it's a foreign key
+    if (organisationId !== undefined) {
+      updateData.organisationId = organisationId;
+    }
+
+    // Handle creator relation if createdBy is provided
+    if (createdBy !== undefined) {
+      if (createdBy === null) {
+        updateData.creator = { disconnect: true };
+      } else {
+        updateData.creator = { connect: { id: createdBy } };
+      }
+    }
+
+    // Handle updater relation if updatedBy is provided
+    if (updatedBy !== undefined) {
+      if (updatedBy === null) {
+        updateData.updater = { disconnect: true };
+      } else {
+        updateData.updater = { connect: { id: updatedBy } };
+      }
+    }
+
+    console.log('Update data after cleaning:', updateData);
+
     try {
       const event = await this.prisma.event.update({
         where: { id },
-        data: input,
+        data: updateData,
+        include: {
+          attendanceRecords: true,
+        },
       });
       return this.convertDecimalFields(event);
     } catch (error) {
-      throw new NotFoundException('Event not found');
+      console.error('Error updating event:', error);
+      throw error; // Re-throw the original error for better debugging
     }
   }
 
@@ -662,5 +743,61 @@ export class EventsService {
         ? (attendingCount / event.capacity) * 100
         : null,
     };
+  }
+
+  // ===================================
+  // POST-EVENT NOTES METHODS
+  // ===================================
+
+  async addEventNotes(
+    input: AddEventNotesInput,
+    userId?: string,
+  ): Promise<PrismaEvent> {
+    // First check if event exists
+    const existingEvent = await this.prisma.event.findUnique({
+      where: { id: input.eventId },
+    });
+
+    if (!existingEvent) {
+      throw new NotFoundException('Event not found');
+    }
+
+    // Check if event has ended (optional business rule)
+    const now = new Date();
+    if (existingEvent.endDate && existingEvent.endDate > now) {
+      throw new Error('Cannot add notes to an event that has not yet ended');
+    }
+
+    // If no userId provided, try to find a system user or use null
+    let notesAuthorId: string | null = userId || null;
+    if (!notesAuthorId) {
+      // Try to find the event creator as fallback
+      notesAuthorId = existingEvent.createdBy;
+    }
+
+    // Update the event with post-event notes
+    const updatedEvent = await this.prisma.event.update({
+      where: { id: input.eventId },
+      data: {
+        postEventNotes: input.postEventNotes,
+        postEventNotesBy: notesAuthorId,
+        postEventNotesDate: new Date(),
+      },
+      include: {
+        attendanceRecords: true,
+        postEventNotesAuthor: notesAuthorId
+          ? {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            }
+          : undefined,
+      },
+    });
+
+    return this.convertDecimalFields(updatedEvent);
   }
 }

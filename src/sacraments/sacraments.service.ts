@@ -1,10 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateSacramentalRecordInput } from './dto/create-sacramental-record.input';
 import { UpdateSacramentalRecordInput } from './dto/update-sacramental-record.input';
 import { PrismaService } from '../prisma/prisma.service';
 import { SacramentalRecord } from './entities/sacramental-record.entity';
 import { SacramentalRecordFilterInput } from './dto/sacramental-record-filter.input';
 import { Prisma } from '@prisma/client';
+import {
+  MarriageAnalytics,
+  MemberMarriageHistory,
+  MonthlyMarriageData,
+  OfficiantStats,
+} from './dto/marriage-analytics.output';
+import {
+  MarriageAnalyticsInput,
+  MemberMarriageHistoryInput,
+} from './dto/marriage-analytics.input';
 
 // Type guard to ensure Prisma record is properly typed
 function isPrismaSacramentalRecord(
@@ -46,7 +60,12 @@ export class SacramentsService {
     }
 
     // Build output for each sacrament type
-    const allTypes = ['BAPTISM', 'COMMUNION', 'CONFIRMATION', 'MARRIAGE'];
+    const allTypes = [
+      'BAPTISM',
+      'EUCHARIST_FIRST_COMMUNION',
+      'CONFIRMATION',
+      'MATRIMONY',
+    ];
     const result = allTypes.map((type) => {
       const count = statsMap[type]?.count || 0;
       // Trend/percentage logic placeholder (real logic would compare with previous period)
@@ -134,6 +153,12 @@ export class SacramentsService {
       locationOfSacrament: record.locationOfSacrament,
       officiantName: record.officiantName,
       officiantId: record.officiantId,
+      // NEW: Marriage-specific member relationship fields
+      groomMemberId: record.groomMemberId,
+      brideMemberId: record.brideMemberId,
+      // NEW: Witness member relationship fields
+      witness1MemberId: record.witness1MemberId,
+      witness2MemberId: record.witness2MemberId,
       godparent1Name: record.godparent1Name,
       godparent2Name: record.godparent2Name,
       sponsorName: record.sponsorName,
@@ -176,12 +201,98 @@ export class SacramentsService {
       );
     }
 
-    // Use type assertion with parentheses for proper precedence
+    // Enhanced validation for marriage records
+    if (createSacramentalRecordInput.sacramentType === 'MATRIMONY') {
+      await this.validateMarriageRecord(createSacramentalRecordInput);
+    }
+
+    // Validate member relationships if provided
+    await this.validateMemberRelationships(createSacramentalRecordInput);
+
+    // Use type assertion with separate variable for clarity
     const prismaResult = await this.prisma.sacramentalRecord.create({
       data: createSacramentalRecordInput,
     });
     const record = prismaResult as unknown as SacramentalRecord;
     return this.mapPrismaRecordToEntity(record);
+  }
+
+  // NEW: Enhanced validation for marriage records
+  private async validateMarriageRecord(
+    input: CreateSacramentalRecordInput,
+  ): Promise<void> {
+    // Ensure both groom and bride information is provided
+    if (!input.groomName && !input.groomMemberId) {
+      throw new BadRequestException(
+        'Groom information is required for marriage records',
+      );
+    }
+
+    if (!input.brideName && !input.brideMemberId) {
+      throw new BadRequestException(
+        'Bride information is required for marriage records',
+      );
+    }
+
+    // Check for duplicate marriage records (business rule)
+    if (input.groomMemberId && input.brideMemberId) {
+      const existingMarriage = await this.prisma.sacramentalRecord.findFirst({
+        where: {
+          sacramentType: 'MATRIMONY',
+          OR: [
+            {
+              AND: [
+                { groomMemberId: input.groomMemberId },
+                { brideMemberId: input.brideMemberId },
+              ],
+            },
+            {
+              AND: [
+                { groomMemberId: input.brideMemberId },
+                { brideMemberId: input.groomMemberId },
+              ],
+            },
+          ],
+        },
+      });
+
+      if (existingMarriage) {
+        throw new BadRequestException(
+          'A marriage record already exists for these members',
+        );
+      }
+    }
+  }
+
+  // NEW: Validate member relationships
+  private async validateMemberRelationships(
+    input: CreateSacramentalRecordInput,
+  ): Promise<void> {
+    const memberIds = [
+      input.groomMemberId,
+      input.brideMemberId,
+      input.officiantId,
+      input.witness1MemberId,
+      input.witness2MemberId,
+    ].filter((id): id is string => Boolean(id));
+
+    if (memberIds.length > 0) {
+      const members = await this.prisma.member.findMany({
+        where: { id: { in: memberIds } },
+        select: { id: true },
+      });
+
+      const foundMemberIds = members.map((m) => m.id);
+      const missingMemberIds = memberIds.filter(
+        (id) => !foundMemberIds.includes(id),
+      );
+
+      if (missingMemberIds.length > 0) {
+        throw new NotFoundException(
+          `Members not found: ${missingMemberIds.join(', ')}`,
+        );
+      }
+    }
   }
 
   async findAll(
@@ -378,5 +489,341 @@ export class SacramentsService {
     });
     const record = prismaResult as unknown as SacramentalRecord;
     return this.mapPrismaRecordToEntity(record);
+  }
+
+  async getMarriageAnalytics(
+    input: MarriageAnalyticsInput,
+  ): Promise<MarriageAnalytics> {
+    const { branchId, startDate, endDate, organisationId } = input;
+
+    // Build date range filter
+    const dateFilter: any = {};
+    if (startDate) dateFilter.gte = new Date(startDate);
+    if (endDate) dateFilter.lte = new Date(endDate);
+
+    // Build base where clause
+    const where: any = {
+      sacramentType: 'MATRIMONY',
+      branchId,
+    };
+    if (organisationId) where.organisationId = organisationId;
+    if (Object.keys(dateFilter).length > 0) where.dateOfSacrament = dateFilter;
+
+    // Get all marriage records
+    const marriages = await this.prisma.sacramentalRecord.findMany({
+      where,
+      include: {
+        groomMember: true,
+        brideMember: true,
+        officiant: true,
+      },
+    });
+
+    // Calculate statistics
+    const totalMarriages = marriages.length;
+    const memberMarriages = marriages.filter(
+      (m) => m.groomMemberId && m.brideMemberId,
+    ).length;
+    const mixedMarriages = marriages.filter(
+      (m) =>
+        (m.groomMemberId && !m.brideMemberId) ||
+        (!m.groomMemberId && m.brideMemberId),
+    ).length;
+    const externalMarriages = marriages.filter(
+      (m) => !m.groomMemberId && !m.brideMemberId,
+    ).length;
+
+    // Calculate year-over-year growth
+    const currentYear = new Date().getFullYear();
+    const thisYearMarriages = marriages.filter(
+      (m) => m.dateOfSacrament.getFullYear() === currentYear,
+    ).length;
+
+    const lastYearMarriages = marriages.filter(
+      (m) => m.dateOfSacrament.getFullYear() === currentYear - 1,
+    ).length;
+
+    const growthPercentage =
+      lastYearMarriages > 0
+        ? ((thisYearMarriages - lastYearMarriages) / lastYearMarriages) * 100
+        : 0;
+
+    // Get monthly trends
+    const monthlyTrends = await this.getMonthlyMarriageData(input);
+
+    // Get top officiants
+    const topOfficiants = await this.getOfficiantStats(input);
+
+    // Calculate average age (for members only)
+    const memberAges: number[] = [];
+    for (const marriage of marriages) {
+      if (marriage.groomMember?.dateOfBirth) {
+        const age = this.calculateAge(
+          marriage.groomMember.dateOfBirth,
+          marriage.dateOfSacrament,
+        );
+        memberAges.push(age);
+      }
+      if (marriage.brideMember?.dateOfBirth) {
+        const age = this.calculateAge(
+          marriage.brideMember.dateOfBirth,
+          marriage.dateOfSacrament,
+        );
+        memberAges.push(age);
+      }
+    }
+    const averageAge =
+      memberAges.length > 0
+        ? memberAges.reduce((sum, age) => sum + age, 0) / memberAges.length
+        : 0;
+
+    // Calculate upcoming anniversaries (next 30 days)
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+    const upcomingAnniversaries = marriages.filter((m) => {
+      const nextAnniversary = new Date(m.dateOfSacrament);
+      nextAnniversary.setFullYear(new Date().getFullYear());
+      return (
+        nextAnniversary >= new Date() && nextAnniversary <= thirtyDaysFromNow
+      );
+    }).length;
+
+    return {
+      totalMarriages,
+      memberMarriages,
+      mixedMarriages,
+      externalMarriages,
+      thisYearMarriages,
+      lastYearMarriages,
+      growthPercentage,
+      monthlyTrends,
+      topOfficiants,
+      averageAge: Math.round(averageAge * 10) / 10, // Round to 1 decimal
+      upcomingAnniversaries,
+    };
+  }
+
+  async getMemberMarriageHistory(
+    input: MemberMarriageHistoryInput,
+  ): Promise<MemberMarriageHistory | null> {
+    const { memberId, branchId } = input;
+
+    // Find marriage record where member is either groom or bride
+    const marriage = await this.prisma.sacramentalRecord.findFirst({
+      where: {
+        sacramentType: 'MATRIMONY',
+        OR: [
+          { groomMemberId: memberId },
+          { brideMemberId: memberId },
+          { memberId }, // Primary member
+        ],
+        ...(branchId && { branchId }),
+      },
+      include: {
+        member: true,
+        groomMember: true,
+        brideMember: true,
+      },
+    });
+
+    if (!marriage) return null;
+
+    // Determine spouse information
+    let spouseName: string;
+    let spouseMemberId: string | undefined;
+
+    if (marriage.groomMemberId === memberId) {
+      // Member is groom, spouse is bride
+      spouseName = marriage.brideName || '';
+      spouseMemberId = marriage.brideMemberId || undefined;
+    } else if (marriage.brideMemberId === memberId) {
+      // Member is bride, spouse is groom
+      spouseName = marriage.groomName || '';
+      spouseMemberId = marriage.groomMemberId || undefined;
+    } else {
+      // Member is primary member, determine from names
+      const memberName = `${marriage.member.firstName} ${marriage.member.lastName}`;
+      if (marriage.groomName === memberName) {
+        spouseName = marriage.brideName || '';
+        spouseMemberId = marriage.brideMemberId || undefined;
+      } else {
+        spouseName = marriage.groomName || '';
+        spouseMemberId = marriage.groomMemberId || undefined;
+      }
+    }
+
+    // Calculate years married and next anniversary
+    const yearsMarried = this.calculateYearsMarried(marriage.dateOfSacrament);
+    const nextAnniversary = this.calculateNextAnniversary(
+      marriage.dateOfSacrament,
+    );
+
+    return {
+      memberId,
+      memberName: `${marriage.member.firstName} ${marriage.member.lastName}`,
+      spouseName,
+      spouseMemberId,
+      marriageDate: marriage.dateOfSacrament,
+      marriageLocation: marriage.locationOfSacrament,
+      officiantName: marriage.officiantName,
+      yearsMarried,
+      nextAnniversary,
+      certificateUrl: marriage.certificateUrl || undefined,
+    };
+  }
+
+  async getMonthlyMarriageData(
+    input: MarriageAnalyticsInput,
+  ): Promise<MonthlyMarriageData[]> {
+    const { branchId, startDate, endDate, organisationId } = input;
+
+    // Default to last 12 months if no date range provided
+    const defaultEndDate = endDate ? new Date(endDate) : new Date();
+    const defaultStartDate = startDate
+      ? new Date(startDate)
+      : new Date(
+          defaultEndDate.getFullYear() - 1,
+          defaultEndDate.getMonth(),
+          1,
+        );
+
+    const where: any = {
+      sacramentType: 'MATRIMONY',
+      branchId,
+      dateOfSacrament: {
+        gte: defaultStartDate,
+        lte: defaultEndDate,
+      },
+    };
+    if (organisationId) where.organisationId = organisationId;
+
+    const marriages = await this.prisma.sacramentalRecord.findMany({
+      where,
+    });
+
+    // Group by month
+    const monthlyData: { [key: string]: MonthlyMarriageData } = {};
+
+    marriages.forEach((marriage) => {
+      const monthKey = `${marriage.dateOfSacrament.getFullYear()}-${String(marriage.dateOfSacrament.getMonth() + 1).padStart(2, '0')}`;
+
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = {
+          month: monthKey,
+          count: 0,
+          memberMarriages: 0,
+          mixedMarriages: 0,
+          externalMarriages: 0,
+        };
+      }
+
+      monthlyData[monthKey].count++;
+
+      if (marriage.groomMemberId && marriage.brideMemberId) {
+        monthlyData[monthKey].memberMarriages++;
+      } else if (marriage.groomMemberId || marriage.brideMemberId) {
+        monthlyData[monthKey].mixedMarriages++;
+      } else {
+        monthlyData[monthKey].externalMarriages++;
+      }
+    });
+
+    return Object.values(monthlyData).sort((a, b) =>
+      a.month.localeCompare(b.month),
+    );
+  }
+
+  async getOfficiantStats(
+    input: MarriageAnalyticsInput,
+  ): Promise<OfficiantStats[]> {
+    const { branchId, startDate, endDate, organisationId } = input;
+
+    const dateFilter: any = {};
+    if (startDate) dateFilter.gte = new Date(startDate);
+    if (endDate) dateFilter.lte = new Date(endDate);
+
+    const where: any = {
+      sacramentType: 'MATRIMONY',
+      branchId,
+    };
+    if (organisationId) where.organisationId = organisationId;
+    if (Object.keys(dateFilter).length > 0) where.dateOfSacrament = dateFilter;
+
+    const marriages = await this.prisma.sacramentalRecord.findMany({
+      where,
+      include: {
+        officiant: true,
+      },
+    });
+
+    // Group by officiant
+    const officiantStats: { [key: string]: OfficiantStats } = {};
+
+    marriages.forEach((marriage) => {
+      const officiantKey = marriage.officiantId || marriage.officiantName;
+
+      if (!officiantStats[officiantKey]) {
+        officiantStats[officiantKey] = {
+          officiantId: marriage.officiantId || '',
+          officiantName: marriage.officiantName,
+          marriageCount: 0,
+          memberOfficiant: !!marriage.officiant,
+        };
+      }
+
+      officiantStats[officiantKey].marriageCount++;
+    });
+
+    return Object.values(officiantStats)
+      .sort((a, b) => b.marriageCount - a.marriageCount)
+      .slice(0, 10); // Top 10 officiants
+  }
+
+  // Helper methods
+  private calculateAge(birthDate: Date, referenceDate: Date): number {
+    const age = referenceDate.getFullYear() - birthDate.getFullYear();
+    const monthDiff = referenceDate.getMonth() - birthDate.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && referenceDate.getDate() < birthDate.getDate())
+    ) {
+      return age - 1;
+    }
+
+    return age;
+  }
+
+  private calculateYearsMarried(marriageDate: Date): number {
+    const now = new Date();
+    const years = now.getFullYear() - marriageDate.getFullYear();
+    const monthDiff = now.getMonth() - marriageDate.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && now.getDate() < marriageDate.getDate())
+    ) {
+      return years - 1;
+    }
+
+    return years;
+  }
+
+  private calculateNextAnniversary(marriageDate: Date): Date {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const anniversary = new Date(
+      currentYear,
+      marriageDate.getMonth(),
+      marriageDate.getDate(),
+    );
+
+    // If anniversary has passed this year, return next year's anniversary
+    if (anniversary < now) {
+      anniversary.setFullYear(currentYear + 1);
+    }
+
+    return anniversary;
   }
 }

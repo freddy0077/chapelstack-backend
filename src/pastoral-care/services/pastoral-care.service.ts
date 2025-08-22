@@ -71,7 +71,7 @@ export class PastoralCareService {
         where: {
           ...where,
           scheduledDate: { gte: new Date() },
-          status: { in: ['SCHEDULED'] },
+          status: 'SCHEDULED',
         },
       }),
 
