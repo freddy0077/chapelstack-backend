@@ -206,8 +206,8 @@ export class RecentContributionDto {
   @Field(() => Date)
   date: Date;
 
-  @Field(() => String)
-  type: string;
+  @Field(() => String, { nullable: true })
+  type?: string;
 }
 
 @ObjectType()
