@@ -640,7 +640,7 @@ export class BranchDashboardService {
         id: c.id,
         amount: c.amount,
         date: c.date,
-        type: c.description || 'Contribution',
+        type: c.description || 'General Contribution',
       })),
       recentSacraments: recentSacraments.map((s) => ({
         id: s.id,
