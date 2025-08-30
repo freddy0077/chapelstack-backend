@@ -775,7 +775,7 @@ export class MembersResolver {
     @UserAgent() userAgent?: string,
   ): Promise<string> {
     return this.membersService.bulkExportData(
-      bulkExportInput.memberIds,
+      bulkExportInput,
       user,
       ipAddress,
       userAgent,

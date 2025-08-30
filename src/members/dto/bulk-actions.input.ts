@@ -1,6 +1,7 @@
 import { InputType, Field } from '@nestjs/graphql';
-import { IsArray, IsEnum, IsString, IsUUID, IsOptional } from 'class-validator';
+import { IsArray, IsEnum, IsString, IsUUID, IsOptional, IsBoolean } from 'class-validator';
 import { MemberStatus } from '../entities/member.entity';
+import { MemberFiltersInput } from './member-filters.input';
 
 @InputType()
 export class BulkUpdateStatusInput {
@@ -88,13 +89,35 @@ export class BulkRemoveFromMinistryInput {
 
 @InputType()
 export class BulkExportInput {
-  @Field(() => [String])
+  // Support both member IDs and filter-based exports
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
   @IsArray()
   @IsUUID('4', { each: true })
-  memberIds: string[];
+  memberIds?: string[];
+
+  @Field(() => MemberFiltersInput, { nullable: true })
+  @IsOptional()
+  filters?: MemberFiltersInput;
 
   @Field(() => String, { nullable: true, defaultValue: 'CSV' })
   @IsOptional()
-  @IsEnum(['CSV', 'PDF'])
-  format?: 'CSV' | 'PDF';
+  @IsEnum(['CSV', 'EXCEL', 'PDF'])
+  format?: 'CSV' | 'EXCEL' | 'PDF';
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  fields?: string[];
+
+  @Field(() => Boolean, { nullable: true, defaultValue: true })
+  @IsOptional()
+  @IsBoolean()
+  includeHeaders?: boolean;
+
+  @Field(() => Boolean, { nullable: true, defaultValue: false })
+  @IsOptional()
+  @IsBoolean()
+  includeImages?: boolean;
 }

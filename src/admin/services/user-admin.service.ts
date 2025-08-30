@@ -478,10 +478,7 @@ export class UserAdminService {
         },
         skip,
         take,
-        orderBy: [
-          { firstName: 'asc' },
-          { lastName: 'asc' },
-        ],
+        orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
       }),
       this.prisma.user.count({ where }),
     ]);

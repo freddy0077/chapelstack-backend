@@ -829,8 +829,12 @@ input BulkDeactivateInput {
 }
 
 input BulkExportInput {
+  fields: [String!]
+  filters: MemberFiltersInput
   format: String = "CSV"
-  memberIds: [String!]!
+  includeHeaders: Boolean = true
+  includeImages: Boolean = false
+  memberIds: [String!]
 }
 
 input BulkRemoveFromGroupInput {
@@ -3473,6 +3477,26 @@ input MemberFilterInput {
   status: String
 }
 
+input MemberFiltersInput {
+  branchId: String
+  gender: [String!]
+  hasEmail: Boolean
+  hasMemberId: Boolean
+  hasPhone: Boolean
+  hasProfileImage: Boolean
+  isRegularAttendee: Boolean
+  joinedAfter: String
+  joinedBefore: String
+  maritalStatus: [String!]
+  maxAge: Int
+  memberStatus: [String!]
+  membershipStatus: [String!]
+  membershipType: [String!]
+  minAge: Int
+  organisationId: String
+  search: String
+}
+
 type MemberGeographic {
   averageAge: Float
   location: String!
@@ -4804,11 +4828,14 @@ type Query {
   spiritualMilestonesByMember(memberId: String!): [SpiritualMilestone!]!
   spiritualMilestonesCount: Int!
   subscription(id: ID!): Subscription!
+  subscriptionDashboardStats: SubscriptionDashboardStats!
   subscriptionLifecycleStats: SubscriptionLifecycleStats!
   subscriptionOrganizations(filter: OrganizationFilterInput): [OrganizationWithSubscription!]!
   subscriptionPayments(filter: PaymentFilterInput): [SubscriptionPayment!]!
   subscriptionPlan(id: ID!): SubscriptionPlan!
   subscriptionPlans(filter: PlanFilterInput): [SubscriptionPlan!]!
+  subscriptionRecentActivity(limit: Int = 10): [SubscriptionActivityItem!]!
+  subscriptionTabCounts: SubscriptionTabCounts!
   superAdminDashboardData(organisationId: ID): SuperAdminDashboardData!
   supportedCertificateSacramentTypes: [CertificateSacramentType!]!
   supportedDenominations: [ChurchDenomination!]!
@@ -4877,7 +4904,7 @@ type RecentContributionDto {
   amount: Float!
   date: DateTime!
   id: String!
-  type: String!
+  type: String
 }
 
 type RecentMemberDto {
@@ -5372,6 +5399,32 @@ type Subscription {
   updatedAt: DateTime!
 }
 
+type SubscriptionActivityItem {
+  description: String!
+  id: String!
+  metadata: JSON
+  organizationId: String!
+  organizationName: String!
+  severity: String!
+  subscriptionId: String!
+  timestamp: String!
+  type: String!
+}
+
+type SubscriptionDashboardStats {
+  activeSubscriptions: Int!
+  expiredSubscriptions: Int!
+  expiringSoon: Int!
+  gracePeriodSubscriptions: Int!
+  monthlyRevenue: Float!
+  organizationGrowthRate: Float!
+  revenueGrowthRate: Float!
+  subscriptionGrowthRate: Float!
+  totalOrganizations: Int!
+  totalRevenue: Float!
+  trialSubscriptions: Int!
+}
+
 input SubscriptionFilterInput {
   customerId: String
   dateFrom: String
@@ -5459,6 +5512,15 @@ enum SubscriptionStatus {
   PAST_DUE
   PAUSED
   TRIALING
+}
+
+type SubscriptionTabCounts {
+  activeSubscriptions: Int!
+  cancelledSubscriptions: Int!
+  expiredSubscriptions: Int!
+  gracePeriodSubscriptions: Int!
+  pendingRenewals: Int!
+  trialSubscriptions: Int!
 }
 
 type SuccessMessage {

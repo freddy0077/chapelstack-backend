@@ -27,7 +27,9 @@ import {
   BulkAddToMinistryInput,
   BulkRemoveFromGroupInput,
   BulkRemoveFromMinistryInput,
+  BulkExportInput,
 } from '../dto/bulk-actions.input';
+import { MemberFiltersInput } from '../dto/member-filters.input';
 import { User } from '../../users/entities/user.entity';
 
 @Injectable()
@@ -2255,34 +2257,360 @@ export class MembersService {
     return true;
   }
 
+  /**
+   * Helper function to build Prisma where clause from member filters
+   */
+  private buildWhereClauseFromFilters(
+    filters: MemberFiltersInput,
+  ): Prisma.MemberWhereInput {
+    const where: Prisma.MemberWhereInput = {};
+
+    // Exclude deactivated members by default
+    where.isDeactivated = false;
+
+    if (filters.branchId) {
+      where.branchId = filters.branchId;
+    } else if (filters.organisationId) {
+      where.organisationId = filters.organisationId;
+    }
+
+    if (filters.hasMemberId === true) {
+      where.memberId = { not: null };
+    } else if (filters.hasMemberId === false) {
+      where.memberId = null;
+    }
+
+    // Server-side filters
+    if (filters.gender && filters.gender.length > 0) {
+      where.gender = { in: filters.gender as any };
+    }
+
+    if (filters.maritalStatus && filters.maritalStatus.length > 0) {
+      where.maritalStatus = { in: filters.maritalStatus as any };
+    }
+
+    if (filters.membershipStatus && filters.membershipStatus.length > 0) {
+      where.membershipStatus = { in: filters.membershipStatus as any };
+    }
+
+    if (filters.memberStatus && filters.memberStatus.length > 0) {
+      where.status = { in: filters.memberStatus as any };
+    }
+
+    // Age range filtering
+    if (filters.minAge !== undefined || filters.maxAge !== undefined) {
+      const now = new Date();
+      const conditions: Prisma.MemberWhereInput[] = [];
+
+      if (filters.maxAge !== undefined) {
+        const minBirthDate = new Date(
+          now.getFullYear() - filters.maxAge - 1,
+          now.getMonth(),
+          now.getDate(),
+        );
+        conditions.push({ dateOfBirth: { gte: minBirthDate } });
+      }
+
+      if (filters.minAge !== undefined) {
+        const maxBirthDate = new Date(
+          now.getFullYear() - filters.minAge,
+          now.getMonth(),
+          now.getDate(),
+        );
+        conditions.push({ dateOfBirth: { lte: maxBirthDate } });
+      }
+
+      if (conditions.length > 0) {
+        where.AND = Array.isArray(where.AND)
+          ? where.AND.concat(conditions)
+          : conditions;
+      }
+    }
+
+    // Date range filtering
+    if (filters.joinedAfter || filters.joinedBefore) {
+      const dateConditions: any = {};
+      if (filters.joinedAfter) {
+        dateConditions.gte = new Date(filters.joinedAfter);
+      }
+      if (filters.joinedBefore) {
+        dateConditions.lte = new Date(filters.joinedBefore);
+      }
+      where.membershipDate = dateConditions;
+    }
+
+    if (filters.hasProfileImage === true) {
+      where.profileImageUrl = { not: null };
+    } else if (filters.hasProfileImage === false) {
+      where.profileImageUrl = null;
+    }
+
+    if (filters.hasEmail === true) {
+      where.email = { not: null };
+    } else if (filters.hasEmail === false) {
+      where.email = null;
+    }
+
+    if (filters.hasPhone === true) {
+      where.phoneNumber = { not: null };
+    } else if (filters.hasPhone === false) {
+      where.phoneNumber = null;
+    }
+
+    if (filters.isRegularAttendee !== undefined) {
+      where.isRegularAttendee = filters.isRegularAttendee;
+    }
+
+    return where;
+  }
+
+  /**
+   * Helper function to add search conditions to where clause
+   */
+  private addSearchToWhereClause(
+    where: Prisma.MemberWhereInput,
+    search: string,
+  ): Prisma.MemberWhereInput {
+    if (!search || search.trim().length === 0) {
+      return where;
+    }
+
+    const searchTerms = search.trim().split(/\s+/);
+    const searchFilter: Prisma.MemberWhereInput = {
+      OR: [
+        {
+          firstName: {
+            contains: search,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
+        {
+          lastName: {
+            contains: search,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
+        { email: { contains: search, mode: Prisma.QueryMode.insensitive } },
+        {
+          phoneNumber: {
+            contains: search,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
+        {
+          memberId: {
+            contains: search,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
+        ...(searchTerms.length > 1
+          ? [
+              {
+                AND: [
+                  {
+                    firstName: {
+                      contains: searchTerms[0],
+                      mode: Prisma.QueryMode.insensitive,
+                    },
+                  },
+                  {
+                    lastName: {
+                      contains: searchTerms.slice(1).join(' '),
+                      mode: Prisma.QueryMode.insensitive,
+                    },
+                  },
+                ],
+              },
+            ]
+          : []),
+      ],
+    };
+
+    return {
+      ...where,
+      AND: [
+        ...(Array.isArray(where.AND)
+          ? where.AND
+          : where.AND
+            ? [where.AND]
+            : []),
+        searchFilter,
+      ],
+    };
+  }
+
+  /**
+   * Generate export data based on member IDs or filters
+   */
   async bulkExportData(
-    memberIds: string[],
+    exportInput: BulkExportInput,
     user: User,
     ipAddress?: string,
     userAgent?: string,
   ): Promise<string> {
-    const members = await this.prisma.member.findMany({
-      where: { id: { in: memberIds } },
-    });
+    let members: any[] = [];
+    let exportDescription = '';
 
-    // For now, we'll just return a CSV string as a placeholder.
-    // In a real-world scenario, you would use a library like 'csv-writer'.
-    const header = 'ID,Name,Email\n';
-    const csv = members
-      .map((m) => `${m.id},${m.firstName} ${m.lastName},${m.email}`)
-      .join('\n');
+    // Determine how to fetch members - by IDs or by filters
+    if (exportInput.memberIds && exportInput.memberIds.length > 0) {
+      // Export specific members by IDs
+      members = await this.prisma.member.findMany({
+        where: {
+          id: { in: exportInput.memberIds },
+          isDeactivated: false, // Exclude deactivated members
+        },
+      });
+      exportDescription = `Exported data for ${exportInput.memberIds.length} selected members.`;
+    } else if (exportInput.filters) {
+      // Export members based on filters
+      let where = this.buildWhereClauseFromFilters(exportInput.filters);
 
+      // Add search conditions if provided
+      if (exportInput.filters.search) {
+        where = this.addSearchToWhereClause(where, exportInput.filters.search);
+      }
+
+      members = await this.prisma.member.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      });
+      exportDescription = `Exported filtered member data (${members.length} members found).`;
+    } else {
+      // Export all members (fallback)
+      members = await this.prisma.member.findMany({
+        where: { isDeactivated: false },
+        orderBy: { createdAt: 'desc' },
+      });
+      exportDescription = `Exported all member data (${members.length} members).`;
+    }
+
+    // Generate export content based on format
+    const format = exportInput.format || 'CSV';
+    let exportContent = '';
+
+    if (format === 'CSV') {
+      exportContent = this.generateCSVExport(members, exportInput);
+    } else if (format === 'EXCEL') {
+      // For now, generate CSV format for Excel (can be enhanced later with actual Excel generation)
+      exportContent = this.generateCSVExport(members, exportInput);
+    } else if (format === 'PDF') {
+      // Placeholder for PDF generation
+      exportContent = this.generatePDFExport(members, exportInput);
+    }
+
+    // Log the export action
     await this.auditLogService.create({
       action: 'BULK_EXPORT',
       entityType: 'Member',
-      entityId: memberIds.join(','),
-      description: `Exported data for ${memberIds.length} members.`,
+      entityId: exportInput.memberIds?.join(',') || 'filtered',
+      description: exportDescription,
       userId: user.id,
       ipAddress,
       userAgent,
     });
 
-    return header + csv;
+    return exportContent;
+  }
+
+  /**
+   * Generate CSV export content
+   */
+  private generateCSVExport(
+    members: any[],
+    exportInput: BulkExportInput,
+  ): string {
+    const selectedFields = exportInput.fields || [
+      'memberId',
+      'firstName',
+      'lastName',
+      'email',
+      'phoneNumber',
+      'gender',
+      'dateOfBirth',
+      'maritalStatus',
+      'membershipStatus',
+      'membershipDate',
+    ];
+
+    let csv = '';
+
+    // Add headers if requested
+    if (exportInput.includeHeaders !== false) {
+      const headers = selectedFields.map((field) =>
+        this.getFieldDisplayName(field),
+      );
+      csv += headers.join(',') + '\n';
+    }
+
+    // Add member data
+    csv += members
+      .map((member) => {
+        return selectedFields
+          .map((field) => {
+            let value = member[field];
+
+            // Format specific fields
+            if (field === 'dateOfBirth' && value) {
+              value = new Date(value).toLocaleDateString();
+            } else if (field === 'membershipDate' && value) {
+              value = new Date(value).toLocaleDateString();
+            }
+
+            // Escape commas and quotes in CSV
+            if (value && typeof value === 'string') {
+              value = value.replace(/"/g, '""');
+              if (
+                value.includes(',') ||
+                value.includes('"') ||
+                value.includes('\n')
+              ) {
+                value = `"${value}"`;
+              }
+            }
+
+            return value || '';
+          })
+          .join(',');
+      })
+      .join('\n');
+
+    return csv;
+  }
+
+  /**
+   * Generate PDF export content (placeholder)
+   */
+  private generatePDFExport(
+    members: any[],
+    exportInput: BulkExportInput,
+  ): string {
+    // This is a placeholder - in a real implementation, you would use a PDF library
+    // like puppeteer, jsPDF, or pdfkit to generate actual PDF content
+    return `PDF Export - ${members.length} members (Feature coming soon)`;
+  }
+
+  /**
+   * Get display name for field
+   */
+  private getFieldDisplayName(field: string): string {
+    const fieldNames: Record<string, string> = {
+      memberId: 'Member ID',
+      firstName: 'First Name',
+      lastName: 'Last Name',
+      email: 'Email',
+      phoneNumber: 'Phone Number',
+      gender: 'Gender',
+      dateOfBirth: 'Date of Birth',
+      maritalStatus: 'Marital Status',
+      membershipStatus: 'Membership Status',
+      membershipDate: 'Membership Date',
+      address: 'Address',
+      occupation: 'Occupation',
+      emergencyContactName: 'Emergency Contact Name',
+      emergencyContactPhone: 'Emergency Contact Phone',
+    };
+
+    return fieldNames[field] || field;
   }
 
   async bulkTransfer(

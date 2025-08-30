@@ -13,6 +13,7 @@ import { WebhookService } from './services/webhook.service';
 import { OrganizationManagementService } from './services/organization-management.service';
 import { SubscriptionWorkflowService } from './services/subscription-workflow.service';
 import { SubscriptionLifecycleService } from './services/subscription-lifecycle.service';
+import { SubscriptionDashboardService } from './services/subscription-dashboard.service';
 
 // Controllers
 import { SubscriptionsController } from './controllers/subscriptions.controller';
@@ -43,6 +44,7 @@ import { OrganizationManagementResolver } from './resolvers/organization-managem
     OrganizationManagementService,
     SubscriptionWorkflowService,
     SubscriptionLifecycleService,
+    SubscriptionDashboardService,
     SubscriptionsResolver,
     SubscriptionPlansResolver,
     OrganizationManagementResolver,
@@ -60,6 +62,7 @@ import { OrganizationManagementResolver } from './resolvers/organization-managem
     OrganizationManagementService,
     SubscriptionWorkflowService,
     SubscriptionLifecycleService,
+    SubscriptionDashboardService,
   ],
 })
 export class SubscriptionsModule {}
