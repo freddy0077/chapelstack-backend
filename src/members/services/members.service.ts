@@ -31,6 +31,12 @@ import {
 } from '../dto/bulk-actions.input';
 import { MemberFiltersInput } from '../dto/member-filters.input';
 import { User } from '../../users/entities/user.entity';
+import {
+  ImportMembersInput,
+  ImportMembersResult,
+  ImportMemberResult,
+  ImportError,
+} from '../dto/import-members.input';
 
 @Injectable()
 export class MembersService {
@@ -90,7 +96,6 @@ export class MembersService {
           memberId = await this.memberIdGenerationService.generateMemberId(
             data.organisationId,
             data.branchId,
-            new Date().getFullYear(),
           );
           this.logger.log(
             `Generated Member ID: ${memberId} for ${data.firstName} ${data.lastName}`,
@@ -121,11 +126,10 @@ export class MembersService {
 
       // Trigger workflow automation for new member
       try {
-        await this.workflowsService.handleMemberCreated(
-          member.id,
-          member.organisationId || '',
-          member.branchId || undefined,
-        );
+        await this.workflowsService.triggerWorkflow({
+          workflowId: 'MEMBER_CREATED_WORKFLOW_ID', // TODO: replace with actual workflow ID
+          targetMemberId: member.id,
+        });
       } catch (error) {
         this.logger.warn(
           `Failed to trigger member created workflow for member ${member.id}: ${error.message}`,
@@ -205,14 +209,46 @@ export class MembersService {
         }
       }
 
+      // Extract relation IDs and other problematic fields for proper handling
+      const { 
+        organisationId, 
+        branchId, 
+        parentId,
+        spouseId,
+        ...memberData 
+      } = createMemberInput;
+
       // Create the member with enhanced fields and proper defaults
       const member = await this.prisma.member.create({
         data: {
-          ...createMemberInput,
+          ...memberData,
           memberId: rfidCardId,
           // Set audit fields
           createdBy: userId,
           lastModifiedBy: userId,
+          // Connect to organisation and branch if provided
+          ...(organisationId && {
+            organisation: {
+              connect: { id: organisationId }
+            }
+          }),
+          ...(branchId && {
+            branch: {
+              connect: { id: branchId }
+            }
+          }),
+          // Connect to parent if provided
+          ...(parentId && {
+            parent: {
+              connect: { id: parentId }
+            }
+          }),
+          // Connect to spouse if provided
+          ...(spouseId && {
+            spouse: {
+              connect: { id: spouseId }
+            }
+          }),
           // Set GDPR compliance defaults if not provided
           consentDate: createMemberInput.consentDate || new Date(),
           consentVersion: createMemberInput.consentVersion || '1.0',
@@ -336,11 +372,10 @@ export class MembersService {
 
       // Trigger workflow automation for new member
       try {
-        await this.workflowsService.handleMemberCreated(
-          member.id,
-          member.organisationId || '',
-          member.branchId || undefined,
-        );
+        await this.workflowsService.triggerWorkflow({
+          workflowId: 'MEMBER_CREATED_WORKFLOW_ID', // TODO: replace with actual workflow ID
+          targetMemberId: member.id,
+        });
       } catch (error) {
         this.logger.warn(
           `Failed to trigger member created workflow for member ${member.id}: ${error.message}`,
@@ -573,11 +608,10 @@ export class MembersService {
 
       // Trigger workflow automation for member update
       try {
-        await this.workflowsService.handleMemberUpdated(
-          updatedMember.id,
-          updatedMember.organisationId || '',
-          updatedMember.branchId || undefined,
-        );
+        await this.workflowsService.triggerWorkflow({
+          workflowId: 'MEMBER_UPDATED_WORKFLOW_ID', // TODO: replace with actual workflow ID
+          targetMemberId: updatedMember.id,
+        });
       } catch (error) {
         this.logger.warn(
           `Failed to trigger member updated workflow for member ${updatedMember.id}: ${error.message}`,
@@ -648,11 +682,10 @@ export class MembersService {
 
       // Trigger workflow automation for member status update
       try {
-        await this.workflowsService.handleMemberUpdated(
-          updatedMember.id,
-          updatedMember.organisationId || '',
-          updatedMember.branchId || undefined,
-        );
+        await this.workflowsService.triggerWorkflow({
+          workflowId: 'MEMBER_STATUS_UPDATED_WORKFLOW_ID', // TODO: replace with actual workflow ID
+          targetMemberId: updatedMember.id,
+        });
       } catch (error) {
         this.logger.warn(
           `Failed to trigger member status updated workflow for member ${updatedMember.id}: ${error.message}`,
@@ -2087,7 +2120,6 @@ export class MembersService {
       const memberId = await this.memberIdGenerationService.generateMemberId(
         member.organisationId,
         member.branchId,
-        membershipYear,
       );
 
       const updatedMember = await this.prisma.member.update({
@@ -2844,5 +2876,229 @@ export class MembersService {
     await Promise.all(auditLogPromises);
 
     return true;
+  }
+
+  /**
+   * Import members in bulk from CSV/Excel data
+   */
+  async importMembers(
+    importMembersInput: ImportMembersInput,
+    currentUser: User,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<ImportMembersResult> {
+    const {
+      branchId,
+      organisationId,
+      members,
+      skipDuplicates = false,
+      updateExisting = false,
+    } = importMembersInput;
+
+    const results: ImportMemberResult[] = [];
+    const errors: ImportError[] = [];
+    let successCount = 0;
+    let errorCount = 0;
+    let skippedCount = 0;
+
+    // Validate branch and organization exist
+    const branch = await this.prisma.branch.findUnique({
+      where: { id: branchId },
+      include: { organisation: true },
+    });
+
+    if (!branch || branch.organisationId !== organisationId) {
+      throw new NotFoundException(
+        'Branch not found or does not belong to the specified organization',
+      );
+    }
+
+    // Process each member
+    for (let i = 0; i < members.length; i++) {
+      const memberData = members[i];
+      const rowNumber = i + 1;
+
+      try {
+        // Set branch and organization IDs
+        memberData.branchId = branchId;
+        memberData.organisationId = organisationId;
+
+        // Check for duplicates based on email or phone
+        let existingMember: Member | null = null;
+        if (memberData.email) {
+          existingMember = await this.prisma.member.findFirst({
+            where: {
+              email: memberData.email,
+              branchId: branchId,
+              isDeactivated: false,
+            },
+          }) as Member | null;
+          if (existingMember && existingMember.gender && typeof existingMember.gender === 'string') {
+            // Convert Prisma Gender enum to app Gender enum
+            existingMember.gender = existingMember.gender as any;
+          }
+        }
+
+        if (!existingMember && memberData.phoneNumber) {
+          existingMember = await this.prisma.member.findFirst({
+            where: {
+              phoneNumber: memberData.phoneNumber,
+              branchId: branchId,
+              isDeactivated: false,
+            },
+          }) as Member | null;
+          if (existingMember && existingMember.gender && typeof existingMember.gender === 'string') {
+            existingMember.gender = existingMember.gender as any;
+          }
+        }
+
+        // Handle existing member
+        if (existingMember) {
+          if (skipDuplicates) {
+            results.push({
+              id: existingMember.id,
+              firstName: memberData.firstName,
+              lastName: memberData.lastName,
+              email: memberData.email,
+              success: false,
+              error: 'Skipped - duplicate member',
+              row: rowNumber,
+            });
+            skippedCount++;
+            continue;
+          } else if (updateExisting) {
+            // Update existing member
+            const updatedMember = await this.prisma.member.update({
+              where: { id: existingMember.id },
+              data: {
+                ...memberData,
+                updatedAt: new Date(),
+              },
+            });
+
+            // Log audit
+            await this.auditLogService.create({
+              userId: currentUser.id,
+              action: 'update_member_import',
+              entityId: updatedMember.id,
+              entityType: 'Member',
+              description: `Member updated via import: ${memberData.firstName} ${memberData.lastName}`,
+              ipAddress,
+              userAgent,
+            });
+
+            results.push({
+              id: updatedMember.id,
+              firstName: memberData.firstName,
+              lastName: memberData.lastName,
+              email: memberData.email,
+              success: true,
+              row: rowNumber,
+            });
+            successCount++;
+            continue;
+          } else {
+            // Duplicate found and not handling
+            results.push({
+              id: existingMember.id,
+              firstName: memberData.firstName,
+              lastName: memberData.lastName,
+              email: memberData.email,
+              success: false,
+              error: 'Duplicate member found',
+              row: rowNumber,
+            });
+            errorCount++;
+            continue;
+          }
+        }
+
+        // Generate member ID if not provided
+        if (!memberData.customFields?.memberId) {
+          const memberId = await this.memberIdGenerationService.generateMemberId(
+            branchId,
+            organisationId,
+          );
+          memberData.customFields = {
+            ...memberData.customFields,
+            memberId,
+          };
+        }
+
+        // Create new member
+        const newMember = await this.prisma.member.create({
+          data: {
+            ...memberData,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+
+        // Log audit
+        await this.auditLogService.create({
+          userId: currentUser.id,
+          action: 'create_member_import',
+          entityId: newMember.id,
+          entityType: 'Member',
+          description: `Member created via import: ${memberData.firstName} ${memberData.lastName}`,
+          ipAddress,
+          userAgent,
+        });
+
+        // Trigger workflow if applicable
+        try {
+          await this.workflowsService.triggerWorkflow({
+            workflowId: 'MEMBER_CREATED_WORKFLOW_ID', // TODO: replace with actual workflow ID
+            targetMemberId: newMember.id,
+          });
+        } catch (workflowError) {
+          this.logger.warn(
+            `Workflow trigger failed for member ${newMember.id}: ${workflowError.message}`,
+          );
+        }
+
+        results.push({
+          id: newMember.id,
+          firstName: memberData.firstName,
+          lastName: memberData.lastName,
+          email: memberData.email,
+          success: true,
+          row: rowNumber,
+        });
+        successCount++;
+      } catch (error) {
+        this.logger.error(`Error importing member at row ${rowNumber}:`, error);
+
+        results.push({
+          firstName: memberData.firstName || 'Unknown',
+          lastName: memberData.lastName || 'Unknown',
+          email: memberData.email,
+          success: false,
+          error: `General import error for ${memberData.firstName} ${memberData.lastName}`,
+          row: rowNumber,
+        });
+
+        errors.push({
+          row: rowNumber,
+          column: 'general',
+          message: `General import error for ${memberData.firstName} ${memberData.lastName}`,
+        });
+
+        errorCount++;
+      }
+    }
+
+    // Generate summary
+    const summary = `Import completed: ${successCount} successful, ${errorCount} errors, ${skippedCount} skipped out of ${members.length} total records.`;
+
+    return {
+      totalProcessed: members.length,
+      successCount,
+      errorCount,
+      skippedCount,
+      results,
+      errors,
+      summary,
+    };
   }
 }

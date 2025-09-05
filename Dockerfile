@@ -1,14 +1,15 @@
 # Backend Dockerfile for NestJS
 FROM node:20-alpine
 
-# Install OpenSSL for Prisma
+# Install OpenSSL for Prisma and pnpm
 RUN apk add --no-cache openssl
+RUN npm install -g pnpm
 
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install --legacy-peer-deps
+COPY package*.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # Copy Prisma schema first and generate client
 COPY prisma ./prisma/
@@ -21,4 +22,4 @@ COPY . .
 EXPOSE 4000
 
 # Use development start command
-CMD ["npm", "run", "start:dev"]
+CMD ["pnpm", "run", "start:dev"]

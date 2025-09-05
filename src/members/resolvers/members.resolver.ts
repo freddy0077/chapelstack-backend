@@ -41,6 +41,10 @@ import { MemberStatistics } from '../dto/member-statistics.output';
 import { MemberDashboard } from '../dto/member-dashboard.dto';
 import { S3UploadService } from '../../content/services/s3-upload.service';
 import { FileUpload, GraphQLUpload } from 'graphql-upload';
+import {
+  ImportMembersInput,
+  ImportMembersResult,
+} from '../dto/import-members.input';
 
 @Resolver(() => Member)
 export class MembersResolver {
@@ -843,6 +847,22 @@ export class MembersResolver {
   ): Promise<boolean> {
     return this.membersService.bulkRemoveFromMinistry(
       bulkRemoveFromMinistryInput,
+      user,
+      ipAddress,
+      userAgent,
+    );
+  }
+
+  @Mutation(() => ImportMembersResult)
+  @UseGuards(GqlAuthGuard)
+  async importMembers(
+    @Args('importMembersInput') importMembersInput: ImportMembersInput,
+    @CurrentUser() user: User,
+    @IpAddress() ipAddress?: string,
+    @UserAgent() userAgent?: string,
+  ): Promise<ImportMembersResult> {
+    return this.membersService.importMembers(
+      importMembersInput,
       user,
       ipAddress,
       userAgent,

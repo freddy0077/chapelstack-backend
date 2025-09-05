@@ -10,17 +10,17 @@ import {
   IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { GraphQLJSON } from 'graphql-type-json';
+import { GraphQLISODateTime } from '@nestjs/graphql';
+import { IsValidEnum } from '../../common/utils/enum-validation.util';
+import { Gender } from '../../common/enums/gender.enum';
 import {
-  Gender,
   MaritalStatus,
   MemberStatus,
   MembershipStatus,
   MembershipType,
   PrivacyLevel,
 } from '../entities/member.entity';
-import { GraphQLJSON } from 'graphql-type-json';
-import { GraphQLISODateTime } from '@nestjs/graphql';
-import { IsValidEnum } from '../../common/utils/enum-validation.util';
 
 @InputType()
 export class CreateMemberInput {
@@ -150,7 +150,7 @@ export class CreateMemberInput {
   @IsString()
   nlbNumber?: string;
 
-  @Field(() => Gender, { defaultValue: Gender.NOT_SPECIFIED })
+  @Field(() => Gender, { defaultValue: Gender.UNKNOWN })
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;

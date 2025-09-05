@@ -47,6 +47,7 @@ import { WorkflowsModule } from './workflows/workflows.module';
 import { PastoralCareModule } from './pastoral-care/pastoral-care.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { DeathRegisterModule } from './death-register/death-register.module';
+import { BirthRegistryModule } from './birth-registry/birth-registry.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { registerEnumType } from '@nestjs/graphql';
@@ -119,6 +120,7 @@ registerEnumType(AttendanceStatsPeriod, {
     PastoralCareModule,
     SubscriptionsModule,
     DeathRegisterModule,
+    BirthRegistryModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppResolver],

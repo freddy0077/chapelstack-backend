@@ -57,6 +57,18 @@ input AddEventNotesInput {
   postEventNotes: String!
 }
 
+type AdditionalDocument {
+  name: String!
+  type: String
+  url: String!
+}
+
+input AdditionalDocumentInput {
+  name: String!
+  type: String
+  url: String!
+}
+
 type AgeDistribution {
   ageGroup: String!
   count: Float!
@@ -506,6 +518,96 @@ type BalanceSheet {
   totalNetAssets: Float!
 }
 
+type BirthRegistry {
+  additionalDocuments: [AdditionalDocument!]!
+  attendingPhysician: String
+  baptismDate: DateTime
+  baptismEvent: Event
+  baptismEventId: ID
+  baptismLocation: String
+  baptismOfficiant: String
+  baptismPlanned: Boolean!
+  birthCertificateUrl: String
+  birthCircumstances: String
+  birthLength: Float
+  birthWeight: Float
+  branch: Branch
+  branchId: ID
+  childFirstName: String!
+  childGender: Gender!
+  childLastName: String!
+  childMember: Member
+  childMemberId: ID
+  childMiddleName: String
+  complications: String
+  createChildMember: Boolean!
+  createdAt: DateTime!
+  createdBy: User
+  createdById: ID
+  dateOfBirth: DateTime!
+  fatherAge: Float
+  fatherFirstName: String
+  fatherLastName: String
+  fatherMember: Member
+  fatherMemberId: ID
+  fatherOccupation: String
+  hospitalName: String
+  hospitalRecordUrl: String
+  id: ID!
+  motherAge: Float
+  motherFirstName: String!
+  motherLastName: String!
+  motherMember: Member
+  motherMemberId: ID
+  motherOccupation: String
+  organisation: Organisation
+  organisationId: ID!
+  parentAddress: String!
+  parentEmail: String
+  parentPhone: String
+  photoUrls: [String!]!
+  placeOfBirth: String!
+  timeOfBirth: String
+  updatedAt: DateTime!
+  updatedBy: User
+  updatedById: ID
+}
+
+type BirthRegistryCalendarEntry {
+  baptismDate: DateTime
+  baptismPlanned: Boolean!
+  childName: String!
+  dateOfBirth: DateTime!
+  daysOld: Float!
+  id: ID!
+  photoUrl: String
+}
+
+input BirthRegistryFiltersInput {
+  baptismPlanned: Boolean
+  branchId: ID
+  dateFrom: String
+  dateTo: String
+  gender: Gender
+  placeOfBirth: String
+  search: String
+  skip: Float
+  take: Float
+}
+
+type BirthRegistryStats {
+  averageBirthWeight: Float!
+  baptismCompletedCount: Float!
+  baptismPlannedCount: Float!
+  femaleCount: Float!
+  homeBirthsCount: Float!
+  hospitalBirthsCount: Float!
+  maleCount: Float!
+  thisMonth: Float!
+  thisYear: Float!
+  total: Float!
+}
+
 enum BirthdayRangeEnum {
   THIS_MONTH
   THIS_WEEK
@@ -874,12 +976,14 @@ input CardScanInput {
 }
 
 type CareRequest {
+  assignedPastor: AuthUser
   assignedPastorId: String
   assistantId: String
   branchId: String
   completionDate: DateTime
   createdAt: DateTime!
   createdBy: String!
+  creator: AuthUser
   description: String!
   id: String!
   memberId: String!
@@ -888,6 +992,7 @@ type CareRequest {
   priority: CareRequestPriority!
   requestDate: DateTime!
   requestType: CareRequestType!
+  requester: Member
   requesterId: String!
   status: CareRequestStatus!
   title: String!
@@ -932,6 +1037,7 @@ enum CareRequestType {
   GENERAL_SUPPORT
   HOME_VISIT
   HOSPITAL_VISIT
+  MASS_INTENTION
   PRAYER_REQUEST
   SPIRITUAL_GUIDANCE
 }
@@ -1505,6 +1611,48 @@ input CreateBackupInput {
   userId: ID
 }
 
+input CreateBirthRegistryInput {
+  additionalDocuments: [AdditionalDocumentInput!]
+  attendingPhysician: String
+  baptismDate: String
+  baptismEventId: ID
+  baptismLocation: String
+  baptismOfficiant: String
+  baptismPlanned: Boolean!
+  birthCertificateUrl: String
+  birthCircumstances: String
+  birthLength: Float
+  birthWeight: Float
+  branchId: ID
+  childFirstName: String!
+  childGender: Gender!
+  childLastName: String!
+  childMemberId: ID
+  childMiddleName: String
+  complications: String
+  createChildMember: Boolean! = true
+  dateOfBirth: String!
+  fatherAge: Float
+  fatherFirstName: String
+  fatherLastName: String
+  fatherMemberId: ID
+  fatherOccupation: String
+  hospitalName: String
+  hospitalRecordUrl: String
+  motherAge: Float
+  motherFirstName: String!
+  motherLastName: String!
+  motherMemberId: ID
+  motherOccupation: String
+  organisationId: ID!
+  parentAddress: String!
+  parentEmail: String
+  parentPhone: String
+  photoUrls: [String!]
+  placeOfBirth: String!
+  timeOfBirth: String
+}
+
 input CreateBranchAdminInput {
   branchId: ID!
   email: String!
@@ -1934,7 +2082,7 @@ input CreateMemberInput {
   fatherName: String
   fatherOccupation: String
   firstName: String!
-  gender: Gender! = NOT_SPECIFIED
+  gender: Gender! = UNKNOWN
   groupIds: [String!]
   headOfHousehold: Boolean! = false
   isRegularAttendee: Boolean! = false
@@ -3033,11 +3181,10 @@ type FundMappingConfiguration {
   organisationId: String!
 }
 
-"""Gender options for members"""
+"""Gender options for members and registries"""
 enum Gender {
   FEMALE
   MALE
-  NOT_SPECIFIED
   UNKNOWN
 }
 
@@ -3135,6 +3282,34 @@ type ImportError {
   column: String!
   message: String!
   row: Float!
+}
+
+type ImportMemberResult {
+  email: String
+  error: String
+  firstName: String!
+  id: String
+  lastName: String!
+  row: Float!
+  success: Boolean!
+}
+
+input ImportMembersInput {
+  branchId: String!
+  members: [CreateMemberInput!]!
+  organisationId: String!
+  skipDuplicates: Boolean! = false
+  updateExisting: Boolean! = false
+}
+
+type ImportMembersResult {
+  errorCount: Float!
+  errors: [ImportError!]!
+  results: [ImportMemberResult!]!
+  skippedCount: Float!
+  successCount: Float!
+  summary: String
+  totalProcessed: Float!
 }
 
 type ImportResult {
@@ -3729,6 +3904,7 @@ enum MembershipStatus {
   ACTIVE_MEMBER
   DECEASED
   INACTIVE_MEMBER
+  INFANT
   MEMBER
   REGULAR_ATTENDEE
   TRANSFERRED
@@ -3911,6 +4087,7 @@ type Mutation {
   checkInChild(input: CheckInInput!): CheckInRecord!
   checkOut(input: AttendanceCheckOutInput!): AttendanceRecord!
   checkOutChild(input: ChildCheckOutInput!): CheckInRecord!
+  completeBaptism(baptismDate: String!, baptismEventId: ID, baptismLocation: String!, baptismOfficiant: String!, birthRegistryId: ID!): BirthRegistry!
   completeFollowUpReminder(id: String!, notes: String): FollowUpReminder!
   completeOnboardingStep(input: CompleteOnboardingStepInput!): OnboardingProgress!
   configureInitialSettings(branchId: ID!, input: InitialSettingsInput!): Boolean!
@@ -3918,6 +4095,7 @@ type Mutation {
   createAttendanceSession(input: CreateAttendanceSessionInput!): AttendanceSession!
   createAuditLog(input: CreateAuditLogInput!): AuditLog!
   createBackup(input: CreateBackupInput!): Backup!
+  createBirthRegistry(createBirthRegistryInput: CreateBirthRegistryInput!): BirthRegistry!
   createBranch(createBranchInput: CreateBranchInput!): Branch!
   createBranchAdmin(input: CreateBranchAdminInput!): UserBranch!
   createBranchSetting(input: CreateSettingInput!): Setting!
@@ -4016,6 +4194,7 @@ type Mutation {
   getPresignedUploadUrl(input: FileUploadInput!): FileUploadResponse!
   importFinancialData(branchId: ID!, file: Upload!, mapping: String!, type: String!): ImportResult!
   importMemberData(branchId: ID!, file: Upload!, mapping: String!): ImportResult!
+  importMembers(importMembersInput: ImportMembersInput!): ImportMembersResult!
   initializeOnboarding(branchId: ID!): OnboardingProgress!
   initiateBranchSetup(input: InitialBranchSetupInput!): ID!
   login(input: SignInDto!): AuthPayload!
@@ -4030,6 +4209,7 @@ type Mutation {
   refreshToken(input: RefreshTokenInput!): TokenPayloadDto!
   register(input: SignUpDto!): UserProfile!
   remove(id: ID!): Sermon!
+  removeBirthRegistry(id: ID!): Boolean!
   removeBranch(id: ID!): Branch!
   removeBranchRoleFromUser(branchId: ID!, roleId: ID!, userId: ID!): UserBranch!
   removeBudget(id: String!): Budget!
@@ -4076,6 +4256,7 @@ type Mutation {
   retryWorkflowExecution(executionId: String!): WorkflowExecution!
   saveUserDashboardPreference(branchId: ID!, dashboardType: DashboardType!, layoutConfig: JSON!, organisationId: ID): UserDashboardPreference!
   scheduleAbsenceCheck(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
+  scheduleBaptism(baptismDate: String!, baptismEventId: ID, baptismLocation: String, baptismOfficiant: String, birthRegistryId: ID!): BirthRegistry!
   sendEmail(input: SendEmailInput!): Boolean!
   sendSms(input: SendSmsInput!): Boolean!
   submitForm(input: CreateFormSubmissionInput!): FormSubmission!
@@ -4087,6 +4268,7 @@ type Mutation {
   updateAnnouncement(id: ID!, input: UpdateAnnouncementInput!): Announcement!
   updateAttendanceRecord(id: ID!, input: UpdateAttendanceRecordInput!): AttendanceRecord!
   updateAttendanceSession(input: UpdateAttendanceSessionInput!): AttendanceSession!
+  updateBirthRegistry(id: ID!, updateBirthRegistryInput: UpdateBirthRegistryInput!): BirthRegistry!
   updateBranch(id: ID!, updateBranchInput: UpdateBranchInput!): Branch!
   updateBranchSettings(branchId: ID!, input: UpdateBranchSettingsInput!): BranchSettings!
   updateBudget(updateBudgetInput: UpdateBudgetInput!): Budget!
@@ -4141,6 +4323,7 @@ type Mutation {
   updateUserActiveStatus(id: ID!, isActive: Boolean!): AuthUser!
   updateVendor(updateVendorInput: UpdateVendorInput!): Vendor!
   updateWorkflowTemplate(branchId: String, id: String!, input: UpdateWorkflowTemplateInput!, organisationId: String!): WorkflowTemplate!
+  uploadBirthRegistryDocument(uploadDocumentInput: UploadDocumentInput!): BirthRegistry!
   uploadDeathDocument(input: UploadDeathDocumentInput!): DeathRegister!
   uploadMemberImage(file: Upload!, memberId: String!): String!
   uploadOrganisationBrandingFile(file: Upload!, organisationId: ID!): String!
@@ -4396,6 +4579,15 @@ input PaginationInput {
   take: Int = 10
 }
 
+type ParentMember {
+  email: String
+  firstName: String!
+  id: ID!
+  lastName: String!
+  phoneNumber: String
+  profileImageUrl: String
+}
+
 type PastorWorkload {
   assignedCareRequests: [CareRequest!]!
   assignedReminders: [FollowUpReminder!]!
@@ -4641,6 +4833,10 @@ type Query {
   auditLogs(filter: AuditLogFilterInput, pagination: PaginationInput): [AuditLog!]!
   backup(id: ID!): Backup!
   backups(filter: BackupFilterInput): [Backup!]!
+  birthRegistries(branchId: ID, filters: BirthRegistryFiltersInput, organisationId: ID!): [BirthRegistry!]!
+  birthRegistry(id: ID!): BirthRegistry!
+  birthRegistryCalendar(branchId: ID, month: Int, organisationId: ID!, year: Int): [BirthRegistryCalendarEntry!]!
+  birthRegistryStatistics(branchId: ID, organisationId: ID!): BirthRegistryStats!
   birthdayMembers(range: BirthdayRangeEnum!): [Member!]!
   branch(id: String!): Branch
   branchActivities(branchId: String!, limit: Float, skip: Float): [BranchActivity!]!
@@ -4810,6 +5006,7 @@ type Query {
   search(branchId: String, query: String!, type: String): [MediaItem!]!
   searchCertificateTemplates(denomination: ChurchDenomination, sacramentType: CertificateSacramentType, searchTerm: String!): [CertificateTemplate!]!
   searchMembers(ageGroup: String, branchId: String, gender: String, membershipStatus: String, query: String!, skip: Int! = 0, take: Int! = 20): [Member!]!
+  searchMembersForParents(branchId: ID!, organisationId: ID!, query: String!, skip: Float = 0, take: Float = 10): [ParentMember!]!
   searchPastoralStaff(branchId: ID, organisationId: ID!, pagination: PaginationInput, search: String): PaginatedUserResponse!
   searchPastors(branchId: ID, organisationId: ID!, pagination: PaginationInput, search: String): PaginatedUserResponse!
   searchUsersByRole(filter: UserRoleFilterInput!, pagination: PaginationInput): PaginatedUserResponse!
@@ -5791,6 +5988,46 @@ input UpdateAttendanceSessionInput {
   type: String
 }
 
+input UpdateBirthRegistryInput {
+  additionalDocuments: [AdditionalDocumentInput!]
+  attendingPhysician: String
+  baptismDate: String
+  baptismEventId: ID
+  baptismLocation: String
+  baptismOfficiant: String
+  baptismPlanned: Boolean
+  birthCertificateUrl: String
+  birthCircumstances: String
+  birthLength: Float
+  birthWeight: Float
+  childFirstName: String
+  childGender: Gender
+  childLastName: String
+  childMemberId: ID
+  childMiddleName: String
+  complications: String
+  createChildMember: Boolean
+  dateOfBirth: String
+  fatherAge: Float
+  fatherFirstName: String
+  fatherLastName: String
+  fatherMemberId: ID
+  fatherOccupation: String
+  hospitalName: String
+  hospitalRecordUrl: String
+  motherAge: Float
+  motherFirstName: String
+  motherLastName: String
+  motherMemberId: ID
+  motherOccupation: String
+  parentAddress: String
+  parentEmail: String
+  parentPhone: String
+  photoUrls: [String!]
+  placeOfBirth: String
+  timeOfBirth: String
+}
+
 input UpdateBranchInput {
   address: String
   city: String
@@ -6198,7 +6435,7 @@ input UpdateMemberInput {
   fatherName: String
   fatherOccupation: String
   firstName: String
-  gender: Gender = NOT_SPECIFIED
+  gender: Gender = UNKNOWN
   groupIds: [String!]
   headOfHousehold: Boolean = false
   id: ID!
@@ -6507,6 +6744,13 @@ scalar Upload
 input UploadDeathDocumentInput {
   deathRegisterId: ID!
   description: String
+  documentType: String!
+  documentUrl: String!
+}
+
+input UploadDocumentInput {
+  birthRegistryId: ID!
+  documentName: String
   documentType: String!
   documentUrl: String!
 }

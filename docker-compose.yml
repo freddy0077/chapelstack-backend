@@ -15,8 +15,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-#    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:prod"
-    command: sh -c "npm run start:prod"
+#    command: sh -c "pnpx prisma generate && pnpx prisma migrate deploy && pnpm run start:prod"
+    command: sh -c "pnpm run start:prod"
 
   db:
     image: postgres:14

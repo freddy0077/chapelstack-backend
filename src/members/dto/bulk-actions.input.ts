@@ -1,5 +1,12 @@
 import { InputType, Field } from '@nestjs/graphql';
-import { IsArray, IsEnum, IsString, IsUUID, IsOptional, IsBoolean } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsString,
+  IsUUID,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 import { MemberStatus } from '../entities/member.entity';
 import { MemberFiltersInput } from './member-filters.input';
 

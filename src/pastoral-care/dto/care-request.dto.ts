@@ -17,6 +17,8 @@ import {
   CareRequestPriority,
   CareRequestStatus,
 } from '@prisma/client';
+import { Member } from '../../members/entities/member.entity';
+import { User } from '../../auth/entities/user.entity';
 
 // Register enums for GraphQL
 registerEnumType(CareRequestType, {
@@ -247,4 +249,14 @@ export class CareRequest {
 
   @Field()
   updatedAt: Date;
+
+  // Relation fields
+  @Field(() => Member, { nullable: true })
+  requester?: Member;
+
+  @Field(() => User, { nullable: true })
+  assignedPastor?: User;
+
+  @Field(() => User, { nullable: true })
+  creator?: User;
 }

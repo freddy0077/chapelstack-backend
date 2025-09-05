@@ -70,6 +70,7 @@ export class CareRequestService {
             lastName: true,
             email: true,
             phoneNumber: true,
+            memberId: true,
           },
         },
         assignedPastor: {
@@ -190,6 +191,7 @@ export class CareRequestService {
             lastName: true,
             email: true,
             phoneNumber: true,
+            memberId: true,
           },
         },
         assignedPastor: {
@@ -274,6 +276,7 @@ export class CareRequestService {
               lastName: true,
               email: true,
               phoneNumber: true,
+              memberId: true,
             },
           },
           assignedPastor: {
@@ -336,6 +339,7 @@ export class CareRequestService {
             lastName: true,
             email: true,
             phoneNumber: true,
+            memberId: true,
           },
         },
         assignedPastor: {
@@ -448,6 +452,7 @@ export class CareRequestService {
             lastName: true,
             email: true,
             phoneNumber: true,
+            memberId: true,
           },
         },
         assignedPastor: {
@@ -489,6 +494,7 @@ export class CareRequestService {
             lastName: true,
             email: true,
             phoneNumber: true,
+            memberId: true,
           },
         },
         assignedPastor: {
@@ -535,6 +541,7 @@ export class CareRequestService {
             lastName: true,
             email: true,
             phoneNumber: true,
+            memberId: true,
           },
         },
       },

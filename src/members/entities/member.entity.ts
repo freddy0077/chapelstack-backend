@@ -4,15 +4,9 @@ import { GraphQLJSON } from 'graphql-type-json';
 import { Family, FamilyRelationship } from './family.entity';
 import { Branch } from '../../branches/entities/branch.entity';
 import { MinistryMember } from '../../ministries/entities/ministry-member.entity';
+import { Gender } from '../../common/enums/gender.enum';
 
 // Enhanced Enums
-export enum Gender {
-  MALE = 'MALE',
-  FEMALE = 'FEMALE',
-  UNKNOWN = 'UNKNOWN',
-  NOT_SPECIFIED = 'NOT_SPECIFIED',
-}
-
 export enum MaritalStatus {
   SINGLE = 'SINGLE',
   MARRIED = 'MARRIED',
@@ -31,6 +25,7 @@ export enum MembershipStatus {
   INACTIVE_MEMBER = 'INACTIVE_MEMBER',
   TRANSFERRED = 'TRANSFERRED',
   DECEASED = 'DECEASED',
+  INFANT = 'INFANT',
 }
 
 export enum MembershipType {
@@ -77,11 +72,6 @@ export enum RelationshipType {
 }
 
 // Register enums
-registerEnumType(Gender, {
-  name: 'Gender',
-  description: 'Gender options for members',
-});
-
 registerEnumType(MemberStatus, {
   name: 'MemberStatus',
   description: 'Status of a church member',
