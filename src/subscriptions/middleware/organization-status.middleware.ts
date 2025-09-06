@@ -209,6 +209,6 @@ export function createOrganizationStatusMiddleware() {
       // This will be injected by NestJS when used as a proper middleware
       null as any,
     );
-    return middleware.use(req, res, next);
+    return middleware.use(req as AuthenticatedRequest, res, next);
   };
 }
