@@ -83,7 +83,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.24",
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "uuid": "^10.0.0"
 
   },
   "devDependencies": {
@@ -99,6 +100,7 @@
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.7",
     "@types/supertest": "^6.0.2",
+    "@types/uuid": "^10.0.0",
     "chance": "^1.1.13",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
