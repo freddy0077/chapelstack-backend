@@ -126,7 +126,9 @@ export class BirthRegistryService {
           organisationId: createBirthRegistryInput.organisationId,
           branchId: createBirthRegistryInput.branchId,
           // Link to primary parent (mother if available, otherwise father)
-          parentId: createBirthRegistryInput.motherMemberId || createBirthRegistryInput.fatherMemberId,
+          parentId:
+            createBirthRegistryInput.motherMemberId ||
+            createBirthRegistryInput.fatherMemberId,
         };
 
         const childMember = await this.membersService.create(
@@ -198,7 +200,11 @@ export class BirthRegistryService {
       });
 
       // Create comprehensive family relationships if child member was created
-      if (childMemberId && (createBirthRegistryInput.motherMemberId || createBirthRegistryInput.fatherMemberId)) {
+      if (
+        childMemberId &&
+        (createBirthRegistryInput.motherMemberId ||
+          createBirthRegistryInput.fatherMemberId)
+      ) {
         await this.createFamilyRelationships(
           childMemberId,
           createBirthRegistryInput.motherMemberId,
@@ -249,7 +255,9 @@ export class BirthRegistryService {
     userAgent?: string,
   ): Promise<void> {
     try {
-      this.logger.log(`Creating family relationships for child ${childMemberId}`);
+      this.logger.log(
+        `Creating family relationships for child ${childMemberId}`,
+      );
 
       // 1. Create parent-child relationships
       if (motherMemberId) {
@@ -264,7 +272,9 @@ export class BirthRegistryService {
           ipAddress,
           userAgent,
         );
-        this.logger.log(`Created child-mother relationship: ${childMemberId} -> ${motherMemberId}`);
+        this.logger.log(
+          `Created child-mother relationship: ${childMemberId} -> ${motherMemberId}`,
+        );
       }
 
       if (fatherMemberId) {
@@ -279,28 +289,31 @@ export class BirthRegistryService {
           ipAddress,
           userAgent,
         );
-        this.logger.log(`Created child-father relationship: ${childMemberId} -> ${fatherMemberId}`);
+        this.logger.log(
+          `Created child-father relationship: ${childMemberId} -> ${fatherMemberId}`,
+        );
       }
 
       // 2. Create spouse relationship between parents if both exist
       if (motherMemberId && fatherMemberId) {
         // Check if spouse relationship already exists
-        const existingSpouseRelationship = await this.prisma.familyRelationship.findFirst({
-          where: {
-            OR: [
-              {
-                memberId: motherMemberId,
-                relatedMemberId: fatherMemberId,
-                relationshipType: FamilyRelationshipType.SPOUSE,
-              },
-              {
-                memberId: fatherMemberId,
-                relatedMemberId: motherMemberId,
-                relationshipType: FamilyRelationshipType.SPOUSE,
-              },
-            ],
-          },
-        });
+        const existingSpouseRelationship =
+          await this.prisma.familyRelationship.findFirst({
+            where: {
+              OR: [
+                {
+                  memberId: motherMemberId,
+                  relatedMemberId: fatherMemberId,
+                  relationshipType: FamilyRelationshipType.SPOUSE,
+                },
+                {
+                  memberId: fatherMemberId,
+                  relatedMemberId: motherMemberId,
+                  relationshipType: FamilyRelationshipType.SPOUSE,
+                },
+              ],
+            },
+          });
 
         if (!existingSpouseRelationship) {
           await this.familiesService.createFamilyRelationship(
@@ -313,7 +326,9 @@ export class BirthRegistryService {
             ipAddress,
             userAgent,
           );
-          this.logger.log(`Created spouse relationship: ${motherMemberId} <-> ${fatherMemberId}`);
+          this.logger.log(
+            `Created spouse relationship: ${motherMemberId} <-> ${fatherMemberId}`,
+          );
         }
       }
 
@@ -326,7 +341,6 @@ export class BirthRegistryService {
         ipAddress,
         userAgent,
       );
-
     } catch (error) {
       this.logger.error(
         `Error creating family relationships for child ${childMemberId}: ${(error as Error).message}`,
@@ -359,7 +373,7 @@ export class BirthRegistryService {
               OR: [
                 motherMemberId ? { motherMemberId } : {},
                 fatherMemberId ? { fatherMemberId } : {},
-              ].filter(condition => Object.keys(condition).length > 0),
+              ].filter((condition) => Object.keys(condition).length > 0),
             },
           ],
         },
@@ -384,17 +398,18 @@ export class BirthRegistryService {
             ipAddress,
             userAgent,
           );
-          
+
           this.logger.log(
-            `Created sibling relationship: ${childMemberId} <-> ${sibling.childMemberId} (${sibling.childFirstName} ${sibling.childLastName})`
+            `Created sibling relationship: ${childMemberId} <-> ${sibling.childMemberId} (${sibling.childFirstName} ${sibling.childLastName})`,
           );
         }
       }
 
       if (existingSiblings.length > 0) {
-        this.logger.log(`Created ${existingSiblings.length} sibling relationships for child ${childMemberId}`);
+        this.logger.log(
+          `Created ${existingSiblings.length} sibling relationships for child ${childMemberId}`,
+        );
       }
-
     } catch (error) {
       this.logger.error(
         `Error creating sibling relationships for child ${childMemberId}: ${(error as Error).message}`,
@@ -799,7 +814,8 @@ export class BirthRegistryService {
     try {
       const currentDate = new Date();
       // Convert 1-based month from frontend to 0-based month for JavaScript Date
-      const targetMonth = month !== undefined ? month - 1 : currentDate.getMonth();
+      const targetMonth =
+        month !== undefined ? month - 1 : currentDate.getMonth();
       const targetYear = year !== undefined ? year : currentDate.getFullYear();
 
       const startDate = new Date(targetYear, targetMonth, 1);
@@ -841,7 +857,8 @@ export class BirthRegistryService {
             (1000 * 60 * 60 * 24),
         ),
         baptismPlanned: registry.baptismPlanned,
-        baptismDate: registry.baptismDate === null ? undefined : registry.baptismDate,
+        baptismDate:
+          registry.baptismDate === null ? undefined : registry.baptismDate,
       }));
     } catch (error) {
       this.logger.error(

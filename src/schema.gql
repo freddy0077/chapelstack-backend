@@ -4982,7 +4982,7 @@ type Query {
   pastorWorkload(pastorId: String!): PastorWorkload!
   pastoralCareDashboard: PastoralCareDashboard!
   pastoralCareRecentActivity(days: Int! = 7): [PastoralCareActivity!]!
-  pastoralCareStats: PastoralCareStats!
+  pastoralCareStats(branchId: String, organisationId: String): PastoralCareStats!
   pastoralVisit(id: String!): PastoralVisit!
   pastoralVisits(filter: PastoralVisitFilterInput!, skip: Int! = 0, take: Int! = 50): [PastoralVisit!]!
   pastoralVisitsCount(filter: PastoralVisitFilterInput!): Int!

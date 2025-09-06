@@ -160,13 +160,13 @@ export class PastoralCareResolver {
 
   @Query(() => PastoralCareStats)
   // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
-  async pastoralCareStats(@Context() context: any): Promise<PastoralCareStats> {
-    const user = context.req.user;
-    const organisationId = user.organisationId;
-    const branchId = user.role === 'SUPER_ADMIN' ? undefined : user.branchId;
-
+  async pastoralCareStats(
+    @Args('branchId', { type: () => String, nullable: true }) branchId?: string,
+    @Args('organisationId', { type: () => String, nullable: true })
+    organisationId?: string,
+  ): Promise<PastoralCareStats> {
     return this.pastoralCareService.getPastoralCareStats(
-      organisationId,
+      organisationId!,
       branchId,
     );
   }
@@ -178,7 +178,12 @@ export class PastoralCareResolver {
   ): Promise<PastoralCareDashboard> {
     const user = context.req.user;
     const organisationId = user.organisationId;
-    const branchId = user.role === 'SUPER_ADMIN' ? undefined : user.branchId;
+
+    // Extract branchId from userBranches array (get the first branch if multiple)
+    const branchId =
+      user.userBranches && user.userBranches.length > 0
+        ? user.userBranches[0].branch.id
+        : undefined;
 
     return this.pastoralCareService.getPastoralCareDashboard(
       organisationId,
@@ -196,7 +201,12 @@ export class PastoralCareResolver {
   ): Promise<FollowUpReminder> {
     const user = context.req.user;
     const organisationId = user.organisationId;
-    const branchId = user.role === 'SUPER_ADMIN' ? undefined : user.branchId;
+
+    // Extract branchId from userBranches array (get the first branch if multiple)
+    const branchId =
+      user.userBranches && user.userBranches.length > 0
+        ? user.userBranches[0].branch.id
+        : undefined;
 
     return this.pastoralCareService.createFollowUpFromVisit(
       visitId,
@@ -218,7 +228,12 @@ export class PastoralCareResolver {
   ): Promise<FollowUpReminder> {
     const user = context.req.user;
     const organisationId = user.organisationId;
-    const branchId = user.role === 'SUPER_ADMIN' ? undefined : user.branchId;
+
+    // Extract branchId from userBranches array (get the first branch if multiple)
+    const branchId =
+      user.userBranches && user.userBranches.length > 0
+        ? user.userBranches[0].branch.id
+        : undefined;
 
     return this.pastoralCareService.createFollowUpFromSession(
       sessionId,
@@ -240,7 +255,12 @@ export class PastoralCareResolver {
   ): Promise<FollowUpReminder> {
     const user = context.req.user;
     const organisationId = user.organisationId;
-    const branchId = user.role === 'SUPER_ADMIN' ? undefined : user.branchId;
+
+    // Extract branchId from userBranches array (get the first branch if multiple)
+    const branchId =
+      user.userBranches && user.userBranches.length > 0
+        ? user.userBranches[0].branch.id
+        : undefined;
 
     return this.pastoralCareService.createFollowUpFromCareRequest(
       requestId,
@@ -260,7 +280,12 @@ export class PastoralCareResolver {
   ): Promise<MemberPastoralHistory> {
     const user = context.req.user;
     const organisationId = user.organisationId;
-    const branchId = user.role === 'SUPER_ADMIN' ? undefined : user.branchId;
+
+    // Extract branchId from userBranches array (get the first branch if multiple)
+    const branchId =
+      user.userBranches && user.userBranches.length > 0
+        ? user.userBranches[0].branch.id
+        : undefined;
 
     return this.pastoralCareService.getMemberPastoralHistory(
       memberId,
@@ -278,7 +303,12 @@ export class PastoralCareResolver {
   ): Promise<PastorWorkload> {
     const user = context.req.user;
     const organisationId = user.organisationId;
-    const branchId = user.role === 'SUPER_ADMIN' ? undefined : user.branchId;
+
+    // Extract branchId from userBranches array (get the first branch if multiple)
+    const branchId =
+      user.userBranches && user.userBranches.length > 0
+        ? user.userBranches[0].branch.id
+        : undefined;
 
     return this.pastoralCareService.getPastorWorkload(
       pastorId,
@@ -295,7 +325,12 @@ export class PastoralCareResolver {
   ): Promise<PastoralCareActivity[]> {
     const user = context.req.user;
     const organisationId = user.organisationId;
-    const branchId = user.role === 'SUPER_ADMIN' ? undefined : user.branchId;
+
+    // Extract branchId from userBranches array (get the first branch if multiple)
+    const branchId =
+      user.userBranches && user.userBranches.length > 0
+        ? user.userBranches[0].branch.id
+        : undefined;
 
     return this.pastoralCareService.getRecentActivity(
       organisationId,

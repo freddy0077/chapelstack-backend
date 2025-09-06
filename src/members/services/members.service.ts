@@ -210,13 +210,8 @@ export class MembersService {
       }
 
       // Extract relation IDs and other problematic fields for proper handling
-      const { 
-        organisationId, 
-        branchId, 
-        parentId,
-        spouseId,
-        ...memberData 
-      } = createMemberInput;
+      const { organisationId, branchId, parentId, spouseId, ...memberData } =
+        createMemberInput;
 
       // Create the member with enhanced fields and proper defaults
       const member = await this.prisma.member.create({
@@ -229,25 +224,25 @@ export class MembersService {
           // Connect to organisation and branch if provided
           ...(organisationId && {
             organisation: {
-              connect: { id: organisationId }
-            }
+              connect: { id: organisationId },
+            },
           }),
           ...(branchId && {
             branch: {
-              connect: { id: branchId }
-            }
+              connect: { id: branchId },
+            },
           }),
           // Connect to parent if provided
           ...(parentId && {
             parent: {
-              connect: { id: parentId }
-            }
+              connect: { id: parentId },
+            },
           }),
           // Connect to spouse if provided
           ...(spouseId && {
             spouse: {
-              connect: { id: spouseId }
-            }
+              connect: { id: spouseId },
+            },
           }),
           // Set GDPR compliance defaults if not provided
           consentDate: createMemberInput.consentDate || new Date(),
@@ -2926,28 +2921,36 @@ export class MembersService {
         // Check for duplicates based on email or phone
         let existingMember: Member | null = null;
         if (memberData.email) {
-          existingMember = await this.prisma.member.findFirst({
+          existingMember = (await this.prisma.member.findFirst({
             where: {
               email: memberData.email,
               branchId: branchId,
               isDeactivated: false,
             },
-          }) as Member | null;
-          if (existingMember && existingMember.gender && typeof existingMember.gender === 'string') {
+          })) as Member | null;
+          if (
+            existingMember &&
+            existingMember.gender &&
+            typeof existingMember.gender === 'string'
+          ) {
             // Convert Prisma Gender enum to app Gender enum
             existingMember.gender = existingMember.gender as any;
           }
         }
 
         if (!existingMember && memberData.phoneNumber) {
-          existingMember = await this.prisma.member.findFirst({
+          existingMember = (await this.prisma.member.findFirst({
             where: {
               phoneNumber: memberData.phoneNumber,
               branchId: branchId,
               isDeactivated: false,
             },
-          }) as Member | null;
-          if (existingMember && existingMember.gender && typeof existingMember.gender === 'string') {
+          })) as Member | null;
+          if (
+            existingMember &&
+            existingMember.gender &&
+            typeof existingMember.gender === 'string'
+          ) {
             existingMember.gender = existingMember.gender as any;
           }
         }
@@ -3015,10 +3018,11 @@ export class MembersService {
 
         // Generate member ID if not provided
         if (!memberData.customFields?.memberId) {
-          const memberId = await this.memberIdGenerationService.generateMemberId(
-            branchId,
-            organisationId,
-          );
+          const memberId =
+            await this.memberIdGenerationService.generateMemberId(
+              branchId,
+              organisationId,
+            );
           memberData.customFields = {
             ...memberData.customFields,
             memberId,
