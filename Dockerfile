@@ -13,13 +13,16 @@ RUN pnpm install --frozen-lockfile
 
 # Copy Prisma schema first and generate client
 COPY prisma ./prisma/
-RUN #npx prisma generate
+RUN pnpx prisma generate
 
 # Copy the rest of the application code
 COPY . .
 
+# Build the application
+RUN pnpm run build
+
 # Expose port
 EXPOSE 4000
 
-# Use development start command
-CMD ["pnpm", "run", "start:dev"]
+# Use production start command
+CMD ["pnpm", "run", "start:prod"]
