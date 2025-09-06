@@ -55,6 +55,8 @@ model User {
   createdWorkflowTemplates      WorkflowTemplate[]
   roles                         Role[]                    @relation("UserRoles")
   certificateGenerations        CertificateGeneration[]
+  birthRegistriesCreated        BirthRegistry[]           @relation("BirthRegistryCreatedBy")
+  birthRegistriesUpdated        BirthRegistry[]           @relation("BirthRegistryUpdatedBy")
 
   @@index([organisationId])
 }
@@ -156,6 +158,7 @@ model Branch {
   workflowTemplates            WorkflowTemplate[]
   workflowTriggers             WorkflowTrigger[]
   deathRegisters               DeathRegister[]
+  birthRegistries              BirthRegistry[]
   certificateTemplates         CertificateTemplate[]
   certificateGenerations       CertificateGeneration[]
 
@@ -392,7 +395,7 @@ model Member {
   firstName                String
   middleName               String?
   lastName                 String
-  gender                   Gender                     @default(NOT_SPECIFIED)
+  gender                   Gender                     @default(UNKNOWN)
   dateOfBirth              DateTime?
   email                    String?                    @unique
   phoneNumber              String?
@@ -516,6 +519,9 @@ model Member {
   workflowExecutions       WorkflowExecution[]
   families                 Family[]                   @relation("MemberFamilies")
   deathRegister            DeathRegister?
+  birthRegistriesAsMother  BirthRegistry[]            @relation("BirthRegistryMother")
+  birthRegistriesAsFather  BirthRegistry[]            @relation("BirthRegistryFather")
+  birthRegistryAsChild     BirthRegistry?             @relation("BirthRegistryChild")
 
   @@index([branchId])
   @@index([status])
@@ -1904,6 +1910,7 @@ model Organisation {
   workflowTemplates            WorkflowTemplate[]
   workflowTriggers             WorkflowTrigger[]
   deathRegisters               DeathRegister[]
+  birthRegistries              BirthRegistry[]
   certificateTemplates         CertificateTemplate[]
   certificateGenerations       CertificateGeneration[]
 
@@ -1954,6 +1961,7 @@ model Event {
   transactions          Transaction[]
   workflowExecutions    WorkflowExecution[]
   funeralDeathRegisters DeathRegister[]     @relation("DeathRegisterFuneralEvent")
+  baptismBirthRegistries BirthRegistry[]    @relation("BirthRegistryBaptismEvent")
 
   @@index([branchId])
   @@index([organisationId])
@@ -2756,6 +2764,7 @@ enum CounselingSessionStatus {
 
 enum CareRequestType {
   PRAYER_REQUEST
+  MASS_INTENTION
   HOSPITAL_VISIT
   HOME_VISIT
   COUNSELING
@@ -2851,6 +2860,7 @@ enum MembershipStatus {
   INACTIVE_MEMBER
   TRANSFERRED
   DECEASED
+  INFANT
 }
 
 enum MembershipType {
@@ -2994,4 +3004,91 @@ model DeathRegister {
   @@index([dateOfDeath])
   @@index([familyNotified])
   @@index([recordedDate])
+}
+
+
+// Birth Registry Model
+model BirthRegistry {
+  id String @id @default(uuid())
+
+  // Child Information
+  childFirstName  String
+  childMiddleName String?
+  childLastName   String
+  childGender     Gender
+  dateOfBirth     DateTime
+  timeOfBirth     String?
+  placeOfBirth    String
+  hospitalName    String?
+  attendingPhysician String?
+  birthWeight     Float?
+  birthLength     Float?
+  birthCircumstances String?
+  complications   String?
+
+  // Mother Information
+  motherFirstName String
+  motherLastName  String
+  motherMemberId  String?
+  motherAge       Int?
+  motherOccupation String?
+
+  // Father Information
+  fatherFirstName String?
+  fatherLastName  String?
+  fatherMemberId  String?
+  fatherAge       Int?
+  fatherOccupation String?
+
+  // Parent Contact Information
+  parentAddress String
+  parentPhone   String?
+  parentEmail   String?
+
+  // Baptism Planning
+  baptismPlanned   Boolean   @default(false)
+  baptismDate      DateTime?
+  baptismLocation  String?
+  baptismOfficiant String?
+  baptismEventId   String?
+
+  // Child Member Creation
+  createChildMember Boolean @default(true)
+  childMemberId     String? @unique
+
+  // Documentation
+  birthCertificateUrl String?
+  hospitalRecordUrl   String?
+  photoUrls           String[] @default([])
+  additionalDocuments Json     @default("[]")
+
+  // Administrative
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  // Foreign Keys
+  branchId       String?
+  organisationId String
+
+  // Relations
+  motherMember   Member?      @relation("BirthRegistryMother", fields: [motherMemberId], references: [id])
+  fatherMember   Member?      @relation("BirthRegistryFather", fields: [fatherMemberId], references: [id])
+  childMember    Member?      @relation("BirthRegistryChild", fields: [childMemberId], references: [id])
+  branch         Branch?      @relation(fields: [branchId], references: [id])
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+  baptismEvent   Event?       @relation("BirthRegistryBaptismEvent", fields: [baptismEventId], references: [id])
+  createdBy      User?        @relation("BirthRegistryCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User?        @relation("BirthRegistryUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([branchId])
+  @@index([organisationId])
+  @@index([dateOfBirth])
+  @@index([childGender])
+  @@index([baptismPlanned])
+  @@index([baptismDate])
+  @@index([motherMemberId])
+  @@index([fatherMemberId])
+  @@index([createdAt])
 }
