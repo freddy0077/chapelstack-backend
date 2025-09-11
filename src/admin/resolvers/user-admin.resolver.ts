@@ -180,7 +180,7 @@ export class UserAdminResolver {
   }
 
   @Query(() => PaginatedUserResponse, { name: 'searchUsersByRole' })
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
+  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
   async searchUsersByRole(
     @Args('filter') filter: UserRoleFilterInput,
     @Args('pagination', { nullable: true })

@@ -4997,7 +4997,7 @@ type Query {
   recentCertificates(branchId: ID, limit: Float! = 10): [RecentCertificate!]!
   recipientFilterCounts(input: RecipientCountInput!): [RecipientCountResult!]!
   recipientGroupStats(filter: CommunicationStatsFilterInput): [RecipientGroupStats!]!
-  recipientGroups: [RecipientGroup!]!
+  recipientGroups(branchId: String, organisationId: String): [RecipientGroup!]!
   recommendedCertificateTemplates(branchId: ID!, limit: Float = 5, sacramentType: CertificateSacramentType): [CertificateTemplate!]!
   sacramentStats(branchId: ID, period: String): [SacramentStatsOutput!]!
   sacramentalRecord(id: ID!): SacramentalRecord!

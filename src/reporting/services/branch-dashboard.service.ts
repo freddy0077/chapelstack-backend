@@ -204,7 +204,7 @@ export class BranchDashboardService {
         date: { gte: startOfMonth, lte: endOfMonth },
       },
       _sum: { amount: true },
-      _count: { id: true },
+      _count: true,
     });
 
     // Map common contribution types
@@ -474,7 +474,7 @@ export class BranchDashboardService {
         branchId,
         member: { isDeactivated: false },
       },
-      _count: { id: true },
+      _count: true,
     });
 
     // Get monthly trends for current year
@@ -489,7 +489,7 @@ export class BranchDashboardService {
         member: { isDeactivated: false },
         dateOfSacrament: { gte: startOfYear, lte: endOfYear },
       },
-      _count: { id: true },
+      _count: true,
     });
 
     // Process monthly trends data
@@ -500,14 +500,14 @@ export class BranchDashboardService {
       );
       return {
         month: month,
-        count: monthRecords.reduce((sum, record) => sum + record._count.id, 0),
+        count: monthRecords.reduce((sum, record) => sum + record._count, 0),
       };
     });
 
     // Format sacrament breakdown
     const breakdown = sacramentsByType.map((item) => ({
       type: item.sacramentType,
-      count: item._count.id,
+      count: item._count,
     }));
 
     return {

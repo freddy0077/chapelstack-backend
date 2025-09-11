@@ -48,14 +48,31 @@ export class RecipientResolver {
   ) {}
 
   @Query(() => [RecipientGroup])
-  async recipientGroups(): Promise<RecipientGroup[]> {
-    // Example: Combine ministries and small groups as recipient groups
+  async recipientGroups(
+    @Args('organisationId', { type: () => String, nullable: true })
+    organisationId?: string,
+    @Args('branchId', { type: () => String, nullable: true })
+    branchId?: string,
+  ): Promise<RecipientGroup[]> {
+    // Build filter conditions
+    const whereConditions: any = {};
+    if (organisationId) {
+      whereConditions.organisationId = organisationId;
+    }
+    if (branchId) {
+      whereConditions.branchId = branchId;
+    }
+
+    // Fetch ministries and small groups with filtering
     const ministries = await this.prisma.ministry.findMany({
+      where: whereConditions,
       select: { id: true, name: true },
     });
     const smallGroups = await this.prisma.smallGroup.findMany({
+      where: whereConditions,
       select: { id: true, name: true },
     });
+    
     return [
       ...ministries.map((m) => ({ ...m, type: 'MINISTRY' })),
       ...smallGroups.map((g) => ({ ...g, type: 'SMALL_GROUP' })),
