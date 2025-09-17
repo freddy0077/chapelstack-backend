@@ -1802,6 +1802,7 @@ export class MembersService {
       membershipStatus?: string;
       ageGroup?: string;
       gender?: string;
+      includeDeactivated?: boolean;
     },
     skip = 0,
     take = 20,
@@ -1822,6 +1823,8 @@ export class MembersService {
               membershipStatus: filters.membershipStatus as any,
             }),
             ...(filters?.gender && { gender: filters.gender as any }),
+            // Exclude deactivated members by default, unless explicitly requested
+            ...(!filters?.includeDeactivated && { isDeactivated: false }),
             deletedAt: null, // Exclude soft-deleted members
           },
         },

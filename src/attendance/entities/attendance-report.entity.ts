@@ -32,10 +32,36 @@ export class AttendanceReportData {
   retentionRate?: number;
 }
 
+// Supporting types for enhanced member data in attendance reports
 @ObjectType()
-export class AttendanceReportMember {
+export class AttendanceReportMemberBasicInfo {
   @Field(() => String)
   id: string;
+
+  @Field(() => String)
+  firstName: string;
+
+  @Field(() => String)
+  lastName: string;
+}
+
+@ObjectType()
+export class AttendanceReportBranchInfo {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  name: string;
+}
+
+@ObjectType()
+export class AttendanceReportMember {
+  // Basic Information (existing)
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String, { nullable: true })
+  memberId?: string;
 
   @Field(() => String)
   firstName: string;
@@ -46,6 +72,107 @@ export class AttendanceReportMember {
   @Field(() => String, { nullable: true })
   email?: string;
 
+  // Enhanced Personal Information
+  @Field(() => String, { nullable: true })
+  middleName?: string;
+
+  @Field(() => String, { nullable: true })
+  title?: string;
+
+  @Field(() => String, { nullable: true })
+  phoneNumber?: string;
+
+  @Field(() => String, { nullable: true })
+  dateOfBirth?: string;
+
+  @Field(() => String, { nullable: true })
+  gender?: string;
+
+  @Field(() => String, { nullable: true })
+  maritalStatus?: string;
+
+  @Field(() => String, { nullable: true })
+  occupation?: string;
+
+  @Field(() => String, { nullable: true })
+  employerName?: string;
+
+  // Address Information
+  @Field(() => String, { nullable: true })
+  address?: string;
+
+  @Field(() => String, { nullable: true })
+  city?: string;
+
+  @Field(() => String, { nullable: true })
+  state?: string;
+
+  @Field(() => String, { nullable: true })
+  postalCode?: string;
+
+  @Field(() => String, { nullable: true })
+  country?: string;
+
+  @Field(() => String, { nullable: true })
+  nationality?: string;
+
+  @Field(() => String, { nullable: true })
+  placeOfBirth?: string;
+
+  @Field(() => String, { nullable: true })
+  nlbNumber?: string;
+
+  // Family Information
+  @Field(() => String, { nullable: true })
+  fatherName?: string;
+
+  @Field(() => String, { nullable: true })
+  motherName?: string;
+
+  @Field(() => String, { nullable: true })
+  fatherOccupation?: string;
+
+  @Field(() => String, { nullable: true })
+  motherOccupation?: string;
+
+  // Emergency Contact
+  @Field(() => String, { nullable: true })
+  emergencyContactName?: string;
+
+  @Field(() => String, { nullable: true })
+  emergencyContactPhone?: string;
+
+  // Church Information
+  @Field(() => String, { nullable: true })
+  membershipDate?: string;
+
+  @Field(() => String, { nullable: true })
+  baptismDate?: string;
+
+  @Field(() => String, { nullable: true })
+  confirmationDate?: string;
+
+  @Field(() => String)
+  status: string;
+
+  // Branch Information
+  @Field(() => AttendanceReportBranchInfo, { nullable: true })
+  branch?: AttendanceReportBranchInfo;
+
+  @Field(() => String, { nullable: true })
+  branchId?: string;
+
+  // Family Relations
+  @Field(() => AttendanceReportMemberBasicInfo, { nullable: true })
+  spouse?: AttendanceReportMemberBasicInfo;
+
+  @Field(() => AttendanceReportMemberBasicInfo, { nullable: true })
+  parent?: AttendanceReportMemberBasicInfo;
+
+  @Field(() => [AttendanceReportMemberBasicInfo], { nullable: true })
+  children?: AttendanceReportMemberBasicInfo[];
+
+  // Attendance Data (existing)
   @Field(() => Int)
   attendanceCount: number;
 
@@ -57,6 +184,22 @@ export class AttendanceReportMember {
 
   @Field(() => [String])
   attendanceDates: string[];
+
+  // Additional Information
+  @Field(() => String, { nullable: true })
+  profileImageUrl?: string;
+
+  @Field(() => String, { nullable: true })
+  notes?: string;
+
+  @Field(() => String, { nullable: true })
+  rfidCardId?: string;
+
+  @Field(() => String)
+  createdAt: string;
+
+  @Field(() => String)
+  updatedAt: string;
 }
 
 @ObjectType()

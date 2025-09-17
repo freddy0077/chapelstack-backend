@@ -104,6 +104,63 @@ export class FileGenerationService {
     // Append summary to file
     fs.appendFileSync(filePath, '\n' + summaryData.join('\n'));
 
+    // Add member analysis if available
+    if (report.members && report.members.length > 0) {
+      const memberData = [
+        '',
+        'MEMBER ANALYSIS',
+        'Member ID,Full Name,Title,Email,Phone,Date of Birth,Gender,Marital Status,Occupation,Employer,Address,City,State,Postal Code,Country,Nationality,Place of Birth,NLB Number,Father Name,Mother Name,Father Occupation,Mother Occupation,Emergency Contact Name,Emergency Contact Phone,Membership Date,Baptism Date,Confirmation Date,Status,Branch,Spouse,Parent,Children,Attendance Count,Attendance Rate,Last Attendance,Profile Image URL,Notes,RFID Card ID,Created At,Updated At',
+      ];
+
+      report.members.forEach((member) => {
+        const memberRow = [
+          member.memberId || member.id,
+          `"${`${member.firstName} ${member.middleName || ''} ${member.lastName}`.trim()}"`,
+          `"${member.title || 'N/A'}"`,
+          `"${member.email || 'N/A'}"`,
+          `"${member.phoneNumber || 'N/A'}"`,
+          `"${member.dateOfBirth || 'N/A'}"`,
+          `"${member.gender || 'N/A'}"`,
+          `"${member.maritalStatus || 'N/A'}"`,
+          `"${member.occupation || 'N/A'}"`,
+          `"${member.employerName || 'N/A'}"`,
+          `"${member.address || 'N/A'}"`,
+          `"${member.city || 'N/A'}"`,
+          `"${member.state || 'N/A'}"`,
+          `"${member.postalCode || 'N/A'}"`,
+          `"${member.country || 'N/A'}"`,
+          `"${member.nationality || 'N/A'}"`,
+          `"${member.placeOfBirth || 'N/A'}"`,
+          `"${member.nlbNumber || 'N/A'}"`,
+          `"${member.fatherName || 'N/A'}"`,
+          `"${member.motherName || 'N/A'}"`,
+          `"${member.fatherOccupation || 'N/A'}"`,
+          `"${member.motherOccupation || 'N/A'}"`,
+          `"${member.emergencyContactName || 'N/A'}"`,
+          `"${member.emergencyContactPhone || 'N/A'}"`,
+          `"${member.membershipDate || 'N/A'}"`,
+          `"${member.baptismDate || 'N/A'}"`,
+          `"${member.confirmationDate || 'N/A'}"`,
+          `"${member.status || 'N/A'}"`,
+          `"${member.branch ? member.branch.name : 'N/A'}"`,
+          `"${member.spouse ? `${member.spouse.firstName} ${member.spouse.lastName}` : 'N/A'}"`,
+          `"${member.parent ? `${member.parent.firstName} ${member.parent.lastName}` : 'N/A'}"`,
+          `"${member.children ? member.children.map(child => `${child.firstName} ${child.lastName}`).join(', ') : 'N/A'}"`,
+          member.attendanceCount,
+          `${member.attendanceRate}%`,
+          `"${member.lastAttendance || 'N/A'}"`,
+          `"${member.profileImageUrl || 'N/A'}"`,
+          `"${member.notes || 'N/A'}"`,
+          `"${member.rfidCardId || 'N/A'}"`,
+          `"${member.createdAt || 'N/A'}"`,
+          `"${member.updatedAt || 'N/A'}"`,
+        ].join(',');
+        memberData.push(memberRow);
+      });
+
+      fs.appendFileSync(filePath, '\n' + memberData.join('\n'));
+    }
+
     this.logger.log(`Generated CSV file: ${filePath}`);
     return filePath;
   }
@@ -182,20 +239,90 @@ export class FileGenerationService {
       worksheet.addRow([]);
       worksheet.addRow(['MEMBER ANALYSIS']);
       worksheet.addRow([
-        'Name',
+        'Member ID',
+        'Full Name',
+        'Title',
         'Email',
+        'Phone',
+        'Date of Birth',
+        'Gender',
+        'Marital Status',
+        'Occupation',
+        'Employer',
+        'Address',
+        'City',
+        'State',
+        'Postal Code',
+        'Country',
+        'Nationality',
+        'Place of Birth',
+        'NLB Number',
+        'Father Name',
+        'Mother Name',
+        'Father Occupation',
+        'Mother Occupation',
+        'Emergency Contact Name',
+        'Emergency Contact Phone',
+        'Membership Date',
+        'Baptism Date',
+        'Confirmation Date',
+        'Status',
+        'Branch',
+        'Spouse',
+        'Parent',
+        'Children',
         'Attendance Count',
         'Attendance Rate',
         'Last Attendance',
+        'Profile Image URL',
+        'Notes',
+        'RFID Card ID',
+        'Created At',
+        'Updated At',
       ]);
 
       report.members.forEach((member) => {
         worksheet.addRow([
-          `${member.firstName} ${member.lastName}`,
+          member.memberId || member.id,
+          `${member.firstName} ${member.middleName || ''} ${member.lastName}`.trim(),
+          member.title || 'N/A',
           member.email || 'N/A',
+          member.phoneNumber || 'N/A',
+          member.dateOfBirth || 'N/A',
+          member.gender || 'N/A',
+          member.maritalStatus || 'N/A',
+          member.occupation || 'N/A',
+          member.employerName || 'N/A',
+          member.address || 'N/A',
+          member.city || 'N/A',
+          member.state || 'N/A',
+          member.postalCode || 'N/A',
+          member.country || 'N/A',
+          member.nationality || 'N/A',
+          member.placeOfBirth || 'N/A',
+          member.nlbNumber || 'N/A',
+          member.fatherName || 'N/A',
+          member.motherName || 'N/A',
+          member.fatherOccupation || 'N/A',
+          member.motherOccupation || 'N/A',
+          member.emergencyContactName || 'N/A',
+          member.emergencyContactPhone || 'N/A',
+          member.membershipDate || 'N/A',
+          member.baptismDate || 'N/A',
+          member.confirmationDate || 'N/A',
+          member.status || 'N/A',
+          member.branch ? member.branch.name : 'N/A',
+          member.spouse ? `${member.spouse.firstName} ${member.spouse.lastName}` : 'N/A',
+          member.parent ? `${member.parent.firstName} ${member.parent.lastName}` : 'N/A',
+          member.children ? member.children.map(child => `${child.firstName} ${child.lastName}`).join(', ') : 'N/A',
           member.attendanceCount,
           `${member.attendanceRate}%`,
           member.lastAttendance || 'N/A',
+          member.profileImageUrl || 'N/A',
+          member.notes || 'N/A',
+          member.rfidCardId || 'N/A',
+          member.createdAt || 'N/A',
+          member.updatedAt || 'N/A',
         ]);
       });
     }

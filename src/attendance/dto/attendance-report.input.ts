@@ -132,4 +132,16 @@ export class AttendanceReportInput {
   @Field(() => Boolean, { defaultValue: false })
   @IsOptional()
   includeCharts?: boolean;
+
+  @Field(() => Boolean, { defaultValue: false })
+  @IsOptional()
+  includeFamilyInfo?: boolean;
+
+  @Field(() => Boolean, { defaultValue: false })
+  @IsOptional()
+  includeContactInfo?: boolean;
+
+  @Field(() => Boolean, { defaultValue: false })
+  @IsOptional()
+  includePersonalDetails?: boolean;
 }

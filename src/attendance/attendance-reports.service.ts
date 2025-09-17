@@ -296,7 +296,14 @@ export class AttendanceReportsService {
         memberId: { not: null },
       },
       include: {
-        member: true,
+        member: {
+          include: {
+            branch: true,
+            spouse: true,
+            parent: true,
+            children: true,
+          },
+        },
       },
       orderBy: {
         checkInTime: 'desc',
@@ -310,21 +317,94 @@ export class AttendanceReportsService {
 
       const memberId = record.member.id;
       if (!memberMap.has(memberId)) {
+        const member = record.member;
+        
         memberMap.set(memberId, {
+          // Basic Information
           id: memberId,
-          firstName: record.member.firstName,
-          lastName: record.member.lastName,
-          email: record.member.email || undefined,
+          memberId: member.memberId || undefined,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          email: member.email || undefined,
+
+          // Enhanced Personal Information
+          middleName: member.middleName || undefined,
+          title: member.title || undefined,
+          phoneNumber: member.phoneNumber || undefined,
+          dateOfBirth: member.dateOfBirth?.toISOString() || undefined,
+          gender: member.gender || undefined,
+          maritalStatus: member.maritalStatus || undefined,
+          occupation: member.occupation || undefined,
+          employerName: member.employerName || undefined,
+
+          // Address Information
+          address: member.address || undefined,
+          city: member.city || undefined,
+          state: member.state || undefined,
+          postalCode: member.postalCode || undefined,
+          country: member.country || undefined,
+          nationality: member.nationality || undefined,
+          placeOfBirth: member.placeOfBirth || undefined,
+          nlbNumber: member.nlbNumber || undefined,
+
+          // Family Information
+          fatherName: member.fatherName || undefined,
+          motherName: member.motherName || undefined,
+          fatherOccupation: member.fatherOccupation || undefined,
+          motherOccupation: member.motherOccupation || undefined,
+
+          // Emergency Contact
+          emergencyContactName: member.emergencyContactName || undefined,
+          emergencyContactPhone: member.emergencyContactPhone || undefined,
+
+          // Church Information
+          membershipDate: member.membershipDate?.toISOString() || undefined,
+          baptismDate: member.baptismDate?.toISOString() || undefined,
+          confirmationDate: member.confirmationDate?.toISOString() || undefined,
+          status: member.status,
+
+          // Branch Information
+          branch: member.branch ? {
+            id: member.branch.id,
+            name: member.branch.name,
+          } : undefined,
+          branchId: member.branchId || undefined,
+
+          // Family Relations
+          spouse: member.spouse ? {
+            id: member.spouse.id,
+            firstName: member.spouse.firstName,
+            lastName: member.spouse.lastName,
+          } : undefined,
+          parent: member.parent ? {
+            id: member.parent.id,
+            firstName: member.parent.firstName,
+            lastName: member.parent.lastName,
+          } : undefined,
+          children: member.children?.map(child => ({
+            id: child.id,
+            firstName: child.firstName,
+            lastName: child.lastName,
+          })) || undefined,
+
+          // Attendance Data
           attendanceCount: 0,
           attendanceRate: 0,
           attendanceDates: [],
+
+          // Additional Information
+          profileImageUrl: member.profileImageUrl || undefined,
+          notes: member.notes || undefined,
+          rfidCardId: member.rfidCardId || undefined,
+          createdAt: member.createdAt.toISOString(),
+          updatedAt: member.updatedAt.toISOString(),
         });
       }
 
-      const member = memberMap.get(memberId)!;
-      member.attendanceCount++;
-      member.attendanceDates.push(record.checkInTime.toISOString());
-      member.lastAttendance = record.checkInTime.toISOString();
+      const memberData = memberMap.get(memberId)!;
+      memberData.attendanceCount++;
+      memberData.attendanceDates.push(record.checkInTime.toISOString());
+      memberData.lastAttendance = record.checkInTime.toISOString();
     });
 
     // Calculate attendance rates

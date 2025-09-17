@@ -209,6 +209,11 @@ type AttendanceReport {
   title: String!
 }
 
+type AttendanceReportBranchInfo {
+  id: String!
+  name: String!
+}
+
 type AttendanceReportChart {
   colors: [String!]
   data: [Float!]!
@@ -266,8 +271,11 @@ input AttendanceReportInput {
   format: AttendanceReportFormat! = JSON
   groupBy: AttendanceReportGroupBy
   includeCharts: Boolean! = false
+  includeContactInfo: Boolean! = false
   includeEventDetails: Boolean! = false
+  includeFamilyInfo: Boolean! = false
   includeMemberDetails: Boolean! = false
+  includePersonalDetails: Boolean! = false
   includeSessionDetails: Boolean! = false
   includeStatistics: Boolean! = false
   includeVisitors: Boolean! = false
@@ -280,13 +288,56 @@ input AttendanceReportInput {
 }
 
 type AttendanceReportMember {
+  address: String
   attendanceCount: Int!
   attendanceDates: [String!]!
   attendanceRate: Float!
+  baptismDate: String
+  branch: AttendanceReportBranchInfo
+  branchId: String
+  children: [AttendanceReportMemberBasicInfo!]
+  city: String
+  confirmationDate: String
+  country: String
+  createdAt: String!
+  dateOfBirth: String
   email: String
+  emergencyContactName: String
+  emergencyContactPhone: String
+  employerName: String
+  fatherName: String
+  fatherOccupation: String
   firstName: String!
+  gender: String
   id: String!
   lastAttendance: String
+  lastName: String!
+  maritalStatus: String
+  memberId: String
+  membershipDate: String
+  middleName: String
+  motherName: String
+  motherOccupation: String
+  nationality: String
+  nlbNumber: String
+  notes: String
+  occupation: String
+  parent: AttendanceReportMemberBasicInfo
+  phoneNumber: String
+  placeOfBirth: String
+  postalCode: String
+  profileImageUrl: String
+  rfidCardId: String
+  spouse: AttendanceReportMemberBasicInfo
+  state: String
+  status: String!
+  title: String
+  updatedAt: String!
+}
+
+type AttendanceReportMemberBasicInfo {
+  firstName: String!
+  id: String!
   lastName: String!
 }
 
@@ -4960,8 +5011,8 @@ type Query {
   memberPastoralHistory(memberId: String!): MemberPastoralHistory!
   memberSearch(query: String!): [Member!]!
   memberStatistics(branchId: String, organisationId: String): MemberStatistics!
-  members(branchId: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, isRegularAttendee: Boolean, joinedAfter: String, joinedBefore: String, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], minAge: Int, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
-  membersCount(branchId: String, endDate: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, isRegularAttendee: Boolean, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], membershipType: [String!], minAge: Int, organisationId: String, search: String, startDate: String): Int!
+  members(branchId: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, includeDeactivated: Boolean = false, isRegularAttendee: Boolean, joinedAfter: String, joinedBefore: String, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], minAge: Int, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
+  membersCount(branchId: String, endDate: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, includeDeactivated: Boolean = false, isRegularAttendee: Boolean, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], membershipType: [String!], minAge: Int, organisationId: String, search: String, startDate: String): Int!
   memorialCalendar(branchId: ID, organisationId: ID, year: Int!): [MemorialDate!]!
   messagePerformanceMetrics(filter: CommunicationStatsFilterInput): MessagePerformanceEntity!
   ministries(filters: MinistryFilterInput): [Ministry!]!
@@ -5005,7 +5056,7 @@ type Query {
   sacramentsByMember(memberId: ID!): [SacramentalRecord!]!
   search(branchId: String, query: String!, type: String): [MediaItem!]!
   searchCertificateTemplates(denomination: ChurchDenomination, sacramentType: CertificateSacramentType, searchTerm: String!): [CertificateTemplate!]!
-  searchMembers(ageGroup: String, branchId: String, gender: String, membershipStatus: String, query: String!, skip: Int! = 0, take: Int! = 20): [Member!]!
+  searchMembers(ageGroup: String, branchId: String, gender: String, includeDeactivated: Boolean = false, membershipStatus: String, query: String!, skip: Int! = 0, take: Int! = 20): [Member!]!
   searchMembersForParents(branchId: ID!, organisationId: ID!, query: String!, skip: Float = 0, take: Float = 10): [ParentMember!]!
   searchPastoralStaff(branchId: ID, organisationId: ID!, pagination: PaginationInput, search: String): PaginatedUserResponse!
   searchPastors(branchId: ID, organisationId: ID!, pagination: PaginationInput, search: String): PaginatedUserResponse!

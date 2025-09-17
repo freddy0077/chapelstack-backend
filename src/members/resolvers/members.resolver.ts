@@ -103,11 +103,15 @@ export class MembersResolver {
     hasPhone?: boolean,
     @Args('isRegularAttendee', { type: () => Boolean, nullable: true })
     isRegularAttendee?: boolean,
+    @Args('includeDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
+    includeDeactivated?: boolean,
   ): Promise<Member[]> {
     const where: Prisma.MemberWhereInput = {};
 
-    // Exclude deactivated members by default
-    where.isDeactivated = false;
+    // Exclude deactivated members by default, unless explicitly requested
+    if (!includeDeactivated) {
+      where.isDeactivated = false;
+    }
 
     if (branchId) {
       where.branchId = branchId;
@@ -392,11 +396,15 @@ export class MembersResolver {
     hasPhone?: boolean,
     @Args('isRegularAttendee', { type: () => Boolean, nullable: true })
     isRegularAttendee?: boolean,
+    @Args('includeDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
+    includeDeactivated?: boolean,
   ): Promise<number> {
     const where: Prisma.MemberWhereInput = {};
 
-    // Exclude deactivated members by default (same as members query)
-    where.isDeactivated = false;
+    // Exclude deactivated members by default, unless explicitly requested
+    if (!includeDeactivated) {
+      where.isDeactivated = false;
+    }
 
     if (branchId) {
       where.branchId = branchId;
@@ -694,12 +702,15 @@ export class MembersResolver {
     @Args('gender', { type: () => String, nullable: true }) gender?: string,
     @Args('skip', { type: () => Int, defaultValue: 0 }) skip?: number,
     @Args('take', { type: () => Int, defaultValue: 20 }) take?: number,
+    @Args('includeDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
+    includeDeactivated?: boolean,
   ): Promise<Member[]> {
     const filters = {
       branchId,
       membershipStatus,
       ageGroup,
       gender,
+      includeDeactivated,
     };
     return this.membersService.searchMembers(query, filters, skip, take);
   }
