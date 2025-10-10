@@ -967,4 +967,28 @@ export class BranchesResolver {
       totalCount,
     };
   }
+
+  @ResolveField('branchAdmin', () => User, { nullable: true })
+  async getBranchAdmin(@Parent() branch: Branch): Promise<User | null> {
+    const { id: branchId } = branch;
+
+    // Find the first user with BRANCH_ADMIN role for this branch
+    const branchAdmin = await this.prisma.user.findFirst({
+      where: {
+        userBranches: {
+          some: {
+            branchId,
+            role: {
+              name: 'BRANCH_ADMIN',
+            },
+          },
+        },
+      },
+      include: {
+        roles: true,
+      },
+    });
+
+    return branchAdmin as unknown as User;
+  }
 }

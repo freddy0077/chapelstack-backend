@@ -684,6 +684,7 @@ enum BorderStyle {
 
 type Branch {
   address: String
+  branchAdmin: User
   branchSettings: BranchSettings!
   city: String
   country: String

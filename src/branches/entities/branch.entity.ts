@@ -3,6 +3,7 @@ import { BranchSetting } from './branch-setting.entity';
 import { BranchStatistics } from '../dto/branch-statistics.output';
 import { BranchSettings } from './branch-settings.entity';
 import { PaginatedTransferRequests } from '../../transfers/dto/paginated-transfer-requests.output';
+import { User } from '../../auth/entities/user.entity';
 
 @ObjectType()
 export class Branch {
@@ -68,6 +69,9 @@ export class Branch {
 
   @Field(() => PaginatedTransferRequests)
   outgoingTransfers?: PaginatedTransferRequests;
+
+  @Field(() => User, { nullable: true })
+  branchAdmin?: User;
 
   // Note: UserBranch, Member, Event relations will be added as those modules are developed.
 }
