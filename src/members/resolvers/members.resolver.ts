@@ -106,13 +106,20 @@ export class MembersResolver {
     isRegularAttendee?: boolean,
     @Args('includeDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
     includeDeactivated?: boolean,
+    @Args('onlyDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
+    onlyDeactivated?: boolean,
   ): Promise<Member[]> {
     const where: Prisma.MemberWhereInput = {};
 
-    // Exclude deactivated members by default, unless explicitly requested
-    if (!includeDeactivated) {
+    // Handle deactivation filtering
+    if (onlyDeactivated) {
+      // Show only deactivated members
+      where.isDeactivated = true;
+    } else if (!includeDeactivated) {
+      // Exclude deactivated members by default
       where.isDeactivated = false;
     }
+    // If includeDeactivated is true and onlyDeactivated is false, show all members
 
     if (branchId) {
       where.branchId = branchId;
@@ -499,13 +506,20 @@ export class MembersResolver {
     isRegularAttendee?: boolean,
     @Args('includeDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
     includeDeactivated?: boolean,
+    @Args('onlyDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
+    onlyDeactivated?: boolean,
   ): Promise<number> {
     const where: Prisma.MemberWhereInput = {};
 
-    // Exclude deactivated members by default, unless explicitly requested
-    if (!includeDeactivated) {
+    // Handle deactivation filtering
+    if (onlyDeactivated) {
+      // Show only deactivated members
+      where.isDeactivated = true;
+    } else if (!includeDeactivated) {
+      // Exclude deactivated members by default
       where.isDeactivated = false;
     }
+    // If includeDeactivated is true and onlyDeactivated is false, show all members
 
     if (branchId) {
       where.branchId = branchId;
@@ -976,6 +990,22 @@ export class MembersResolver {
     return this.membersService.importMembers(
       importMembersInput,
       user,
+      ipAddress,
+      userAgent,
+    );
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(GqlAuthGuard)
+  async permanentlyDeleteMember(
+    @Args('memberId', { type: () => String }, ParseUUIDPipe) memberId: string,
+    @CurrentUser() userId?: string,
+    @IpAddress() ipAddress?: string,
+    @UserAgent() userAgent?: string,
+  ): Promise<boolean> {
+    return this.membersService.permanentlyDeleteMember(
+      memberId,
+      userId,
       ipAddress,
       userAgent,
     );

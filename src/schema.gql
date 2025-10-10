@@ -4283,6 +4283,7 @@ type Mutation {
   markAllNotificationsAsRead(userId: ID!): Boolean!
   markFamilyNotified(id: ID!): DeathRegister!
   markNotificationAsRead(notificationId: ID!): NotificationDto!
+  permanentlyDeleteMember(memberId: String!): Boolean!
   processCardScan(input: CardScanInput!): AttendanceRecord!
   publishForm(id: String!): Form!
   recordAttendance(input: RecordAttendanceInput!): AttendanceRecord!
@@ -5044,8 +5045,8 @@ type Query {
   memberPastoralHistory(memberId: String!): MemberPastoralHistory!
   memberSearch(query: String!): [Member!]!
   memberStatistics(branchId: String, organisationId: String): MemberStatistics!
-  members(branchId: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, includeDeactivated: Boolean = false, isRegularAttendee: Boolean, joinedAfter: String, joinedBefore: String, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], minAge: Int, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
-  membersCount(branchId: String, endDate: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, includeDeactivated: Boolean = false, isRegularAttendee: Boolean, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], membershipType: [String!], minAge: Int, organisationId: String, search: String, startDate: String): Int!
+  members(branchId: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, includeDeactivated: Boolean = false, isRegularAttendee: Boolean, joinedAfter: String, joinedBefore: String, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], minAge: Int, onlyDeactivated: Boolean = false, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
+  membersCount(branchId: String, endDate: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, includeDeactivated: Boolean = false, isRegularAttendee: Boolean, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], membershipType: [String!], minAge: Int, onlyDeactivated: Boolean = false, organisationId: String, search: String, startDate: String): Int!
   memorialCalendar(branchId: ID, organisationId: ID, year: Int!): [MemorialDate!]!
   messagePerformanceMetrics(filter: CommunicationStatsFilterInput): MessagePerformanceEntity!
   ministries(filters: MinistryFilterInput): [Ministry!]!

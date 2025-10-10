@@ -1,8 +1,8 @@
 import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  ConflictException,
+    Injectable,
+    Logger,
+    NotFoundException,
+    ConflictException, BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../../audit/services';
@@ -3107,5 +3107,57 @@ export class MembersService {
       errors,
       summary,
     };
+  }
+
+  async permanentlyDeleteMember(
+    memberId: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    try {
+      const member = await this.prisma.member.findUnique({
+        where: { id: memberId },
+      });
+
+      if (!member) {
+        throw new NotFoundException(`Member with ID ${memberId} not found`);
+      }
+
+      // Only allow permanent deletion of deactivated members
+      if (!member.isDeactivated) {
+        throw new BadRequestException(
+          'Only deactivated members can be permanently deleted. Please deactivate the member first.',
+        );
+      }
+
+      // Log the action before deletion
+      await this.auditLogService.create({
+        action: 'PERMANENT_DELETE',
+        entityType: 'Member',
+        entityId: memberId,
+        description: `Permanently deleted member: ${member.firstName} ${member.lastName}`,
+        userId: userId || 'system',
+        ipAddress,
+        userAgent,
+      });
+
+      // Permanently delete the member from the database
+      await this.prisma.member.delete({
+        where: { id: memberId },
+      });
+
+      this.logger.log(
+        `Member ${memberId} (${member.firstName} ${member.lastName}) permanently deleted by user ${userId}`,
+      );
+
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Error permanently deleting member ${memberId}: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
   }
 }
