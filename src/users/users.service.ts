@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import bcrypt from 'bcrypt';
 
@@ -40,6 +40,46 @@ export class UsersService {
         this.logger.error(`Error creating user: ${error.message}`, error.stack);
       } else {
         this.logger.error(`Error creating user: ${String(error)}`);
+      }
+      throw error;
+    }
+  }
+
+  async updateUserPassword(userId: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Validate password
+      if (!newPassword || newPassword.length < 8) {
+        throw new BadRequestException('Password must be at least 8 characters long');
+      }
+
+      // Check if user exists
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Hash new password
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+
+      // Update user password
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash },
+      });
+
+      this.logger.log(`Password updated successfully for user: ${userId}`);
+      return {
+        success: true,
+        message: 'Password updated successfully',
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        this.logger.error(`Error updating password: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`Error updating password: ${String(error)}`);
       }
       throw error;
     }

@@ -106,6 +106,18 @@ export class OrganizationManagementService {
         suspendedBy: true,
         createdAt: true,
         updatedAt: true,
+        users: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+          take: 1,
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
         subscriptionsAsCustomer: {
           select: {
             id: true,
@@ -150,6 +162,14 @@ export class OrganizationManagementService {
       suspensionReason: org.suspensionReason || undefined,
       suspendedAt: org.suspendedAt || undefined,
       suspendedBy: org.suspendedBy || undefined,
+      mainUser: org.users?.[0]
+        ? {
+            id: org.users[0].id,
+            email: org.users[0].email,
+            firstName: org.users[0].firstName || undefined,
+            lastName: org.users[0].lastName || undefined,
+          }
+        : undefined,
       subscription: org.subscriptionsAsCustomer?.[0]
         ? {
             id: org.subscriptionsAsCustomer[0].id,

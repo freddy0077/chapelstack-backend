@@ -2,6 +2,21 @@ import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
 import { OrganisationStatus } from '@prisma/client';
 
 @ObjectType()
+export class MainUserInfo {
+  @Field(() => ID)
+  id: string;
+
+  @Field(() => String)
+  email: string;
+
+  @Field(() => String, { nullable: true })
+  firstName?: string;
+
+  @Field(() => String, { nullable: true })
+  lastName?: string;
+}
+
+@ObjectType()
 export class OrganizationSubscriptionInfo {
   @Field(() => ID)
   id: string;
@@ -65,6 +80,9 @@ export class OrganizationWithSubscription {
 
   @Field(() => OrganizationSubscriptionInfo, { nullable: true })
   subscription?: OrganizationSubscriptionInfo;
+
+  @Field(() => MainUserInfo, { nullable: true })
+  mainUser?: MainUserInfo;
 
   @Field(() => OrganizationCounts)
   _count: OrganizationCounts;

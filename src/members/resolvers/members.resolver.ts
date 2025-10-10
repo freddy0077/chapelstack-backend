@@ -45,6 +45,7 @@ import {
   ImportMembersInput,
   ImportMembersResult,
 } from '../dto/import-members.input';
+import { MemberActivity } from '../dto/member-activity.output';
 
 @Resolver(() => Member)
 export class MembersResolver {
@@ -220,6 +221,106 @@ export class MembersResolver {
     @Args('id', { type: () => String }, ParseUUIDPipe) id: string,
   ): Promise<Member> {
     return this.membersService.findOne(id);
+  }
+
+  @Query(() => [MemberActivity], { name: 'memberActivities' })
+  async getMemberActivities(
+    @Args('memberId', { type: () => String }) memberId: string,
+    @Args('limit', { type: () => Int, nullable: true, defaultValue: 20 })
+    limit?: number,
+  ): Promise<MemberActivity[]> {
+    const activities: MemberActivity[] = [];
+
+    // Fetch attendance records
+    const attendanceRecords = await this.prisma.attendanceRecord.findMany({
+      where: { memberId },
+      orderBy: { checkInTime: 'desc' },
+      take: limit,
+      include: {
+        session: true,
+        event: true,
+      },
+    });
+
+    for (const record of attendanceRecords) {
+      activities.push({
+        id: record.id,
+        type: 'ATTENDANCE' as any,
+        title: record.session?.name || record.event?.title || 'Church Service',
+        description: record.notes || undefined,
+        date: record.checkInTime,
+        status: record.checkOutTime ? 'completed' : 'checked_in',
+        relatedEntityId: record.sessionId || record.eventId || undefined,
+      });
+    }
+
+    // Fetch contributions
+    const contributions = await this.prisma.contribution.findMany({
+      where: { memberId },
+      orderBy: { date: 'desc' },
+      take: limit,
+      include: {
+        contributionType: true,
+        fund: true,
+      },
+    });
+
+    for (const contribution of contributions) {
+      activities.push({
+        id: contribution.id,
+        type: 'CONTRIBUTION' as any,
+        title: contribution.contributionType?.name || 'Contribution',
+        description: contribution.notes || `${contribution.fund?.name || 'General Fund'}`,
+        date: contribution.date,
+        amount: contribution.amount,
+        relatedEntityId: contribution.id,
+      });
+    }
+
+    // Fetch prayer requests
+    const prayerRequests = await this.prisma.prayerRequest.findMany({
+      where: { memberId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    for (const request of prayerRequests) {
+      activities.push({
+        id: request.id,
+        type: 'PRAYER_REQUEST' as any,
+        title: 'Prayer Request',
+        description: request.requestText?.substring(0, 100) + (request.requestText?.length > 100 ? '...' : ''),
+        date: request.createdAt,
+        status: request.status,
+        priority: request.status === 'NEW' ? 'high' : request.status === 'IN_PROGRESS' ? 'medium' : 'low',
+        relatedEntityId: request.id,
+      });
+    }
+
+    // Fetch pastoral visits
+    const pastoralVisits = await this.prisma.pastoralVisit.findMany({
+      where: { memberId },
+      orderBy: { scheduledDate: 'desc' },
+      take: limit,
+    });
+
+    for (const visit of pastoralVisits) {
+      activities.push({
+        id: visit.id,
+        type: 'PASTORAL_VISIT' as any,
+        title: visit.title || 'Pastoral Visit',
+        description: visit.description ? visit.description.substring(0, 100) + (visit.description.length > 100 ? '...' : '') : undefined,
+        date: visit.actualDate || visit.scheduledDate,
+        status: visit.status,
+        priority: visit.status === 'SCHEDULED' ? 'medium' : 'low',
+        relatedEntityId: visit.id,
+      });
+    }
+
+    // Sort all activities by date (most recent first) and limit
+    return activities
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .slice(0, limit);
   }
 
   @Mutation(() => Member)

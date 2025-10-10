@@ -6,6 +6,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Field, ObjectType } from '@nestjs/graphql';
 import * as bcrypt from 'bcrypt';
 import { CreateUsersWithRoleInput } from '../dto/create-users-with-role.input';
+import { UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 
 @ObjectType()
 class CreatedUserResult {
@@ -21,6 +23,14 @@ class CreatedUserResult {
   id?: string;
   @Field({ nullable: true })
   error?: string;
+}
+
+@ObjectType()
+class UpdatePasswordResult {
+  @Field()
+  success: boolean;
+  @Field()
+  message: string;
 }
 
 @Resolver(() => User)
@@ -110,5 +120,14 @@ export class UsersResolver {
       }
     }
     return results;
+  }
+
+  @Mutation(() => UpdatePasswordResult)
+  @UseGuards(GqlAuthGuard)
+  async updateUserPassword(
+    @Args('userId') userId: string,
+    @Args('newPassword') newPassword: string,
+  ): Promise<UpdatePasswordResult> {
+    return this.usersService.updateUserPassword(userId, newPassword);
   }
 }

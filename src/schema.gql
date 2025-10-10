@@ -52,6 +52,16 @@ type ActivitySummaryDto {
   totalActivities: Float!
 }
 
+"""Type of member activity"""
+enum ActivityType {
+  ATTENDANCE
+  CARE_REQUEST
+  CONTRIBUTION
+  COUNSELING
+  PASTORAL_VISIT
+  PRAYER_REQUEST
+}
+
 input AddEventNotesInput {
   eventId: ID!
   postEventNotes: String!
@@ -3490,6 +3500,13 @@ enum LogoPosition {
   TOP_RIGHT
 }
 
+type MainUserInfo {
+  email: String!
+  firstName: String
+  id: ID!
+  lastName: String
+}
+
 """Marital status options"""
 enum MaritalStatus {
   DIVORCED
@@ -3640,6 +3657,18 @@ type Member {
   statusChangeReason: String
   title: String
   updatedAt: DateTime!
+}
+
+type MemberActivity {
+  amount: Float
+  date: DateTime!
+  description: String
+  id: ID!
+  priority: String
+  relatedEntityId: String
+  status: String
+  title: String!
+  type: ActivityType!
 }
 
 type MemberAgeGroup {
@@ -4372,6 +4401,7 @@ type Mutation {
   updateTransaction(input: UpdateTransactionInput!): Transaction!
   updateTransferRequest(input: UpdateTransferRequestInput!): TransferRequest!
   updateUserActiveStatus(id: ID!, isActive: Boolean!): AuthUser!
+  updateUserPassword(newPassword: String!, userId: String!): UpdatePasswordResult!
   updateVendor(updateVendorInput: UpdateVendorInput!): Vendor!
   updateWorkflowTemplate(branchId: String, id: String!, input: UpdateWorkflowTemplateInput!, organisationId: String!): WorkflowTemplate!
   uploadBirthRegistryDocument(uploadDocumentInput: UploadDocumentInput!): BirthRegistry!
@@ -4563,6 +4593,7 @@ type OrganizationWithSubscription {
   createdAt: DateTime!
   email: String
   id: ID!
+  mainUser: MainUserInfo
   name: String!
   status: String!
   subscription: OrganizationSubscriptionInfo
@@ -5001,6 +5032,7 @@ type Query {
   mediaItem(id: ID!): MediaItem!
   mediaItems(branchId: String, type: String): [MediaItem!]!
   member(id: String!): Member!
+  memberActivities(limit: Int = 20, memberId: String!): [MemberActivity!]!
   memberAttendanceHistory(memberId: ID!): [AttendanceRecord!]!
   memberByRfidCard(rfidCardId: String!): Member
   memberCounselingSessions(includeConfidential: Boolean! = false, memberId: String!): [CounselingSession!]!
@@ -6574,6 +6606,11 @@ input UpdateOrganisationInput {
   vision: String
   website: String
   zipCode: String
+}
+
+type UpdatePasswordResult {
+  message: String!
+  success: Boolean!
 }
 
 input UpdatePastoralVisitInput {
