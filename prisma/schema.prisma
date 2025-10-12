@@ -57,6 +57,9 @@ model User {
   certificateGenerations        CertificateGeneration[]
   birthRegistriesCreated        BirthRegistry[]           @relation("BirthRegistryCreatedBy")
   birthRegistriesUpdated        BirthRegistry[]           @relation("BirthRegistryUpdatedBy")
+  conversationParticipants      ConversationParticipant[] @relation("UserConversationParticipants")
+  sentMessages                  ConversationMessage[]     @relation("UserSentMessages")
+  messageReadReceipts           MessageReadReceipt[]      @relation("UserMessageReadReceipts")
 
   @@index([organisationId])
 }
@@ -101,6 +104,10 @@ model Branch {
   postalCode                   String?
   state                        String?
   website                      String?
+  description                  String?
+  emailDisplayName             String?
+  emailSignature               String?                       @db.Text
+  smsDisplayName               String?
   organisationId               String?
   attendanceRecords            AttendanceRecord[]            @relation("BranchAttendanceRecords")
   attendanceSessions           AttendanceSession[]
@@ -148,6 +155,7 @@ model Branch {
   SmallGroup                   SmallGroup[]
   SmsMessage                   SmsMessage[]
   speakers                     Speaker[]
+  zones                        Zone[]
   transactions                 Transaction[]                 @relation("BranchTransactions")
   destinationTransfers         TransferRequest[]             @relation("DestinationBranchTransfers")
   sourceTransfers              TransferRequest[]             @relation("SourceBranchTransfers")
@@ -161,6 +169,9 @@ model Branch {
   birthRegistries              BirthRegistry[]
   certificateTemplates         CertificateTemplate[]
   certificateGenerations       CertificateGeneration[]
+  conversations                Conversation[]                @relation("BranchConversations")
+  assets                       Asset[]
+  assetDisposals               AssetDisposal[]
 
   @@index([organisationId])
 }
@@ -280,6 +291,127 @@ model Notification {
 
   @@index([userId])
   @@index([branchId])
+  @@index([organisationId])
+}
+
+// Conversation Threading Models
+model Conversation {
+  id             String                    @id @default(uuid())
+  subject        String?
+  organisationId String
+  branchId       String?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  lastMessageAt  DateTime?
+  status         ConversationStatus        @default(ACTIVE)
+  participants   ConversationParticipant[]
+  messages       ConversationMessage[]
+  branch         Branch?                   @relation("BranchConversations", fields: [branchId], references: [id])
+  organisation   Organisation              @relation("OrganisationConversations", fields: [organisationId], references: [id])
+
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([lastMessageAt])
+  @@index([status])
+}
+
+model ConversationParticipant {
+  id             String          @id @default(uuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime        @default(now())
+  leftAt         DateTime?
+  lastReadAt     DateTime?
+  role           ParticipantRole @default(MEMBER)
+  conversation   Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User            @relation("UserConversationParticipants", fields: [userId], references: [id])
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+}
+
+model ConversationMessage {
+  id             String               @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String               @db.Text
+  messageType    MessageChannelType   @default(IN_APP)
+  status         MessageStatus        @default(SENT)
+  readAt         DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  conversation   Conversation         @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User                 @relation("UserSentMessages", fields: [senderId], references: [id])
+  attachments    MessageAttachment[]
+  readReceipts   MessageReadReceipt[]
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@index([status])
+}
+
+model MessageAttachment {
+  id         String               @id @default(uuid())
+  messageId  String
+  filename   String
+  fileUrl    String
+  fileSize   Int
+  mimeType   String
+  scanStatus AttachmentScanStatus @default(PENDING)
+  scannedAt  DateTime?
+  createdAt  DateTime             @default(now())
+  message    ConversationMessage  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([scanStatus])
+}
+
+model MessageReadReceipt {
+  id        String              @id @default(uuid())
+  messageId String
+  userId    String
+  readAt    DateTime            @default(now())
+  message   ConversationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User                @relation("UserMessageReadReceipts", fields: [userId], references: [id])
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+}
+
+model MessageRecipient {
+  id            String         @id @default(uuid())
+  messageId     String
+  recipientId   String
+  recipientType RecipientType  @default(MEMBER)
+  status        DeliveryStatus @default(PENDING)
+  deliveredAt   DateTime?
+  openedAt      DateTime?
+  clickedAt     DateTime?
+  bouncedAt     DateTime?
+  errorMessage  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([messageId, recipientId])
+  @@index([messageId])
+  @@index([recipientId])
+  @@index([status])
+}
+
+model UnsubscribeList {
+  id             String       @id @default(uuid())
+  email          String
+  organisationId String
+  reason         String?
+  unsubscribedAt DateTime     @default(now())
+  organisation   Organisation @relation("OrganisationUnsubscribes", fields: [organisationId], references: [id])
+
+  @@unique([email, organisationId])
+  @@index([email])
   @@index([organisationId])
 }
 
@@ -426,6 +558,7 @@ model Member {
   spouseId                 String?                    @unique
   organisationId           String?
   userId                   String?                    @unique
+  zoneId                   String?
   addressLine2             String?
   affidavitUrl             String?
   alternatePhone           String?
@@ -490,6 +623,7 @@ model Member {
   guardianProfile          Guardian?
   branch                   Branch?                    @relation(fields: [branchId], references: [id])
   organisation             Organisation?              @relation(fields: [organisationId], references: [id])
+  zone                     Zone?                      @relation(fields: [zoneId], references: [id])
   parent                   Member?                    @relation("MemberParent", fields: [parentId], references: [id])
   children                 Member[]                   @relation("MemberParent")
   spouse                   Member?                    @relation("MemberSpouse", fields: [spouseId], references: [id])
@@ -522,10 +656,13 @@ model Member {
   birthRegistriesAsMother  BirthRegistry[]            @relation("BirthRegistryMother")
   birthRegistriesAsFather  BirthRegistry[]            @relation("BirthRegistryFather")
   birthRegistryAsChild     BirthRegistry?             @relation("BirthRegistryChild")
+  assignedAssets           Asset[]
+  approvedDisposals        AssetDisposal[]
 
   @@index([branchId])
   @@index([status])
   @@index([membershipDate])
+  @@index([zoneId])
 }
 
 model CommunicationPrefs {
@@ -749,6 +886,28 @@ model Ministry {
   @@index([status])
 }
 
+model Zone {
+  id             String        @id @default(uuid())
+  name           String
+  description    String?
+  location       String?
+  leaderName     String?
+  leaderPhone    String?
+  leaderEmail    String?
+  status         String        @default("ACTIVE")
+  branchId       String?
+  organisationId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  members        Member[]
+  branch         Branch?       @relation(fields: [branchId], references: [id])
+  organisation   Organisation? @relation(fields: [organisationId], references: [id])
+
+  @@index([branchId])
+  @@index([organisationId])
+  @@index([status])
+}
+
 model SmallGroup {
   id              String        @id @default(uuid())
   name            String
@@ -778,6 +937,8 @@ model GroupMember {
   id           String      @id @default(uuid())
   role         String
   joinDate     DateTime    @default(now())
+  leaveDate    DateTime?
+  leaveReason  String?
   status       String
   memberId     String
   ministryId   String?
@@ -794,6 +955,7 @@ model GroupMember {
   @@index([smallGroupId])
   @@index([role])
   @@index([status])
+  @@index([leaveDate])
 }
 
 model AttendanceSession {
@@ -1760,14 +1922,18 @@ model FormFieldValue {
 model ScheduledReport {
   id              String              @id @default(uuid())
   name            String
-  reportType      String
+  description     String?
+  reportType      String // Legacy field, kept for backward compatibility
+  category        ReportCategory? // New field for report builder
+  templateId      String? // Link to ReportTemplate
   frequency       ReportFrequencyEnum
   lastRunAt       DateTime?
   nextRunAt       DateTime?
   recipientEmails String[]
   outputFormat    String
   branchId        String?
-  filterJson      String?
+  filterJson      String? // Legacy JSON string
+  filters         Json? // New structured filters
   isActive        Boolean             @default(true)
   createdById     String
   createdAt       DateTime            @default(now())
@@ -1782,6 +1948,8 @@ model ScheduledReport {
   @@index([createdById])
   @@index([frequency])
   @@index([nextRunAt])
+  @@index([category])
+  @@index([templateId])
 }
 
 model UserDashboardPreference {
@@ -1899,6 +2067,7 @@ model Organisation {
   smallGroups                  SmallGroup[]
   smsMessages                  SmsMessage[]
   speakers                     Speaker[]
+  zones                        Zone[]
   subscriptionsAsCustomer      Subscription[]                @relation("SubscriptionCustomer")
   subscriptions                Subscription[]                @relation("SubscriptionOrganisation")
   transactions                 Transaction[]                 @relation("OrganisationTransactions")
@@ -1913,55 +2082,61 @@ model Organisation {
   birthRegistries              BirthRegistry[]
   certificateTemplates         CertificateTemplate[]
   certificateGenerations       CertificateGeneration[]
+  conversations                Conversation[]                @relation("OrganisationConversations")
+  unsubscribes                 UnsubscribeList[]             @relation("OrganisationUnsubscribes")
+  assetTypes                   AssetType[]
+  assets                       Asset[]
+  assetDisposals               AssetDisposal[]
+  assetMaintenances            AssetMaintenance[]
 
   @@index([email])
 }
 
 model Event {
-  id                    String              @id @default(uuid())
-  title                 String
-  description           String?
-  startDate             DateTime
-  endDate               DateTime?
-  location              String?
-  category              String?
-  branchId              String?
-  createdBy             String?
-  updatedBy             String?
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  organisationId        String?
-  capacity              Int?
-  currency              String?             @default("GHS")
-  eventImageUrl         String?
-  eventType             EventType           @default(OTHER)
-  isFree                Boolean             @default(true)
-  isPublic              Boolean             @default(true)
-  organizerEmail        String?
-  organizerName         String?
-  organizerPhone        String?
-  registrationDeadline  DateTime?
-  registrationRequired  Boolean             @default(false)
-  requiresApproval      Boolean             @default(false)
-  status                EventStatus         @default(DRAFT)
-  tags                  String[]
-  ticketPrice           Decimal?            @db.Decimal(10, 2)
+  id                     String              @id @default(uuid())
+  title                  String
+  description            String?
+  startDate              DateTime
+  endDate                DateTime?
+  location               String?
+  category               String?
+  branchId               String?
+  createdBy              String?
+  updatedBy              String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  organisationId         String?
+  capacity               Int?
+  currency               String?             @default("GHS")
+  eventImageUrl          String?
+  eventType              EventType           @default(OTHER)
+  isFree                 Boolean             @default(true)
+  isPublic               Boolean             @default(true)
+  organizerEmail         String?
+  organizerName          String?
+  organizerPhone         String?
+  registrationDeadline   DateTime?
+  registrationRequired   Boolean             @default(false)
+  requiresApproval       Boolean             @default(false)
+  status                 EventStatus         @default(DRAFT)
+  tags                   String[]
+  ticketPrice            Decimal?            @db.Decimal(10, 2)
   // Post-event notes fields
-  postEventNotes        String?             @db.Text
-  postEventNotesBy      String?
-  postEventNotesDate    DateTime?
-  attendanceRecords     AttendanceRecord[]
-  branch                Branch?             @relation("BranchEvents", fields: [branchId], references: [id])
-  creator               User?               @relation("EventCreatedBy", fields: [createdBy], references: [id])
-  organisation          Organisation?       @relation(fields: [organisationId], references: [id])
-  updater               User?               @relation("EventUpdatedBy", fields: [updatedBy], references: [id])
-  postEventNotesAuthor  User?               @relation("EventPostEventNotesBy", fields: [postEventNotesBy], references: [id])
-  eventRSVPs            EventRSVP[]
-  eventRegistrations    EventRegistration[]
-  transactions          Transaction[]
-  workflowExecutions    WorkflowExecution[]
-  funeralDeathRegisters DeathRegister[]     @relation("DeathRegisterFuneralEvent")
-  baptismBirthRegistries BirthRegistry[]    @relation("BirthRegistryBaptismEvent")
+  postEventNotes         String?             @db.Text
+  postEventNotesBy       String?
+  postEventNotesDate     DateTime?
+  attendanceRecords      AttendanceRecord[]
+  branch                 Branch?             @relation("BranchEvents", fields: [branchId], references: [id])
+  creator                User?               @relation("EventCreatedBy", fields: [createdBy], references: [id])
+  organisation           Organisation?       @relation(fields: [organisationId], references: [id])
+  updater                User?               @relation("EventUpdatedBy", fields: [updatedBy], references: [id])
+  postEventNotesAuthor   User?               @relation("EventPostEventNotesBy", fields: [postEventNotesBy], references: [id])
+  eventRSVPs             EventRSVP[]
+  eventRegistrations     EventRegistration[]
+  transactions           Transaction[]
+  workflowExecutions     WorkflowExecution[]
+  funeralDeathRegisters  DeathRegister[]     @relation("DeathRegisterFuneralEvent")
+  baptismBirthRegistries BirthRegistry[]     @relation("BirthRegistryBaptismEvent")
 
   @@index([branchId])
   @@index([organisationId])
@@ -2068,16 +2243,40 @@ model Transaction {
   description    String?
   reference      String?
   metadata       Json?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  memberId       String?
-  eventId        String?
-  branch         Branch?         @relation("BranchTransactions", fields: [branchId], references: [id])
-  event          Event?          @relation(fields: [eventId], references: [id])
-  fund           Fund?           @relation("FundTransactions", fields: [fundId], references: [id])
-  member         Member?         @relation(fields: [memberId], references: [id])
-  organisation   Organisation    @relation("OrganisationTransactions", fields: [organisationId], references: [id])
-  user           User?           @relation("UserTransactions", fields: [userId], references: [id])
+
+  // Audit and Status Fields
+  status                TransactionStatus @default(ACTIVE)
+  createdBy             String?
+  createdAt             DateTime          @default(now())
+  lastModifiedBy        String?
+  lastModifiedAt        DateTime?
+  voidedBy              String?
+  voidedAt              DateTime?
+  voidReason            String?
+  version               Int               @default(1)
+  originalTransactionId String?
+
+  // Reconciliation Fields
+  isReconciled       Boolean   @default(false)
+  reconciledAt       DateTime?
+  reconciledBy       String?
+  accountingPeriodId String?
+  periodClosed       Boolean   @default(false)
+
+  updatedAt DateTime @updatedAt
+  memberId  String?
+  eventId   String?
+
+  // Relations
+  branch               Branch?               @relation("BranchTransactions", fields: [branchId], references: [id])
+  event                Event?                @relation(fields: [eventId], references: [id])
+  fund                 Fund?                 @relation("FundTransactions", fields: [fundId], references: [id])
+  member               Member?               @relation(fields: [memberId], references: [id])
+  organisation         Organisation          @relation("OrganisationTransactions", fields: [organisationId], references: [id])
+  user                 User?                 @relation("UserTransactions", fields: [userId], references: [id])
+  auditLogs            TransactionAuditLog[]
+  originalTransaction  Transaction?          @relation("TransactionReversal", fields: [originalTransactionId], references: [id])
+  reversalTransactions Transaction[]         @relation("TransactionReversal")
 
   @@index([organisationId])
   @@index([branchId])
@@ -2087,6 +2286,8 @@ model Transaction {
   @@index([eventId])
   @@index([type])
   @@index([date])
+  @@index([status])
+  @@index([isReconciled])
 }
 
 model TransferRequest {
@@ -2654,6 +2855,7 @@ enum ReportFrequencyEnum {
   WEEKLY
   MONTHLY
   QUARTERLY
+  YEARLY
 }
 
 enum OnboardingStep {
@@ -2677,6 +2879,45 @@ enum TransactionType {
   FUND_ALLOCATION
 }
 
+enum TransactionStatus {
+  ACTIVE
+  PENDING
+  VOIDED
+  REVERSED
+  REVERSAL
+}
+
+enum AuditAction {
+  CREATE
+  EDIT
+  VOID
+  REVERSE
+  RECONCILE
+  UNRECONCILE
+  APPROVE
+  REJECT
+}
+
+model TransactionAuditLog {
+  id             String      @id @default(uuid())
+  transactionId  String
+  action         AuditAction
+  performedBy    String
+  performedAt    DateTime    @default(now())
+  previousValues Json?
+  newValues      Json?
+  reason         String?
+  ipAddress      String?
+  userAgent      String?
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId])
+  @@index([performedBy])
+  @@index([action])
+  @@index([performedAt])
+}
+
 enum WorkflowType {
   FOLLOW_UP
   EVENT_REMINDER
@@ -2689,6 +2930,122 @@ enum WorkflowStatus {
   INACTIVE
   PAUSED
   DELETED
+}
+
+enum AbsenteeMessageType {
+  SMS
+  EMAIL
+  NOTIFICATION
+  WHATSAPP
+}
+
+enum AbsenteeMessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  READ
+}
+
+enum ReportCategory {
+  ATTENDANCE
+  MEMBERSHIP
+  FINANCE
+  BIRTH_REGISTER
+  DEATH_REGISTER
+  SACRAMENTS
+  CONTRIBUTIONS
+  EVENTS
+  GROUPS
+  ZONES
+}
+
+enum ExportFormat {
+  PDF
+  EXCEL
+  CSV
+}
+
+model AbsenteeMessage {
+  id                  String              @id @default(uuid())
+  organisationId      String
+  branchId            String
+  eventId             String?
+  attendanceSessionId String?
+  sentBy              String
+  sentAt              DateTime            @default(now())
+  messageType         AbsenteeMessageType
+  subject             String?
+  message             String
+  recipientCount      Int
+  deliveredCount      Int                 @default(0)
+  failedCount         Int                 @default(0)
+
+  recipients AbsenteeMessageRecipient[]
+
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([eventId])
+  @@index([attendanceSessionId])
+  @@index([sentBy])
+  @@index([sentAt])
+}
+
+model AbsenteeMessageRecipient {
+  id            String                @id @default(uuid())
+  messageId     String
+  memberId      String
+  status        AbsenteeMessageStatus @default(PENDING)
+  sentAt        DateTime              @default(now())
+  deliveredAt   DateTime?
+  readAt        DateTime?
+  failureReason String?
+
+  message AbsenteeMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([memberId])
+  @@index([status])
+}
+
+model ReportTemplate {
+  id             String         @id @default(uuid())
+  name           String
+  description    String?
+  category       ReportCategory
+  filters        Json // Dynamic filter configuration
+  metrics        Json // Metrics to calculate
+  columns        Json? // Column configuration for display
+  createdBy      String
+  organisationId String
+  branchId       String?
+  isPublic       Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([category])
+  @@index([createdBy])
+}
+
+model ReportExecution {
+  id             String         @id @default(uuid())
+  templateId     String?
+  category       ReportCategory
+  filters        Json
+  results        Json
+  summary        Json?
+  executedBy     String
+  organisationId String
+  branchId       String?
+  executedAt     DateTime       @default(now())
+
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([category])
+  @@index([executedAt])
+  @@index([executedBy])
 }
 
 enum WorkflowTriggerType {
@@ -2774,6 +3131,7 @@ enum CareRequestType {
   SPIRITUAL_GUIDANCE
   FAMILY_CRISIS
   GENERAL_SUPPORT
+  OTHER
 }
 
 enum CareRequestPriority {
@@ -2951,6 +3309,48 @@ enum BurialType {
   CREMATION
 }
 
+// Communication Threading Enums
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  CLOSED
+}
+
+enum ParticipantRole {
+  ADMIN
+  MEMBER
+}
+
+enum MessageChannelType {
+  EMAIL
+  SMS
+  IN_APP
+  PUSH
+}
+
+enum AttachmentScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  FAILED
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+  OPENED
+  CLICKED
+}
+
+enum RecipientType {
+  MEMBER
+  USER
+  EXTERNAL
+}
+
 // Death Register Model
 model DeathRegister {
   id            String   @id @default(uuid())
@@ -3006,38 +3406,37 @@ model DeathRegister {
   @@index([recordedDate])
 }
 
-
 // Birth Registry Model
 model BirthRegistry {
   id String @id @default(uuid())
 
   // Child Information
-  childFirstName  String
-  childMiddleName String?
-  childLastName   String
-  childGender     Gender
-  dateOfBirth     DateTime
-  timeOfBirth     String?
-  placeOfBirth    String
-  hospitalName    String?
+  childFirstName     String
+  childMiddleName    String?
+  childLastName      String
+  childGender        Gender
+  dateOfBirth        DateTime
+  timeOfBirth        String?
+  placeOfBirth       String
+  hospitalName       String?
   attendingPhysician String?
-  birthWeight     Float?
-  birthLength     Float?
+  birthWeight        Float?
+  birthLength        Float?
   birthCircumstances String?
-  complications   String?
+  complications      String?
 
   // Mother Information
-  motherFirstName String
-  motherLastName  String
-  motherMemberId  String?
-  motherAge       Int?
+  motherFirstName  String
+  motherLastName   String
+  motherMemberId   String?
+  motherAge        Int?
   motherOccupation String?
 
   // Father Information
-  fatherFirstName String?
-  fatherLastName  String?
-  fatherMemberId  String?
-  fatherAge       Int?
+  fatherFirstName  String?
+  fatherLastName   String?
+  fatherMemberId   String?
+  fatherAge        Int?
   fatherOccupation String?
 
   // Parent Contact Information
@@ -3073,14 +3472,14 @@ model BirthRegistry {
   organisationId String
 
   // Relations
-  motherMember   Member?      @relation("BirthRegistryMother", fields: [motherMemberId], references: [id])
-  fatherMember   Member?      @relation("BirthRegistryFather", fields: [fatherMemberId], references: [id])
-  childMember    Member?      @relation("BirthRegistryChild", fields: [childMemberId], references: [id])
-  branch         Branch?      @relation(fields: [branchId], references: [id])
-  organisation   Organisation @relation(fields: [organisationId], references: [id])
-  baptismEvent   Event?       @relation("BirthRegistryBaptismEvent", fields: [baptismEventId], references: [id])
-  createdBy      User?        @relation("BirthRegistryCreatedBy", fields: [createdById], references: [id])
-  updatedBy      User?        @relation("BirthRegistryUpdatedBy", fields: [updatedById], references: [id])
+  motherMember Member?      @relation("BirthRegistryMother", fields: [motherMemberId], references: [id])
+  fatherMember Member?      @relation("BirthRegistryFather", fields: [fatherMemberId], references: [id])
+  childMember  Member?      @relation("BirthRegistryChild", fields: [childMemberId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  baptismEvent Event?       @relation("BirthRegistryBaptismEvent", fields: [baptismEventId], references: [id])
+  createdBy    User?        @relation("BirthRegistryCreatedBy", fields: [createdById], references: [id])
+  updatedBy    User?        @relation("BirthRegistryUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([branchId])
   @@index([organisationId])
@@ -3091,4 +3490,120 @@ model BirthRegistry {
   @@index([motherMemberId])
   @@index([fatherMemberId])
   @@index([createdAt])
+}
+
+// ============================================
+// ASSET MANAGEMENT MODELS
+// ============================================
+
+model AssetType {
+  id                      String       @id @default(uuid())
+  name                    String
+  description             String?
+  defaultDepreciationRate Float? // Annual percentage
+  category                String? // "FIXED_ASSET", "CURRENT_ASSET", etc.
+  icon                    String?
+  color                   String?
+  customFields            Json? // Type-specific attributes
+  organisationId          String
+  organisation            Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  assets                  Asset[]
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  @@index([organisationId])
+  @@index([name])
+}
+
+model Asset {
+  id                   String             @id @default(uuid())
+  assetCode            String             @unique // e.g., "AST-2024-001"
+  name                 String
+  description          String?
+  assetTypeId          String
+  assetType            AssetType          @relation(fields: [assetTypeId], references: [id])
+  purchaseDate         DateTime?
+  purchasePrice        Float?
+  currentValue         Float?
+  depreciationRate     Float? // Annual percentage
+  location             String?
+  assignedToMemberId   String?
+  assignedToMember     Member?            @relation(fields: [assignedToMemberId], references: [id])
+  assignedToDepartment String?
+  status               String             @default("ACTIVE") // ACTIVE, IN_MAINTENANCE, DISPOSED, LOST, DAMAGED
+  condition            String? // EXCELLENT, GOOD, FAIR, POOR
+  warrantyExpiryDate   DateTime?
+  supplier             String?
+  serialNumber         String?
+  modelNumber          String?
+  photos               String[]           @default([])
+  attachments          String[]           @default([])
+  notes                String?
+  customData           Json? // Type-specific data
+  branchId             String?
+  branch               Branch?            @relation(fields: [branchId], references: [id])
+  organisationId       String
+  organisation         Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  disposalRecords      AssetDisposal[]
+  maintenanceRecords   AssetMaintenance[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([assetTypeId])
+  @@index([status])
+  @@index([assetCode])
+  @@index([assignedToMemberId])
+}
+
+model AssetDisposal {
+  id                  String       @id @default(uuid())
+  assetId             String
+  asset               Asset        @relation(fields: [assetId], references: [id])
+  disposalDate        DateTime
+  disposalMethod      String // SOLD, DONATED, SCRAPPED, LOST, STOLEN, DAMAGED
+  disposalReason      String?
+  salePrice           Float?
+  buyerRecipient      String? // Name of buyer or recipient
+  approvedByMemberId  String?
+  approvedByMember    Member?      @relation(fields: [approvedByMemberId], references: [id])
+  disposalNotes       String?
+  bookValueAtDisposal Float?
+  gainLossOnDisposal  Float? // salePrice - bookValueAtDisposal
+  documents           String[]     @default([])
+  branchId            String?
+  branch              Branch?      @relation(fields: [branchId], references: [id])
+  organisationId      String
+  organisation        Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([organisationId])
+  @@index([branchId])
+  @@index([assetId])
+  @@index([disposalDate])
+  @@index([disposalMethod])
+}
+
+model AssetMaintenance {
+  id                  String       @id @default(uuid())
+  assetId             String
+  asset               Asset        @relation(fields: [assetId], references: [id])
+  maintenanceDate     DateTime
+  maintenanceType     String // ROUTINE, REPAIR, UPGRADE, INSPECTION
+  description         String
+  cost                Float?
+  performedBy         String? // Vendor or staff name
+  nextMaintenanceDate DateTime?
+  notes               String?
+  documents           String[]     @default([])
+  organisationId      String
+  organisation        Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([organisationId])
+  @@index([assetId])
+  @@index([maintenanceDate])
 }
