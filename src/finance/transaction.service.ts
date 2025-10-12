@@ -1,8 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTransactionInput } from './dto/create-transaction.input';
 import { UpdateTransactionInput } from './dto/update-transaction.input';
-import { TransactionType, Prisma } from '@prisma/client';
+import {
+  TransactionType,
+  Prisma,
+  TransactionStatus,
+  AuditAction,
+} from '@prisma/client';
 import { TransactionStats } from './dto/transaction-stats.dto';
 import { DateRangeInput } from '../common/dto/date-range.input';
 import {
@@ -60,7 +69,7 @@ export class TransactionService {
     private readonly workflowsService: WorkflowsService,
   ) {}
 
-  async create(data: CreateTransactionInput) {
+  async create(data: CreateTransactionInput, userId?: string) {
     console.log('gddgedggded', data);
     // Defensive: ensure type is a valid TransactionType enum value
     if (!data.type || !Object.values(TransactionType).includes(data.type)) {
@@ -71,7 +80,7 @@ export class TransactionService {
       organisationId,
       branchId,
       fundId,
-      userId,
+      userId: transactionUserId,
       memberId,
       eventId,
       amount,
@@ -90,16 +99,31 @@ export class TransactionService {
         description,
         reference,
         metadata,
+        status: TransactionStatus.ACTIVE,
+        createdBy: userId,
+        version: 1,
         organisation: {
           connect: { id: organisationId },
         },
         ...(branchId && { branch: { connect: { id: branchId } } }),
         ...(fundId && { fund: { connect: { id: fundId } } }),
-        ...(userId && { user: { connect: { id: userId } } }),
+        ...(transactionUserId && {
+          user: { connect: { id: transactionUserId } },
+        }),
         ...(memberId && { member: { connect: { id: memberId } } }),
         ...(eventId && { event: { connect: { id: eventId } } }),
       },
     });
+
+    // Create audit log
+    if (userId) {
+      await this.createAuditLog({
+        transactionId: transaction.id,
+        action: AuditAction.CREATE,
+        performedBy: userId,
+        newValues: transaction,
+      });
+    }
 
     // Trigger workflow automation for CONTRIBUTION transactions
     if (type === TransactionType.CONTRIBUTION) {
@@ -832,8 +856,8 @@ export class TransactionService {
       memberId,
       memberName: `${member.firstName} ${member.lastName}`,
       memberEmail: member.email || undefined,
-      periodStart: dateRange.startDate!,
-      periodEnd: dateRange.endDate!,
+      periodStart: dateRange.startDate,
+      periodEnd: dateRange.endDate,
       totalGiving,
       contributionCount,
       averageGift,
@@ -1557,8 +1581,8 @@ export class TransactionService {
     organisationId: string,
   ): CashFlowStatement {
     let netCashFromOperating = 0;
-    let netCashFromInvesting = 0;
-    let netCashFromFinancing = 0;
+    const netCashFromInvesting = 0;
+    const netCashFromFinancing = 0;
 
     const operatingActivities: FinancialLineItem[] = [];
     const investingActivities: FinancialLineItem[] = [];
@@ -1633,8 +1657,8 @@ export class TransactionService {
   ): StatementOfNetAssets {
     // For churches, most assets are typically unrestricted
     let totalUnrestricted = 0;
-    let totalTemporarilyRestricted = 0;
-    let totalPermanentlyRestricted = 0;
+    const totalTemporarilyRestricted = 0;
+    const totalPermanentlyRestricted = 0;
 
     const unrestrictedItems: FinancialLineItem[] = [];
     const fundBalances = new Map<string, number>();
@@ -2001,7 +2025,14 @@ export class TransactionService {
   }
 
   findOne(id: string) {
-    return this.prisma.transaction.findUnique({ where: { id } });
+    return this.prisma.transaction.findUnique({
+      where: { id },
+      include: {
+        fund: true,
+        event: true,
+        member: true,
+      },
+    });
   }
 
   update(id: string, data: UpdateTransactionInput) {
@@ -2013,5 +2044,349 @@ export class TransactionService {
 
   remove(id: string) {
     return this.prisma.transaction.delete({ where: { id } });
+  }
+
+  // ==================== AUDIT & VOID METHODS ====================
+
+  /**
+   * Void a transaction (soft delete with audit trail)
+   */
+  async voidTransaction(
+    transactionId: string,
+    userId: string,
+    reason: string,
+    createReversal: boolean = true,
+  ) {
+    const transaction = await this.findOne(transactionId);
+
+    if (!transaction) {
+      throw new BadRequestException('Transaction not found');
+    }
+
+    // Check if already voided
+    if (transaction.status === TransactionStatus.VOIDED) {
+      throw new BadRequestException('Transaction is already voided');
+    }
+
+    // Check if reconciled
+    if (transaction.isReconciled) {
+      throw new ForbiddenException('Cannot void a reconciled transaction');
+    }
+
+    // Check if period is closed
+    if (transaction.periodClosed) {
+      throw new ForbiddenException(
+        'Cannot void a transaction in a closed period',
+      );
+    }
+
+    // Create audit log before voiding
+    await this.createAuditLog({
+      transactionId,
+      action: AuditAction.VOID,
+      performedBy: userId,
+      reason,
+      previousValues: { status: transaction.status },
+      newValues: { status: TransactionStatus.VOIDED },
+    });
+
+    // Update transaction status
+    const voidedTransaction = await this.prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        status: TransactionStatus.VOIDED,
+        voidedBy: userId,
+        voidedAt: new Date(),
+        voidReason: reason,
+      },
+      include: {
+        fund: true,
+        event: true,
+        member: true,
+      },
+    });
+
+    // Create reversal transaction if requested
+    if (createReversal) {
+      await this.createReversalTransaction(transaction, userId, reason);
+    }
+
+    return voidedTransaction;
+  }
+
+  /**
+   * Create a reversal transaction
+   */
+  async createReversalTransaction(
+    originalTransaction: any,
+    userId: string,
+    reason: string,
+  ) {
+    const reversal = await this.prisma.transaction.create({
+      data: {
+        organisationId: originalTransaction.organisationId,
+        branchId: originalTransaction.branchId,
+        fundId: originalTransaction.fundId,
+        type: originalTransaction.type,
+        amount: new Prisma.Decimal(originalTransaction.amount).negated(),
+        date: new Date(), // Use today's date for reversal
+        description: `REVERSAL: ${originalTransaction.description || 'Transaction'}`,
+        reference: `REV-${originalTransaction.reference || originalTransaction.id.substring(0, 8)}`,
+        status: TransactionStatus.REVERSAL,
+        originalTransactionId: originalTransaction.id,
+        createdBy: userId,
+        version: 1,
+        metadata: {
+          reversalReason: reason,
+          originalDate: originalTransaction.date,
+          originalAmount: originalTransaction.amount.toString(),
+        },
+      },
+    });
+
+    // Create audit log for reversal
+    await this.createAuditLog({
+      transactionId: reversal.id,
+      action: AuditAction.REVERSE,
+      performedBy: userId,
+      reason,
+      newValues: reversal,
+    });
+
+    // Update original transaction status
+    await this.prisma.transaction.update({
+      where: { id: originalTransaction.id },
+      data: { status: TransactionStatus.REVERSED },
+    });
+
+    return reversal;
+  }
+
+  /**
+   * Edit a transaction with audit trail
+   */
+  async editTransaction(
+    transactionId: string,
+    userId: string,
+    updates: Partial<UpdateTransactionInput>,
+    reason: string,
+    userRole?: string,
+  ) {
+    const transaction = await this.findOne(transactionId);
+
+    if (!transaction) {
+      throw new BadRequestException('Transaction not found');
+    }
+
+    // Check if can edit
+    const canEdit = this.canEditTransaction(transaction, userRole);
+    if (!canEdit.allowed) {
+      throw new ForbiddenException(canEdit.reason);
+    }
+
+    // Create audit log with before/after values
+    await this.createAuditLog({
+      transactionId,
+      action: AuditAction.EDIT,
+      performedBy: userId,
+      reason,
+      previousValues: transaction,
+      newValues: updates,
+    });
+
+    // Update transaction
+    const updatedTransaction = await this.prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        ...updates,
+        lastModifiedBy: userId,
+        lastModifiedAt: new Date(),
+        version: { increment: 1 },
+      },
+      include: {
+        fund: true,
+        event: true,
+        member: true,
+      },
+    });
+
+    return updatedTransaction;
+  }
+
+  /**
+   * Check if transaction can be edited
+   */
+  canEditTransaction(
+    transaction: any,
+    userRole?: string,
+  ): { allowed: boolean; reason?: string } {
+    // Cannot edit if voided
+    if (transaction.status === TransactionStatus.VOIDED) {
+      return { allowed: false, reason: 'Cannot edit a voided transaction' };
+    }
+
+    // Cannot edit if reconciled
+    if (transaction.isReconciled) {
+      return { allowed: false, reason: 'Cannot edit a reconciled transaction' };
+    }
+
+    // Cannot edit if period is closed
+    if (transaction.periodClosed) {
+      return {
+        allowed: false,
+        reason: 'Cannot edit a transaction in a closed period',
+      };
+    }
+
+    // Check time restrictions based on role
+    const hoursSinceCreation =
+      (Date.now() - new Date(transaction.createdAt).getTime()) /
+      (1000 * 60 * 60);
+
+    if (userRole === 'BRANCH_ADMIN' && hoursSinceCreation > 24) {
+      return {
+        allowed: false,
+        reason: 'Branch admins can only edit transactions within 24 hours',
+      };
+    }
+
+    if (userRole === 'TREASURER' && hoursSinceCreation > 168) {
+      // 7 days
+      return {
+        allowed: false,
+        reason: 'Treasurers can only edit transactions within 7 days',
+      };
+    }
+
+    if (userRole === 'ACCOUNTANT' && hoursSinceCreation > 720) {
+      // 30 days
+      return {
+        allowed: false,
+        reason: 'Accountants can only edit transactions within 30 days',
+      };
+    }
+
+    return { allowed: true };
+  }
+
+  /**
+   * Check if transaction can be voided
+   */
+  canVoidTransaction(
+    transaction: any,
+    userRole?: string,
+  ): { allowed: boolean; reason?: string } {
+    // Cannot void if already voided
+    if (transaction.status === TransactionStatus.VOIDED) {
+      return { allowed: false, reason: 'Transaction is already voided' };
+    }
+
+    // Cannot void if reconciled
+    if (transaction.isReconciled) {
+      return { allowed: false, reason: 'Cannot void a reconciled transaction' };
+    }
+
+    // Cannot void if period is closed
+    if (transaction.periodClosed) {
+      return {
+        allowed: false,
+        reason: 'Cannot void a transaction in a closed period',
+      };
+    }
+
+    // Check time restrictions based on role
+    const hoursSinceCreation =
+      (Date.now() - new Date(transaction.createdAt).getTime()) /
+      (1000 * 60 * 60);
+
+    if (userRole === 'BRANCH_ADMIN' && hoursSinceCreation > 24) {
+      return {
+        allowed: false,
+        reason: 'Branch admins can only void transactions within 24 hours',
+      };
+    }
+
+    if (userRole === 'TREASURER' && hoursSinceCreation > 720) {
+      // 30 days
+      return {
+        allowed: false,
+        reason: 'Treasurers can only void transactions within 30 days',
+      };
+    }
+
+    // Accountants can void any time (no restriction)
+
+    return { allowed: true };
+  }
+
+  /**
+   * Create audit log entry
+   */
+  async createAuditLog(data: {
+    transactionId: string;
+    action: AuditAction;
+    performedBy: string;
+    reason?: string;
+    previousValues?: any;
+    newValues?: any;
+    ipAddress?: string;
+    userAgent?: string;
+  }) {
+    return this.prisma.transactionAuditLog.create({
+      data: {
+        transactionId: data.transactionId,
+        action: data.action,
+        performedBy: data.performedBy,
+        reason: data.reason,
+        previousValues: data.previousValues,
+        newValues: data.newValues,
+        ipAddress: data.ipAddress,
+        userAgent: data.userAgent,
+      },
+    });
+  }
+
+  /**
+   * Get audit history for a transaction
+   */
+  async getAuditHistory(transactionId: string) {
+    return this.prisma.transactionAuditLog.findMany({
+      where: { transactionId },
+      orderBy: { performedAt: 'desc' },
+    });
+  }
+
+  /**
+   * Get all voided transactions
+   */
+  async getVoidedTransactions(params: {
+    organisationId: string;
+    branchId?: string;
+    startDate?: Date;
+    endDate?: Date;
+  }) {
+    const where: Prisma.TransactionWhereInput = {
+      organisationId: params.organisationId,
+      status: TransactionStatus.VOIDED,
+      ...(params.branchId && { branchId: params.branchId }),
+      ...(params.startDate || params.endDate
+        ? {
+            voidedAt: {
+              ...(params.startDate && { gte: params.startDate }),
+              ...(params.endDate && { lte: params.endDate }),
+            },
+          }
+        : {}),
+    };
+
+    return this.prisma.transaction.findMany({
+      where,
+      include: {
+        fund: true,
+        event: true,
+        member: true,
+      },
+      orderBy: { voidedAt: 'desc' },
+    });
   }
 }

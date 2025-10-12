@@ -8,6 +8,8 @@ export enum ActivityType {
   COUNSELING = 'COUNSELING',
   PASTORAL_VISIT = 'PASTORAL_VISIT',
   CARE_REQUEST = 'CARE_REQUEST',
+  SACRAMENT = 'SACRAMENT',
+  GROUP_MEMBERSHIP = 'GROUP_MEMBERSHIP',
 }
 
 registerEnumType(ActivityType, {

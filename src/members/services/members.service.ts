@@ -1164,11 +1164,9 @@ export class MembersService {
 
     const ageGroups = {
       '0-14': 0,
-      '15-17': 0,
-      '18-25': 0,
-      '26-35': 0,
-      '36-50': 0,
-      '51+': 0,
+      '15-40': 0,
+      '41-59': 0,
+      '60+': 0,
     };
 
     members.forEach((member) => {
@@ -1177,16 +1175,12 @@ export class MembersService {
           new Date().getFullYear() - new Date(member.dateOfBirth).getFullYear();
         if (age >= 0 && age <= 14) {
           ageGroups['0-14']++;
-        } else if (age >= 15 && age <= 17) {
-          ageGroups['15-17']++;
-        } else if (age >= 18 && age <= 25) {
-          ageGroups['18-25']++;
-        } else if (age >= 26 && age <= 35) {
-          ageGroups['26-35']++;
-        } else if (age >= 36 && age <= 50) {
-          ageGroups['36-50']++;
-        } else if (age >= 51) {
-          ageGroups['51+']++;
+        } else if (age >= 15 && age <= 40) {
+          ageGroups['15-40']++;
+        } else if (age >= 41 && age <= 59) {
+          ageGroups['41-59']++;
+        } else if (age >= 60) {
+          ageGroups['60+']++;
         }
       }
     });
@@ -3155,6 +3149,107 @@ export class MembersService {
     } catch (error) {
       this.logger.error(
         `Error permanently deleting member ${memberId}: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  async getMemberHistory(
+    memberId: string,
+    skip = 0,
+    take = 50,
+  ): Promise<any[]> {
+    try {
+      // Verify member exists
+      const member = await this.prisma.member.findUnique({
+        where: { id: memberId },
+      });
+
+      if (!member) {
+        throw new NotFoundException(`Member with ID ${memberId} not found`);
+      }
+
+      // Fetch audit logs for this member
+      const auditLogs = await this.prisma.auditLog.findMany({
+        where: {
+          OR: [
+            // Direct member changes
+            { entityId: memberId },
+            // Member-related changes in description
+            { entityType: 'Member', description: { contains: memberId } },
+            // GroupMember changes - check metadata for memberId
+            {
+              entityType: 'GroupMember',
+              metadata: {
+                path: ['memberId'],
+                equals: memberId,
+              },
+            },
+          ],
+        },
+        skip,
+        take,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      return auditLogs;
+    } catch (error) {
+      this.logger.error(
+        `Error fetching member history for ${memberId}: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw error;
+    }
+  }
+
+  async getMemberHistoryCount(memberId: string): Promise<number> {
+    try {
+      // Verify member exists
+      const member = await this.prisma.member.findUnique({
+        where: { id: memberId },
+      });
+
+      if (!member) {
+        throw new NotFoundException(`Member with ID ${memberId} not found`);
+      }
+
+      // Count audit logs for this member
+      const count = await this.prisma.auditLog.count({
+        where: {
+          OR: [
+            // Direct member changes
+            { entityId: memberId },
+            // Member-related changes in description
+            { entityType: 'Member', description: { contains: memberId } },
+            // GroupMember changes - check metadata for memberId
+            {
+              entityType: 'GroupMember',
+              metadata: {
+                path: ['memberId'],
+                equals: memberId,
+              },
+            },
+          ],
+        },
+      });
+
+      return count;
+    } catch (error) {
+      this.logger.error(
+        `Error counting member history for ${memberId}: ${(error as Error).message}`,
         (error as Error).stack,
       );
       throw error;

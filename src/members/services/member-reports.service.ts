@@ -713,10 +713,10 @@ export class MemberReportsService {
     });
 
     const ageGroups = {
-      '18-25': 0,
-      '26-35': 0,
-      '36-50': 0,
-      '51+': 0,
+      '0-14': 0,
+      '15-40': 0,
+      '41-59': 0,
+      '60+': 0,
     };
 
     // Calculate actual age groups from database
@@ -724,14 +724,14 @@ export class MemberReportsService {
       if (member.dateOfBirth) {
         const age =
           new Date().getFullYear() - new Date(member.dateOfBirth).getFullYear();
-        if (age >= 18 && age <= 25) {
-          ageGroups['18-25']++;
-        } else if (age >= 26 && age <= 35) {
-          ageGroups['26-35']++;
-        } else if (age >= 36 && age <= 50) {
-          ageGroups['36-50']++;
-        } else if (age >= 51) {
-          ageGroups['51+']++;
+        if (age >= 0 && age <= 14) {
+          ageGroups['0-14']++;
+        } else if (age >= 15 && age <= 40) {
+          ageGroups['15-40']++;
+        } else if (age >= 41 && age <= 59) {
+          ageGroups['41-59']++;
+        } else if (age >= 60) {
+          ageGroups['60+']++;
         }
       }
     });
@@ -924,9 +924,9 @@ export class MemberReportsService {
       {
         type: 'BAR',
         title: 'Age Groups',
-        labels: ['18-25', '26-35', '36-50', '51+'],
+        labels: ['0-14', '15-40', '41-59', '60+'],
         data: JSON.stringify({
-          labels: ['18-25', '26-35', '36-50', '51+'],
+          labels: ['0-14', '15-40', '41-59', '60+'],
           datasets: [
             {
               label: 'Members',

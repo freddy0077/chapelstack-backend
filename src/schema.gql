@@ -24,6 +24,44 @@ type AbsentMember {
   phone: String
 }
 
+input AbsenteeFiltersInput {
+  memberGroupIds: [String!]
+  minConsecutiveAbsences: Float
+  regularAttendersOnly: Boolean
+}
+
+type AbsenteeInfo {
+  attendanceRate: Float!
+  consecutiveAbsences: Float!
+  isRegularAttender: Boolean!
+  lastAttendance: DateTime
+  member: AbsenteeMemberInfo!
+}
+
+type AbsenteeMemberInfo {
+  email: String
+  firstName: String!
+  id: String!
+  lastName: String!
+  phoneNumber: String
+  profileImageUrl: String
+}
+
+type AbsenteeMessageResult {
+  deliveredCount: Float!
+  failedCount: Float!
+  id: String!
+  recipientCount: Float!
+  sentAt: DateTime!
+}
+
+enum AbsenteeMessageType {
+  EMAIL
+  NOTIFICATION
+  SMS
+  WHATSAPP
+}
+
 type ActivityEngagement {
   recentEvents: [EventInfo!]!
   upcomingEvents: [EventInfo!]!
@@ -58,13 +96,20 @@ enum ActivityType {
   CARE_REQUEST
   CONTRIBUTION
   COUNSELING
+  GROUP_MEMBERSHIP
   PASTORAL_VISIT
   PRAYER_REQUEST
+  SACRAMENT
 }
 
 input AddEventNotesInput {
   eventId: ID!
   postEventNotes: String!
+}
+
+input AddParticipantsInput {
+  conversationId: String!
+  userIds: [String!]!
 }
 
 type AdditionalDocument {
@@ -128,6 +173,99 @@ type AnnouncementsWidget {
   announcements: [AnnouncementItem!]!
   title: String!
   widgetType: WidgetType!
+}
+
+type Asset {
+  assetCode: String!
+  assetType: AssetType
+  assetTypeId: String!
+  assignedToDepartment: String
+  assignedToMemberId: String
+  attachments: [String!]!
+  branchId: String
+  condition: String
+  createdAt: DateTime!
+  currentValue: Float
+  customData: JSON
+  depreciationRate: Float
+  description: String
+  id: ID!
+  location: String
+  modelNumber: String
+  name: String!
+  notes: String
+  organisationId: String!
+  photos: [String!]!
+  purchaseDate: DateTime
+  purchasePrice: Float
+  serialNumber: String
+  status: String!
+  supplier: String
+  updatedAt: DateTime!
+  warrantyExpiryDate: DateTime
+}
+
+type AssetDisposal {
+  approvedByMemberId: String
+  asset: Asset
+  assetId: String!
+  bookValueAtDisposal: Float
+  branchId: String
+  buyerRecipient: String
+  createdAt: DateTime!
+  disposalDate: DateTime!
+  disposalMethod: String!
+  disposalNotes: String
+  disposalReason: String
+  documents: [String!]!
+  gainLossOnDisposal: Float
+  id: ID!
+  organisationId: String!
+  salePrice: Float
+  updatedAt: DateTime!
+}
+
+input AssetDisposalFilterInput {
+  branchId: String
+  disposalMethod: String
+  endDate: DateTime
+  organisationId: String!
+  startDate: DateTime
+}
+
+input AssetFilterInput {
+  assetTypeId: String
+  assignedToMemberId: String
+  branchId: String
+  condition: String
+  organisationId: String!
+  search: String
+  status: String
+}
+
+type AssetStatistics {
+  activeAssets: Int!
+  disposedAssets: Int!
+  inMaintenanceAssets: Int!
+  totalAssets: Int!
+  totalDepreciation: Float!
+  totalPurchaseValue: Float!
+  totalValue: Float!
+}
+
+type AssetType {
+  assetCount: Int
+  category: String
+  color: String
+  createdAt: DateTime!
+  customFields: JSON
+  defaultDepreciationRate: Float
+  description: String
+  icon: String
+  id: ID!
+  name: String!
+  organisationId: String!
+  updatedAt: DateTime!
 }
 
 input AssignRfidCardInput {
@@ -474,6 +612,18 @@ type AttendanceTrendData {
   trendData: [AttendanceDataPoint!]!
 }
 
+"""Type of audit action performed on transaction"""
+enum AuditAction {
+  APPROVE
+  CREATE
+  EDIT
+  RECONCILE
+  REJECT
+  REVERSE
+  UNRECONCILE
+  VOID
+}
+
 type AuditLog {
   action: String!
   branch: Branch
@@ -689,7 +839,10 @@ type Branch {
   city: String
   country: String
   createdAt: DateTime!
+  description: String
   email: String
+  emailDisplayName: String
+  emailSignature: String
   establishedAt: DateTime
   id: ID!
   incomingTransfers(paginationInput: PaginationInput): PaginatedTransferRequests!
@@ -701,6 +854,7 @@ type Branch {
   phoneNumber: String
   postalCode: String
   settings: BranchSettings!
+  smsDisplayName: String
   state: String
   statistics: BranchStatistics!
   updatedAt: DateTime!
@@ -1100,6 +1254,7 @@ enum CareRequestType {
   HOME_VISIT
   HOSPITAL_VISIT
   MASS_INTENTION
+  OTHER
   PRAYER_REQUEST
   SPIRITUAL_GUIDANCE
 }
@@ -1565,6 +1720,51 @@ type ContributionTypeInfo {
   name: String!
 }
 
+type ConversationDto {
+  branchId: String
+  createdAt: DateTime!
+  id: ID!
+  lastMessageAt: DateTime
+  messageCount: Int
+  messages: [ConversationMessageDto!]
+  organisationId: String!
+  participants: [ConversationParticipantDto!]!
+  status: String!
+  subject: String
+  updatedAt: DateTime!
+}
+
+type ConversationMessageDto {
+  attachments: [MessageAttachmentDto!]
+  content: String!
+  conversationId: String!
+  createdAt: DateTime!
+  deliveredAt: DateTime
+  id: ID!
+  messageType: String!
+  readAt: DateTime
+  readReceipts: [MessageReadReceiptDto!]
+  sender: UserInfo!
+  senderId: String!
+  status: String!
+}
+
+type ConversationParticipantDto {
+  id: ID!
+  joinedAt: DateTime!
+  lastReadAt: DateTime
+  leftAt: DateTime
+  role: String!
+  user: UserInfo!
+  userId: String!
+}
+
+type ConversationsResponse {
+  conversations: [ConversationDto!]!
+  hasMore: Boolean!
+  total: Int!
+}
+
 type CounselingSession {
   actualDate: DateTime
   branchId: String
@@ -1637,6 +1837,57 @@ input CreateAnnouncementInput {
   targetBranchIds: [ID!]
   targetRoleIds: [ID!]
   title: String!
+}
+
+input CreateAssetDisposalInput {
+  approvedByMemberId: String
+  assetId: String!
+  bookValueAtDisposal: Float
+  branchId: String
+  buyerRecipient: String
+  disposalDate: DateTime!
+  disposalMethod: String!
+  disposalNotes: String
+  disposalReason: String
+  documents: [String!]
+  organisationId: String!
+  salePrice: Float
+}
+
+input CreateAssetInput {
+  assetTypeId: String!
+  assignedToDepartment: String
+  assignedToMemberId: String
+  attachments: [String!]
+  branchId: String
+  condition: String
+  currentValue: Float
+  customData: JSON
+  depreciationRate: Float
+  description: String
+  location: String
+  modelNumber: String
+  name: String!
+  notes: String
+  organisationId: String!
+  photos: [String!]
+  purchaseDate: DateTime
+  purchasePrice: Float
+  serialNumber: String
+  status: String
+  supplier: String
+  warrantyExpiryDate: DateTime
+}
+
+input CreateAssetTypeInput {
+  category: String
+  color: String
+  customFields: JSON
+  defaultDepreciationRate: Float
+  description: String
+  icon: String
+  name: String!
+  organisationId: String!
 }
 
 input CreateAttendanceSessionInput {
@@ -1728,13 +1979,17 @@ input CreateBranchInput {
   address: String
   city: String
   country: String
+  description: String
   email: String
+  emailDisplayName: String
+  emailSignature: String
   establishedAt: DateTime
   isActive: Boolean = true
   name: String!
   organisationId: String!
   phoneNumber: String
   postalCode: String
+  smsDisplayName: String
   state: String
   website: String
 }
@@ -1825,6 +2080,13 @@ input CreateContributionTypeFundMappingInput {
   fundId: String!
   isActive: Boolean
   organisationId: String
+}
+
+input CreateConversationInput {
+  branchId: String
+  organisationId: String!
+  participantIds: [String!]!
+  subject: String
 }
 
 input CreateCounselingSessionInput {
@@ -2315,6 +2577,18 @@ input CreatePrayerRequestInput {
   requestText: String!
 }
 
+input CreateReportTemplateInput {
+  branchId: String
+  category: ReportCategory!
+  columns: JSON
+  description: String
+  filters: JSON!
+  isPublic: Boolean
+  metrics: JSON!
+  name: String!
+  organisationId: String!
+}
+
 input CreateRoleInput {
   description: String
   name: String!
@@ -2349,6 +2623,18 @@ input CreateSacramentalRecordInput {
   witness1Name: String
   witness2MemberId: String
   witness2Name: String
+}
+
+input CreateScheduledReportInput {
+  branchId: String
+  category: ReportCategory!
+  description: String
+  filters: JSON!
+  frequency: ReportFrequency!
+  name: String!
+  organisationId: String!
+  recipients: [String!]!
+  templateId: String
 }
 
 input CreateSeriesInput {
@@ -2486,6 +2772,17 @@ input CreateWorkflowTemplateInput {
   triggerConfig: String
   triggerType: WorkflowTriggerType!
   type: WorkflowType!
+}
+
+input CreateZoneInput {
+  branchId: String
+  description: String
+  leaderEmail: String
+  leaderName: String
+  leaderPhone: String
+  location: String
+  name: String!
+  organisationId: String!
 }
 
 type CreatedUserResult {
@@ -2874,6 +3171,14 @@ enum EventType {
   WORKSHOP
   WORSHIP_SERVICE
   YOUTH_EVENT
+}
+
+input ExecuteReportInput {
+  branchId: String
+  category: ReportCategory!
+  filters: JSON!
+  organisationId: String!
+  templateId: String
 }
 
 type Expense {
@@ -3274,6 +3579,30 @@ input GenerateQRTokenInput {
   sessionId: ID!
 }
 
+input GetConversationsInput {
+  branchId: String
+  organisationId: String
+  skip: Int = 0
+  status: String
+  take: Int = 20
+}
+
+input GetMessagesInput {
+  before: DateTime
+  conversationId: String!
+  skip: Int = 0
+  take: Int = 50
+}
+
+input GetRecipientCountInput {
+  birthdayRange: String
+  branchId: String
+  filters: [String!]
+  groupIds: [String!]
+  memberIds: [String!]
+  organisationId: String
+}
+
 type GivingTrend {
   changePercent: Float!
   consistency: Float!
@@ -3294,6 +3623,8 @@ type GroupMember {
   createdAt: DateTime!
   id: ID!
   joinDate: DateTime!
+  leaveDate: DateTime
+  leaveReason: String
   member: Member
   memberId: String!
   ministry: Ministry
@@ -3519,6 +3850,11 @@ enum MaritalStatus {
   WIDOWED
 }
 
+input MarkAsReadInput {
+  conversationId: String!
+  messageIds: [String!]!
+}
+
 type MarriageAnalytics {
   averageAge: Float!
   externalMarriages: Int!
@@ -3722,17 +4058,6 @@ type MemberEngagement {
   name: String!
 }
 
-input MemberFilterInput {
-  branchId: String
-  gender: String
-  groupId: String
-  maxAge: Float
-  minAge: Float
-  role: String
-  search: String
-  status: String
-}
-
 input MemberFiltersInput {
   branchId: String
   gender: [String!]
@@ -3788,6 +4113,29 @@ input MemberGivingAnalysisInput {
   memberId: String!
   organisationId: String!
   recentContributionsLimit: Int! = 10
+}
+
+type MemberHistoryEntry {
+  action: String!
+  branchId: String
+  createdAt: DateTime!
+  description: String!
+  entityId: String
+  entityType: String!
+  id: String!
+  ipAddress: String
+  metadata: JSON
+  updatedAt: DateTime!
+  user: MemberHistoryUser
+  userAgent: String
+  userId: String
+}
+
+type MemberHistoryUser {
+  email: String
+  firstName: String
+  id: String
+  lastName: String
 }
 
 type MemberMarriageHistory {
@@ -4031,6 +4379,15 @@ type MemoryUsageDto {
   rss: Float!
 }
 
+type MessageAttachmentDto {
+  fileSize: Int!
+  fileUrl: String!
+  filename: String!
+  id: ID!
+  mimeType: String!
+  scanStatus: String!
+}
+
 type MessagePerformanceEntity {
   overallDeliveryRate: Float!
   overallOpenRate: Float
@@ -4050,6 +4407,13 @@ type MessagePerformanceMetrics {
   totalSent: Int!
 }
 
+type MessageReadReceiptDto {
+  id: ID!
+  readAt: DateTime!
+  user: UserInfo!
+  userId: String!
+}
+
 type MessageStatusCount {
   count: Int!
   status: String!
@@ -4061,6 +4425,12 @@ type MessageTimeSeriesData {
 }
 
 union MessageUnion = EmailMessageDto | NotificationDto | SmsMessageDto
+
+type MessagesResponse {
+  hasMore: Boolean!
+  messages: [ConversationMessageDto!]!
+  total: Int!
+}
 
 """Type of spiritual milestone"""
 enum MilestoneType {
@@ -4134,6 +4504,12 @@ type MonthlyMarriageData {
   month: String!
 }
 
+type MultiWeekAbsentee {
+  consecutiveAbsences: Float!
+  lastAttendance: DateTime
+  member: AbsenteeMemberInfo!
+}
+
 type Mutation {
   addEventNotes(addEventNotesInput: AddEventNotesInput!): Event!
   addFamilyConnection(familyId: String!, memberId: String!, relatedMemberId: String!, relationship: String!): Family!
@@ -4142,7 +4518,9 @@ type Mutation {
   addMemberToFamilyByRfidCard(familyId: String!, relatedMemberId: String!, relationship: String!, rfidCardId: String!): Family!
   addMemberToGroup(groupId: ID!, memberId: ID!, roleInGroup: String): GroupMember!
   addMemberToMinistry(joinDate: String, memberId: ID!, ministryId: ID!, role: String): MinistryMember!
+  addParticipants(input: AddParticipantsInput!): [ConversationParticipantDto!]!
   addUserToBranch(branchId: String!, role: String!, userId: String!): User!
+  archiveConversation(conversationId: String!): ConversationDto!
   archiveForm(id: String!): Form!
   assignBranchRoleToUser(assignedBy: ID, branchId: ID!, roleId: ID!, userId: ID!): UserBranch!
   assignCareRequest(assignedPastorId: String!, id: String!): CareRequest!
@@ -4173,6 +4551,8 @@ type Mutation {
   completeOnboardingStep(input: CompleteOnboardingStepInput!): OnboardingProgress!
   configureInitialSettings(branchId: ID!, input: InitialSettingsInput!): Boolean!
   createAnnouncement(input: CreateAnnouncementInput!): Announcement!
+  createAsset(input: CreateAssetInput!): Asset!
+  createAssetType(input: CreateAssetTypeInput!): AssetType!
   createAttendanceSession(input: CreateAttendanceSessionInput!): AttendanceSession!
   createAuditLog(input: CreateAuditLogInput!): AuditLog!
   createBackup(input: CreateBackupInput!): Backup!
@@ -4189,6 +4569,7 @@ type Mutation {
   createChildrenMinistryVolunteer(input: CreateVolunteerInput!): ChildrenMinistryVolunteer!
   createContribution(createContributionInput: CreateContributionInput!): Contribution!
   createContributionTypeFundMapping(input: CreateContributionTypeFundMappingInput!): ContributionTypeFundMapping!
+  createConversation(input: CreateConversationInput!): ConversationDto!
   createCounselingSession(input: CreateCounselingSessionInput!): CounselingSession!
   createDataExport(input: CreateDataExportInput!): DataOperation!
   createDataImport(input: CreateDataImportInput!): DataOperation!
@@ -4226,9 +4607,11 @@ type Mutation {
   createPrayerRequest(data: CreatePrayerRequestInput!): PrayerRequest!
   createPredefinedWorkflows(branchId: String, organisationId: String): [WorkflowTemplate!]!
   createRecurringEvent(createEventInput: CreateEventInput!): [Event!]!
+  createReportTemplate(input: CreateReportTemplateInput!): ReportTemplate!
   createRole(input: CreateRoleInput!): Role!
   createRoleWithPermissions(input: CreateRoleWithPermissionsInput!): Role!
   createSacramentalRecord(input: CreateSacramentalRecordInput!): SacramentalRecord!
+  createScheduledReport(input: CreateScheduledReportInput!): ScheduledReport!
   createSeries(createSeriesInput: CreateSeriesInput!): Series!
   createSermon(createSermonInput: CreateSermonInput!): Sermon!
   createSmallGroup(input: CreateSmallGroupInput!): SmallGroup!
@@ -4243,7 +4626,10 @@ type Mutation {
   createUsersWithRole(input: CreateUsersWithRoleInput!): [CreatedUserResult!]!
   createVendor(createVendorInput: CreateVendorInput!): Vendor!
   createWorkflowTemplate(branchId: String, input: CreateWorkflowTemplateInput!, organisationId: String!): WorkflowTemplate!
+  createZone(input: CreateZoneInput!): Zone!
   deleteAnnouncement(id: ID!): Announcement!
+  deleteAsset(id: String!): Boolean!
+  deleteAssetType(id: String!): Boolean!
   deleteAttendanceRecord(id: ID!): Boolean!
   deleteAttendanceSession(id: ID!): AttendanceSession!
   deleteCareRequest(id: String!): Boolean!
@@ -4260,14 +4646,19 @@ type Mutation {
   deleteOrganisation(id: ID!): Boolean!
   deletePastoralVisit(id: String!): Boolean!
   deletePermission(id: ID!): Permission!
+  deleteReportTemplate(id: String!): ReportTemplate!
   deleteRole(id: ID!): Role!
   deleteSacramentalRecord(id: ID!): SacramentalRecord!
   deleteSmallGroup(id: ID!): Boolean!
   deleteSubscriptionPlan(id: ID!): SubscriptionPlan!
   deleteTemplate(id: ID!): Boolean!
   deleteWorkflowTemplate(branchId: String, id: String!, organisationId: String!): Boolean!
+  deleteZone(id: String!): Zone!
   disableOrganization(input: DisableOrganizationInput!): OrganizationWithSubscription!
+  disposeAsset(input: CreateAssetDisposalInput!): AssetDisposal!
+  editTransaction(reason: String!, transactionId: String!, updates: UpdateTransactionInput!): Transaction!
   enableOrganization(id: String!): OrganizationWithSubscription!
+  executeReport(input: ExecuteReportInput!): ReportResult!
   forgotPassword(input: ForgotPasswordInput!): SuccessMessage!
   generateAbsenceAlerts(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
   generateCertificate(input: GenerateCertificateInput!): CertificateGeneration!
@@ -4278,14 +4669,17 @@ type Mutation {
   importMembers(importMembersInput: ImportMembersInput!): ImportMembersResult!
   initializeOnboarding(branchId: ID!): OnboardingProgress!
   initiateBranchSetup(input: InitialBranchSetupInput!): ID!
+  leaveConversation(conversationId: String!): Boolean!
   login(input: SignInDto!): AuthPayload!
   logout(input: RefreshTokenInput!): SuccessMessage!
   markAllNotificationsAsRead(userId: ID!): Boolean!
   markFamilyNotified(id: ID!): DeathRegister!
+  markMessagesAsRead(input: MarkAsReadInput!): [MessageReadReceiptDto!]!
   markNotificationAsRead(notificationId: ID!): NotificationDto!
   permanentlyDeleteMember(memberId: String!): Boolean!
   processCardScan(input: CardScanInput!): AttendanceRecord!
   publishForm(id: String!): Form!
+  recalculateAssetValues(organisationId: String!): Float!
   recordAttendance(input: RecordAttendanceInput!): AttendanceRecord!
   recordBulkAttendance(input: RecordBulkAttendanceInput!): Boolean!
   refreshToken(input: RefreshTokenInput!): TokenPayloadDto!
@@ -4339,8 +4733,12 @@ type Mutation {
   saveUserDashboardPreference(branchId: ID!, dashboardType: DashboardType!, layoutConfig: JSON!, organisationId: ID): UserDashboardPreference!
   scheduleAbsenceCheck(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
   scheduleBaptism(baptismDate: String!, baptismEventId: ID, baptismLocation: String, baptismOfficiant: String, birthRegistryId: ID!): BirthRegistry!
+  sendAbsenteeMessage(input: SendAbsenteeMessageInput!): AbsenteeMessageResult!
   sendEmail(input: SendEmailInput!): Boolean!
+  sendEmailWithTracking(input: SendEmailInput!): SendMessageResponse!
+  sendMessage(input: SendMessageInput!): ConversationMessageDto!
   sendSms(input: SendSmsInput!): Boolean!
+  sendSmsWithTracking(input: SendSmsInput!): SendMessageResponse!
   submitForm(input: CreateFormSubmissionInput!): FormSubmission!
   syncSubscriptionPlanWithPaystack(id: ID!): SubscriptionPlan!
   transferMember(fromBranchId: String!, id: String!, reason: String, toBranchId: String!): Member!
@@ -4348,6 +4746,8 @@ type Mutation {
   triggerWorkflow(input: TriggerWorkflowInput!): WorkflowExecution!
   update(updateSermonInput: UpdateSermonInput!): Sermon!
   updateAnnouncement(id: ID!, input: UpdateAnnouncementInput!): Announcement!
+  updateAsset(input: UpdateAssetInput!): Asset!
+  updateAssetType(input: UpdateAssetTypeInput!): AssetType!
   updateAttendanceRecord(id: ID!, input: UpdateAttendanceRecordInput!): AttendanceRecord!
   updateAttendanceSession(input: UpdateAttendanceSessionInput!): AttendanceSession!
   updateBirthRegistry(id: ID!, updateBirthRegistryInput: UpdateBirthRegistryInput!): BirthRegistry!
@@ -4389,6 +4789,7 @@ type Mutation {
   updatePermission(id: ID!, input: UpdatePermissionInput!): Permission!
   updatePledge(updatePledgeInput: UpdatePledgeInput!): Pledge!
   updatePrayerRequest(data: UpdatePrayerRequestInput!, id: ID!): PrayerRequest!
+  updateReportTemplate(id: String!, input: UpdateReportTemplateInput!): ReportTemplate!
   updateRole(id: ID!, input: UpdateRoleInput!): Role!
   updateSacramentalRecord(input: UpdateSacramentalRecordInput!): SacramentalRecord!
   updateSeries(updateSeriesInput: UpdateSeriesInput!): Series!
@@ -4406,12 +4807,14 @@ type Mutation {
   updateUserPassword(newPassword: String!, userId: String!): UpdatePasswordResult!
   updateVendor(updateVendorInput: UpdateVendorInput!): Vendor!
   updateWorkflowTemplate(branchId: String, id: String!, input: UpdateWorkflowTemplateInput!, organisationId: String!): WorkflowTemplate!
+  updateZone(id: String!, input: UpdateZoneInput!): Zone!
   uploadBirthRegistryDocument(uploadDocumentInput: UploadDocumentInput!): BirthRegistry!
   uploadDeathDocument(input: UploadDeathDocumentInput!): DeathRegister!
   uploadMemberImage(file: Upload!, memberId: String!): String!
   uploadOrganisationBrandingFile(file: Upload!, organisationId: ID!): String!
   uploadSacramentalCertificate(file: Upload!, recordId: ID!): SacramentalRecord!
   verifyPaymentAndCreateSubscription(input: VerifyPaymentInput!): Subscription!
+  voidTransaction(input: VoidTransactionInput!): Transaction!
 }
 
 type MyGroupsWidget {
@@ -4906,6 +5309,12 @@ type Query {
   allAttendanceRecords(filter: AttendanceFilterInput): [AttendanceRecord!]!
   allMessages(filter: AllMessagesFilterInput): [MessageUnion!]!
   announcements(branchId: ID): [Announcement!]!
+  asset(id: String!): Asset!
+  assetDisposals(filters: AssetDisposalFilterInput!): [AssetDisposal!]!
+  assetStatistics(branchId: String, organisationId: String!): AssetStatistics!
+  assetType(id: String!): AssetType!
+  assetTypes(organisationId: String!): [AssetType!]!
+  assets(filters: AssetFilterInput!): [Asset!]!
   assigneeFollowUpReminders(assignedToId: String!, status: String): [FollowUpReminder!]!
   attendanceRecord(id: ID!): AttendanceRecord!
   attendanceRecords(filter: AttendanceFilterInput, sessionId: ID): [AttendanceRecord!]!
@@ -4921,7 +5330,6 @@ type Query {
   birthRegistry(id: ID!): BirthRegistry!
   birthRegistryCalendar(branchId: ID, month: Int, organisationId: ID!, year: Int): [BirthRegistryCalendarEntry!]!
   birthRegistryStatistics(branchId: ID, organisationId: ID!): BirthRegistryStats!
-  birthdayMembers(range: BirthdayRangeEnum!): [Member!]!
   branch(id: String!): Branch
   branchActivities(branchId: String!, limit: Float, skip: Float): [BranchActivity!]!
   branchDashboard(branchId: ID!): BranchDashboardDataDto!
@@ -4931,6 +5339,8 @@ type Query {
   budget(id: String!): Budget!
   budgetVsActual(input: BudgetVsActualInput!): BudgetVsActual!
   budgets(organisationId: String): [Budget!]!
+  canEditTransaction(transactionId: String!): Boolean!
+  canVoidTransaction(transactionId: String!): Boolean!
   careRequest(id: String!): CareRequest!
   careRequests(filter: CareRequestFilterInput!, skip: Int! = 0, take: Int! = 50): [CareRequest!]!
   careRequestsCount(filter: CareRequestFilterInput!): Int!
@@ -4991,7 +5401,6 @@ type Query {
   familyRelationships(skip: Int = 0, take: Int = 10): [FamilyRelationship!]!
   familyRelationshipsByMember(memberId: String!): [FamilyRelationship!]!
   familyRelationshipsCount: Int!
-  filteredMembers(filter: MemberFilterInput): [Member!]!
   financialStatements(input: FinancialStatementsInput!): FinancialStatements!
   findAbsentMembers(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
   findByMember(memberId: ID!): Speaker
@@ -5017,10 +5426,17 @@ type Query {
   generateMemberImportTemplate: String!
   generateMemberReport(input: MemberReportInput!): MemberReport!
   generateReport(input: ReportRequestInput!): ReportOutput!
+  getAbsentees(attendanceSessionId: String, branchId: String!, eventId: String, filters: AbsenteeFiltersInput, organisationId: String!): [AbsenteeInfo!]!
   getActiveSeries(branchId: String): [Series!]!
+  getConversation(conversationId: String!): ConversationDto!
+  getConversations(input: GetConversationsInput): ConversationsResponse!
   getFundForContributionType(branchId: ID!, contributionTypeId: ID!, organisationId: ID!): String
   getFundForContributionTypeName(branchId: ID!, contributionTypeName: String!, organisationId: ID!): String
+  getMessages(input: GetMessagesInput!): MessagesResponse!
+  getMultiWeekAbsentees(branchId: String!, organisationId: String!, weeks: Float!): [MultiWeekAbsentee!]!
+  getRecipientCount(input: GetRecipientCountInput!): RecipientCountResponse!
   getSubscriptions(filter: SubscriptionFilterInput): [Subscription!]!
+  getUnreadCount(organisationId: String): UnreadCountResponse!
   groupMember(id: ID!): GroupMember!
   groupMembers(filters: GroupMemberFilterInput): [GroupMember!]!
   guardian(id: ID!): Guardian!
@@ -5041,9 +5457,10 @@ type Query {
   memberDashboard(memberId: String!): MemberDashboard!
   memberDemographicsReport(branchId: ID, dateRange: DateRangeInput, organisationId: ID): MemberDemographicsData!
   memberGivingAnalysis(input: MemberGivingAnalysisInput!): MemberGivingAnalysis!
+  memberHistory(memberId: String!, skip: Int = 0, take: Int = 50): [MemberHistoryEntry!]!
+  memberHistoryCount(memberId: String!): Int!
   memberMarriageHistory(input: MemberMarriageHistoryInput!): MemberMarriageHistory
   memberPastoralHistory(memberId: String!): MemberPastoralHistory!
-  memberSearch(query: String!): [Member!]!
   memberStatistics(branchId: String, organisationId: String): MemberStatistics!
   members(branchId: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, includeDeactivated: Boolean = false, isRegularAttendee: Boolean, joinedAfter: String, joinedBefore: String, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], minAge: Int, onlyDeactivated: Boolean = false, organisationId: String, search: String, skip: Int = 0, take: Int = 10): [Member!]!
   membersCount(branchId: String, endDate: String, gender: [String!], hasEmail: Boolean, hasMemberId: Boolean, hasPhone: Boolean, hasProfileImage: Boolean, includeDeactivated: Boolean = false, isRegularAttendee: Boolean, maritalStatus: [String!], maxAge: Int, memberStatus: [String!], membershipStatus: [String!], membershipType: [String!], minAge: Int, onlyDeactivated: Boolean = false, organisationId: String, search: String, startDate: String): Int!
@@ -5080,14 +5497,18 @@ type Query {
   prayerRequests(branchId: String, organisationId: String, status: PrayerRequestStatusEnum): [PrayerRequest!]!
   publicForm(slug: String!): Form!
   recentCertificates(branchId: ID, limit: Float! = 10): [RecentCertificate!]!
-  recipientFilterCounts(input: RecipientCountInput!): [RecipientCountResult!]!
   recipientGroupStats(filter: CommunicationStatsFilterInput): [RecipientGroupStats!]!
   recipientGroups(branchId: String, organisationId: String): [RecipientGroup!]!
   recommendedCertificateTemplates(branchId: ID!, limit: Float = 5, sacramentType: CertificateSacramentType): [CertificateTemplate!]!
+  reportExecution(id: String!): ReportExecution
+  reportHistory(branchId: String, category: ReportCategory, organisationId: String!): [ReportExecution!]!
+  reportTemplate(id: String!): ReportTemplate
+  reportTemplates(branchId: String, category: ReportCategory, organisationId: String!): [ReportTemplate!]!
   sacramentStats(branchId: ID, period: String): [SacramentStatsOutput!]!
   sacramentalRecord(id: ID!): SacramentalRecord!
   sacramentalRecords(filter: SacramentalRecordFilterInput): [SacramentalRecord!]!
   sacramentsByMember(memberId: ID!): [SacramentalRecord!]!
+  scheduledReports(branchId: String, organisationId: String!): [ScheduledReport!]!
   search(branchId: String, query: String!, type: String): [MediaItem!]!
   searchCertificateTemplates(denomination: ChurchDenomination, sacramentType: CertificateSacramentType, searchTerm: String!): [CertificateTemplate!]!
   searchMembers(ageGroup: String, branchId: String, gender: String, includeDeactivated: Boolean = false, membershipStatus: String, query: String!, skip: Int! = 0, take: Int! = 20): [Member!]!
@@ -5128,6 +5549,7 @@ type Query {
   totalSupportedDenominations: Float!
   totalSupportedSacramentTypes: Float!
   transaction(id: ID!): Transaction!
+  transactionAuditHistory(transactionId: String!): [TransactionAuditLog!]!
   transactionStats(branchId: String, contributionTypeId: String, dateRange: DateRangeInput, eventId: String, fundId: String, organisationId: String): TransactionStats!
   transactions(branchId: String, dateRange: DateRangeInput, eventId: String, fundId: String, organisationId: String, paginationInput: PaginationInput, type: TransactionType, userId: String): PaginatedTransaction!
   transferRequest(id: ID!): TransferRequest!
@@ -5142,12 +5564,16 @@ type Query {
   validateQRToken(token: String!): AttendanceSession!
   vendor(id: String!): Vendor!
   vendors(organisationId: String): [Vendor!]!
+  voidedTransactions(branchId: String, endDate: DateTime, organisationId: String!, startDate: DateTime): [Transaction!]!
   volunteerSchedule(endDate: DateTime, id: ID!, startDate: DateTime): [VolunteerScheduleItem!]!
   workflowExecution(branchId: String, id: String!, organisationId: String!): WorkflowExecution!
   workflowExecutions(branchId: String, limit: Float! = 50, organisationId: String!, workflowId: String): [WorkflowExecution!]!
   workflowStats(branchId: String, organisationId: String!): WorkflowStats!
   workflowTemplate(branchId: String, id: String!, organisationId: String!): WorkflowTemplate!
   workflowTemplates(branchId: String, filter: WorkflowFilterInput, organisationId: String!): [WorkflowTemplate!]!
+  zone(id: String!): Zone!
+  zoneStats(branchId: String, organisationId: String!): ZoneStats!
+  zones(branchId: String, organisationId: String!): [Zone!]!
 }
 
 type QuickLinkItem {
@@ -5208,24 +5634,25 @@ type RecentSacramentsWidget {
   widgetType: WidgetType!
 }
 
-input RecipientCountInput {
-  branchId: String
-
-  """Contact type: id, email, or phone"""
-  contactType: String
-  filters: [String!]!
-  organisationId: String
+type RecipientBreakdown {
+  count: Int!
+  id: String
+  name: String!
+  source: String!
 }
 
-type RecipientCountResult {
-  count: Float!
-  filter: String!
+type RecipientCountResponse {
+  breakdown: [RecipientBreakdown!]!
+  duplicateCount: Int!
+  message: String
+  totalMembers: Int!
+  uniqueMembers: Int!
 }
 
 type RecipientGroup {
   id: ID!
   name: String!
-  type: String
+  type: String!
 }
 
 type RecipientGroupStats {
@@ -5296,6 +5723,32 @@ enum RelationshipType {
   WARD
 }
 
+enum ReportCategory {
+  ATTENDANCE
+  BIRTH_REGISTER
+  CONTRIBUTIONS
+  DEATH_REGISTER
+  EVENTS
+  FINANCE
+  GROUPS
+  MEMBERSHIP
+  SACRAMENTS
+  ZONES
+}
+
+type ReportExecution {
+  branchId: String
+  category: ReportCategory!
+  executedAt: DateTime!
+  executedBy: String!
+  filters: JSON!
+  id: String!
+  organisationId: String!
+  results: JSON!
+  summary: JSON
+  templateId: String
+}
+
 input ReportFilterInput {
   branchId: String
   dateRange: DateRangeInput
@@ -5304,6 +5757,14 @@ input ReportFilterInput {
   groupId: String
   organisationId: String
   searchTerm: String
+}
+
+enum ReportFrequency {
+  DAILY
+  MONTHLY
+  QUARTERLY
+  WEEKLY
+  YEARLY
 }
 
 type ReportOutput {
@@ -5319,6 +5780,34 @@ input ReportRequestInput {
   filter: ReportFilterInput!
   outputFormat: String
   reportType: String!
+}
+
+type ReportResult {
+  charts: JSON
+  data: JSON!
+  execution: ReportExecution
+  summary: ReportSummary!
+}
+
+type ReportSummary {
+  metrics: JSON!
+  totalRecords: Float!
+}
+
+type ReportTemplate {
+  branchId: String
+  category: ReportCategory!
+  columns: JSON
+  createdAt: DateTime!
+  createdBy: String!
+  description: String
+  filters: JSON!
+  id: String!
+  isPublic: Boolean!
+  metrics: JSON!
+  name: String!
+  organisationId: String!
+  updatedAt: DateTime!
 }
 
 input RestoreBackupInput {
@@ -5451,6 +5940,36 @@ type SacramentsOverview {
   totalSacraments: Float!
 }
 
+type ScheduledReport {
+  branchId: String
+  category: ReportCategory
+  createdAt: DateTime
+  createdBy: String!
+  description: String
+  filters: JSON
+  frequency: ReportFrequency!
+  id: String!
+  isActive: Boolean
+  lastRunDate: DateTime
+  name: String!
+  nextRunDate: DateTime
+  organisationId: String
+  recipients: [String!]!
+  templateId: String
+  updatedAt: DateTime
+}
+
+input SendAbsenteeMessageInput {
+  attendanceSessionId: String
+  branchId: String!
+  eventId: String
+  memberIds: [String!]!
+  message: String!
+  messageType: AbsenteeMessageType!
+  organisationId: String!
+  subject: String
+}
+
 input SendEmailInput {
   birthdayRange: BirthdayRangeEnum
   bodyHtml: String
@@ -5466,6 +5985,22 @@ input SendEmailInput {
   subject: String!
   templateData: JSON
   templateId: String
+}
+
+input SendMessageInput {
+  content: String!
+  conversationId: String!
+  messageType: String
+}
+
+type SendMessageResponse {
+  estimatedDelivery: DateTime
+  message: String
+  messageId: String!
+  recipientCount: Int!
+  scheduledFor: DateTime
+  status: String!
+  success: Boolean!
 }
 
 input SendSmsInput {
@@ -5932,9 +6467,11 @@ type TotalAttendanceStat {
 }
 
 type Transaction {
+  accountingPeriodId: String
   amount: Float!
   branchId: String
   createdAt: DateTime!
+  createdBy: String
   date: DateTime!
   description: String
   event: Event
@@ -5942,13 +6479,38 @@ type Transaction {
   fund: Fund
   fundId: String
   id: ID!
+  isReconciled: Boolean!
+  lastModifiedAt: DateTime
+  lastModifiedBy: String
   memberId: String
   metadata: JSON
   organisationId: String!
+  originalTransactionId: String
+  periodClosed: Boolean!
+  reconciledAt: DateTime
+  reconciledBy: String
   reference: String
+  status: TransactionStatus!
   type: TransactionType!
   updatedAt: DateTime!
   userId: String
+  version: Int!
+  voidReason: String
+  voidedAt: DateTime
+  voidedBy: String
+}
+
+type TransactionAuditLog {
+  action: AuditAction!
+  id: ID!
+  ipAddress: String
+  newValues: JSON
+  performedAt: DateTime!
+  performedBy: String!
+  previousValues: JSON
+  reason: String
+  transactionId: String!
+  userAgent: String
 }
 
 type TransactionStats {
@@ -5958,6 +6520,15 @@ type TransactionStats {
   totalOfferings: Float!
   totalPledges: Float!
   totalTithes: Float!
+}
+
+"""Status of transaction (ACTIVE, VOIDED, etc.)"""
+enum TransactionStatus {
+  ACTIVE
+  PENDING
+  REVERSAL
+  REVERSED
+  VOIDED
 }
 
 """The type of transaction"""
@@ -6031,6 +6602,10 @@ type UniqueMembersStat {
   unique_members: Float!
 }
 
+type UnreadCountResponse {
+  count: Int!
+}
+
 type UpcomingEventsWidget {
   events: [EventItem!]!
   title: String!
@@ -6045,6 +6620,41 @@ input UpdateAnnouncementInput {
   targetBranchIds: [ID!]
   targetRoleIds: [ID!]
   title: String
+}
+
+input UpdateAssetInput {
+  assetTypeId: String
+  assignedToDepartment: String
+  assignedToMemberId: String
+  attachments: [String!]
+  condition: String
+  currentValue: Float
+  customData: JSON
+  depreciationRate: Float
+  description: String
+  id: ID!
+  location: String
+  modelNumber: String
+  name: String
+  notes: String
+  photos: [String!]
+  purchaseDate: DateTime
+  purchasePrice: Float
+  serialNumber: String
+  status: String
+  supplier: String
+  warrantyExpiryDate: DateTime
+}
+
+input UpdateAssetTypeInput {
+  category: String
+  color: String
+  customFields: JSON
+  defaultDepreciationRate: Float
+  description: String
+  icon: String
+  id: ID!
+  name: String
 }
 
 input UpdateAttendanceRecordInput {
@@ -6117,13 +6727,17 @@ input UpdateBranchInput {
   address: String
   city: String
   country: String
+  description: String
   email: String
+  emailDisplayName: String
+  emailSignature: String
   establishedAt: DateTime
   isActive: Boolean = true
   name: String
   organisationId: String
   phoneNumber: String
   postalCode: String
+  smsDisplayName: String
   state: String
   website: String
 }
@@ -6670,6 +7284,15 @@ input UpdatePrayerRequestInput {
   status: PrayerRequestStatusEnum
 }
 
+input UpdateReportTemplateInput {
+  columns: JSON
+  description: String
+  filters: JSON
+  isPublic: Boolean
+  metrics: JSON
+  name: String
+}
+
 input UpdateRoleInput {
   description: String
   name: String
@@ -6828,6 +7451,16 @@ input UpdateWorkflowTemplateInput {
   triggerConfig: String
 }
 
+input UpdateZoneInput {
+  description: String
+  leaderEmail: String
+  leaderName: String
+  leaderPhone: String
+  location: String
+  name: String
+  status: String
+}
+
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
 
@@ -6897,6 +7530,13 @@ input UserFilterInput {
   roleId: ID
 }
 
+type UserInfo {
+  email: String!
+  firstName: String
+  id: ID!
+  lastName: String
+}
+
 input UserInput {
   branchId: ID
   email: String!
@@ -6952,6 +7592,12 @@ input VerifyPaymentInput {
 type VisitorsStat {
   period: String!
   visitors: Float!
+}
+
+input VoidTransactionInput {
+  createReversal: Boolean = true
+  reason: String!
+  transactionId: String!
 }
 
 type VolunteerEventAssignment {
@@ -7121,4 +7767,38 @@ enum WorkflowType {
   EVENT_REMINDER
   FOLLOW_UP
   MEMBERSHIP_RENEWAL
+}
+
+type Zone {
+  _count: ZoneMemberCount
+  branchId: String
+  createdAt: DateTime!
+  description: String
+  id: String!
+  leaderEmail: String
+  leaderName: String
+  leaderPhone: String
+  location: String
+  name: String!
+  organisationId: String
+  status: String!
+  updatedAt: DateTime!
+}
+
+type ZoneMemberCount {
+  members: Int!
+}
+
+type ZoneStats {
+  activeZones: Int!
+  totalMembers: Int!
+  totalZones: Int!
+  zones: [ZoneStatsItem!]!
+}
+
+type ZoneStatsItem {
+  id: String!
+  memberCount: Int!
+  name: String!
+  status: String!
 }

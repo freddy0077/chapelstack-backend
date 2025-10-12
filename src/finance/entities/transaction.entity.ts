@@ -3,17 +3,23 @@ import {
   Field,
   Float,
   ID,
+  Int,
   registerEnumType,
 } from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-type-json';
-import { TransactionType } from '@prisma/client';
+import { TransactionType, TransactionStatus } from '@prisma/client';
 import { Fund } from '../../funds/entities/fund.entity';
 import { Event } from '../../events/entities/event.entity';
 
-// Register TransactionType enum for GraphQL
+// Register enums for GraphQL
 registerEnumType(TransactionType, {
   name: 'TransactionType',
-  description: 'Type of transaction (INCOME, EXPENSE, etc.)',
+  description: 'Type of transaction (CONTRIBUTION, EXPENSE, etc.)',
+});
+
+registerEnumType(TransactionStatus, {
+  name: 'TransactionStatus',
+  description: 'Status of transaction (ACTIVE, VOIDED, etc.)',
 });
 
 @ObjectType()
@@ -57,15 +63,60 @@ export class Transaction {
   @Field(() => GraphQLJSON, { nullable: true })
   metadata?: any;
 
+  // Audit and Status Fields
+  @Field(() => TransactionStatus)
+  status: TransactionStatus;
+
+  @Field({ nullable: true })
+  createdBy?: string;
+
+  @Field()
+  createdAt: Date;
+
+  @Field({ nullable: true })
+  lastModifiedBy?: string;
+
+  @Field({ nullable: true })
+  lastModifiedAt?: Date;
+
+  @Field({ nullable: true })
+  voidedBy?: string;
+
+  @Field({ nullable: true })
+  voidedAt?: Date;
+
+  @Field({ nullable: true })
+  voidReason?: string;
+
+  @Field(() => Int)
+  version: number;
+
+  @Field({ nullable: true })
+  originalTransactionId?: string;
+
+  // Reconciliation Fields
+  @Field()
+  isReconciled: boolean;
+
+  @Field({ nullable: true })
+  reconciledAt?: Date;
+
+  @Field({ nullable: true })
+  reconciledBy?: string;
+
+  @Field({ nullable: true })
+  accountingPeriodId?: string;
+
+  @Field()
+  periodClosed: boolean;
+
+  @Field()
+  updatedAt: Date;
+
+  // Relations
   @Field(() => Fund, { nullable: true })
   fund?: Fund;
 
   @Field(() => Event, { nullable: true })
   event?: Event;
-
-  @Field()
-  createdAt: Date;
-
-  @Field()
-  updatedAt: Date;
 }

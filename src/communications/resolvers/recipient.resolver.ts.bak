@@ -10,16 +10,17 @@ import {
   MemberFilterInput,
   BirthdayRangeEnum,
 } from '../dto/member-filter.input';
-import { RecipientGroup } from '../entities/recipient-group.entity';
-import { Inject } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { Member } from '../../members/entities/member.entity';
 import { RecipientService } from '../services/recipient.service';
+import { RecipientGroupDto } from '../dto/recipient-group.dto';
+import { MemberDto } from '../dto/member.dto';
+import {
+  GetRecipientCountInput,
+  RecipientCountResponse,
+} from '../dto/recipient-count.dto';
 
 @InputType()
 export class RecipientCountInput {
   @Field(() => [String])
-  filters: string[];
 
   @Field({ nullable: true })
   branchId?: string;
@@ -186,5 +187,12 @@ export class RecipientResolver {
       filter,
       count,
     }));
+  }
+
+  @Query(() => RecipientCountResponse)
+  async getRecipientCount(
+    @Args('input') input: GetRecipientCountInput,
+  ): Promise<RecipientCountResponse> {
+    return this.recipientService.getRecipientCount(input);
   }
 }

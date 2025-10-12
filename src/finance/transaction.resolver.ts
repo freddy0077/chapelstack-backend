@@ -6,11 +6,14 @@ import {
   ID,
   ResolveField,
   Parent,
+  Context,
 } from '@nestjs/graphql';
 import { TransactionService } from './transaction.service';
 import { Transaction } from './entities/transaction.entity';
+import { TransactionAuditLog } from './entities/transaction-audit-log.entity';
 import { CreateTransactionInput } from './dto/create-transaction.input';
 import { UpdateTransactionInput } from './dto/update-transaction.input';
+import { VoidTransactionInput } from './dto/void-transaction.input';
 import { TransactionType } from '@prisma/client';
 import { registerEnumType } from '@nestjs/graphql';
 import { PaginatedTransaction } from './dto/paginated-transaction.dto';
@@ -253,6 +256,82 @@ export class TransactionResolver {
     if (!transaction.eventId) return null;
     return this.prisma.event.findUnique({
       where: { id: transaction.eventId },
+    });
+  }
+
+  // ==================== AUDIT & VOID MUTATIONS ====================
+
+  @Mutation(() => Transaction, { name: 'voidTransaction' })
+  voidTransaction(
+    @Args('input') input: VoidTransactionInput,
+    @Context() context: any,
+  ) {
+    const userId = context.req?.user?.id || 'system';
+    return this.transactionService.voidTransaction(
+      input.transactionId,
+      userId,
+      input.reason,
+      input.createReversal ?? true,
+    );
+  }
+
+  @Mutation(() => Transaction, { name: 'editTransaction' })
+  editTransaction(
+    @Args('transactionId') transactionId: string,
+    @Args('updates') updates: UpdateTransactionInput,
+    @Args('reason') reason: string,
+    @Context() context: any,
+  ) {
+    const userId = context.req?.user?.id || 'system';
+    const userRole = context.req?.user?.role;
+    return this.transactionService.editTransaction(
+      transactionId,
+      userId,
+      updates,
+      reason,
+      userRole,
+    );
+  }
+
+  @Query(() => [TransactionAuditLog], { name: 'transactionAuditHistory' })
+  getTransactionAuditHistory(@Args('transactionId') transactionId: string) {
+    return this.transactionService.getAuditHistory(transactionId);
+  }
+
+  @Query(() => Boolean, { name: 'canEditTransaction' })
+  async canEditTransaction(
+    @Args('transactionId') transactionId: string,
+    @Context() context: any,
+  ) {
+    const transaction = await this.transactionService.findOne(transactionId);
+    const userRole = context.req?.user?.role;
+    const result = this.transactionService.canEditTransaction(transaction, userRole);
+    return result.allowed;
+  }
+
+  @Query(() => Boolean, { name: 'canVoidTransaction' })
+  async canVoidTransaction(
+    @Args('transactionId') transactionId: string,
+    @Context() context: any,
+  ) {
+    const transaction = await this.transactionService.findOne(transactionId);
+    const userRole = context.req?.user?.role;
+    const result = this.transactionService.canVoidTransaction(transaction, userRole);
+    return result.allowed;
+  }
+
+  @Query(() => [Transaction], { name: 'voidedTransactions' })
+  getVoidedTransactions(
+    @Args('organisationId') organisationId: string,
+    @Args('branchId', { nullable: true }) branchId?: string,
+    @Args('startDate', { nullable: true }) startDate?: Date,
+    @Args('endDate', { nullable: true }) endDate?: Date,
+  ) {
+    return this.transactionService.getVoidedTransactions({
+      organisationId,
+      branchId,
+      startDate,
+      endDate,
     });
   }
 }

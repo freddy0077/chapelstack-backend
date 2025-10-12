@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SendSmsInput } from '../dto/send-sms.input';
 import { SmsMessageDto } from '../dto/sms-message.dto';
+import { SendMessageResponse } from '../dto/send-message-response.dto';
 import { MessageStatus } from '../enums/message-status.enum';
 import { MessageStatus as PrismaMessageStatus } from '@prisma/client';
 import { smsQueue } from '../queue/sms.queue';
@@ -173,6 +174,129 @@ export class SmsService {
       );
       if (error instanceof BadRequestException) throw error;
       return false;
+    }
+  }
+
+  /**
+   * Send SMS and return detailed response with message ID and stats
+   * @param input SendSmsInput containing recipients, message, etc.
+   * @returns Promise<SendMessageResponse> with message details
+   */
+  async sendSmsWithTracking(input: SendSmsInput): Promise<SendMessageResponse> {
+    try {
+      let allRecipientIds: string[] = [...input.recipients];
+      
+      // Expand group recipients
+      if (input.groupIds && input.groupIds.length > 0) {
+        const groupMembers = await this.prisma.member.findMany({
+          where: {
+            groupMemberships: {
+              some: {
+                OR: [
+                  { ministryId: { in: input.groupIds } },
+                  { smallGroupId: { in: input.groupIds } },
+                ],
+              },
+            },
+          },
+          select: { id: true },
+        });
+        allRecipientIds.push(...groupMembers.map((m) => m.id));
+      }
+
+      // Expand birthday range recipients (if needed in future)
+      // For now, birthday range filtering is handled by the existing sendSms method
+      // which uses the recipient service properly
+
+      // Remove duplicates
+      allRecipientIds = [...new Set(allRecipientIds)];
+      const recipientCount = allRecipientIds.length;
+
+      if (recipientCount === 0) {
+        return {
+          success: false,
+          messageId: '',
+          recipientCount: 0,
+          status: 'FAILED',
+          message: 'No recipients found',
+        };
+      }
+
+      // Fetch recipient phone numbers
+      const members = await this.prisma.member.findMany({
+        where: { id: { in: allRecipientIds } },
+        select: { id: true, phoneNumber: true },
+      });
+
+      const phoneNumbers = members
+        .filter((m) => m.phoneNumber)
+        .map((m) => m.phoneNumber as string);
+
+      if (phoneNumbers.length === 0) {
+        return {
+          success: false,
+          messageId: '',
+          recipientCount: 0,
+          status: 'FAILED',
+          message: 'No valid phone numbers found',
+        };
+      }
+
+      // Create SMS record
+      const smsMessage = await this.prisma.smsMessage.create({
+        data: {
+          body: input.message,
+          senderNumber: this.configService.get<string>('SMS_SENDER_NUMBER') || 'CHURCH',
+          recipients: phoneNumbers,
+          status: input.scheduledAt ? 'SCHEDULED' : 'SENDING',
+          branchId: input.branchId,
+          organisationId: input.organisationId,
+          scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null,
+        },
+      });
+
+      // Calculate estimated delivery
+      const estimatedDelivery = input.scheduledAt
+        ? new Date(input.scheduledAt)
+        : new Date(Date.now() + 30000); // 30 seconds from now
+
+      // If scheduled, queue for later
+      if (input.scheduledAt) {
+        const scheduledDate = new Date(input.scheduledAt);
+        const delay = scheduledDate.getTime() - Date.now();
+        await smsQueue.add('send', input, delay > 0 ? { delay } : {});
+
+        return {
+          success: true,
+          messageId: smsMessage.id,
+          recipientCount: phoneNumbers.length,
+          scheduledFor: scheduledDate,
+          status: 'SCHEDULED',
+          estimatedDelivery,
+          message: `SMS scheduled for ${scheduledDate.toLocaleString()}`,
+        };
+      }
+
+      // Send immediately via queue
+      await smsQueue.add('send', input);
+
+      return {
+        success: true,
+        messageId: smsMessage.id,
+        recipientCount: phoneNumbers.length,
+        status: 'SENDING',
+        estimatedDelivery,
+        message: `SMS queued for delivery to ${phoneNumbers.length} recipient(s)`,
+      };
+    } catch (error) {
+      this.logger.error('Failed to send SMS with tracking:', error);
+      return {
+        success: false,
+        messageId: '',
+        recipientCount: 0,
+        status: 'FAILED',
+        message: error.message || 'Failed to send SMS',
+      };
     }
   }
 

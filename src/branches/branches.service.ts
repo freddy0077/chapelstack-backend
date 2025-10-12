@@ -42,6 +42,24 @@ function toGraphQLBranch(
         ? undefined
         : prismaBranch.establishedAt,
 
+    description:
+      prismaBranch.description === null ? undefined : prismaBranch.description,
+
+    emailDisplayName:
+      prismaBranch.emailDisplayName === null
+        ? undefined
+        : prismaBranch.emailDisplayName,
+
+    emailSignature:
+      prismaBranch.emailSignature === null
+        ? undefined
+        : prismaBranch.emailSignature,
+
+    smsDisplayName:
+      prismaBranch.smsDisplayName === null
+        ? undefined
+        : prismaBranch.smsDisplayName,
+
     // Map settings if they are included in the query result
     settings:
       prismaBranch.settings === null ? undefined : prismaBranch.settings,

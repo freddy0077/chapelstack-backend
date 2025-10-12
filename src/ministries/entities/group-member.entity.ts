@@ -14,6 +14,12 @@ export class GroupMember {
   @Field()
   joinDate: Date;
 
+  @Field(() => Date, { nullable: true })
+  leaveDate?: Date | null;
+
+  @Field(() => String, { nullable: true })
+  leaveReason?: string | null;
+
   @Field()
   status: string;
 

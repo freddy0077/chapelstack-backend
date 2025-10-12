@@ -7,6 +7,7 @@ import { CreateEmailTemplateInput } from '../dto/create-email-template.input';
 import { UpdateEmailTemplateInput } from '../dto/update-email-template.input';
 import { EmailTemplateDto } from '../dto/email-template.dto';
 import { EmailMessageDto } from '../dto/email-message.dto';
+import { SendMessageResponse } from '../dto/send-message-response.dto';
 import { TemplateService } from './template.service';
 import { RecipientService } from './recipient.service';
 
@@ -278,6 +279,170 @@ export class EmailService {
     } catch (error) {
       this.handleEmailError(error, 'Failed to send email');
       return false;
+    }
+  }
+
+  /**
+   * Send an email and return detailed response with message ID and stats
+   * @param input SendEmailInput containing recipients, subject, body, etc.
+   * @returns Promise<SendMessageResponse> with message details
+   */
+  async sendEmailWithTracking(
+    input: SendEmailInput,
+  ): Promise<SendMessageResponse> {
+    try {
+      const {
+        branchId,
+        organisationId,
+        templateId,
+        groupIds,
+        birthdayRange,
+        scheduledAt,
+        recipients: explicitRecipients = [],
+        filters = [],
+        ...rest
+      } = input;
+
+      // Process template if provided
+      const { bodyHtml, bodyText, finalSubject } = await this.processTemplate(
+        templateId,
+        rest.templateData,
+        rest.bodyHtml,
+        rest.bodyText,
+        rest.subject,
+      );
+
+      // Gather all recipients
+      const allRecipientsSet = new Set<string>();
+      const memberIds: string[] = [];
+      const emailAddresses: string[] = [];
+
+      // Separate member IDs from email addresses
+      (explicitRecipients || []).forEach((recipient) => {
+        if (
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            recipient,
+          )
+        ) {
+          memberIds.push(recipient);
+        } else if (this.isValidEmail(recipient)) {
+          emailAddresses.push(recipient);
+          allRecipientsSet.add(recipient);
+        }
+      });
+
+      // Fetch member emails
+      if (memberIds.length > 0) {
+        const members = await this.prisma.member.findMany({
+          where: { id: { in: memberIds } },
+          select: { email: true },
+        });
+        members.forEach((m) => m.email && allRecipientsSet.add(m.email));
+      }
+
+      // Process groups
+      if (groupIds && groupIds.length > 0) {
+        const groupMembers = await this.prisma.member.findMany({
+          where: {
+            groupMemberships: {
+              some: {
+                OR: [
+                  { ministryId: { in: groupIds } },
+                  { smallGroupId: { in: groupIds } },
+                ],
+              },
+            },
+          },
+          select: { email: true },
+        });
+        groupMembers.forEach((m) => m.email && allRecipientsSet.add(m.email));
+      }
+
+      // Process birthday range - use existing method
+      if (birthdayRange) {
+        const birthdayEmails = await this.gatherRecipients(
+          [],
+          branchId,
+          organisationId,
+          undefined,
+          birthdayRange,
+        );
+        birthdayEmails.forEach((email) => allRecipientsSet.add(email));
+      }
+
+      const allRecipients = Array.from(allRecipientsSet);
+      const recipientCount = allRecipients.length;
+
+      if (recipientCount === 0) {
+        return {
+          success: false,
+          messageId: '',
+          recipientCount: 0,
+          status: 'FAILED',
+          message: 'No recipients found',
+        };
+      }
+
+      // Create a single email record for tracking
+      const emailRecord = await this.createEmailRecord({
+        subject: finalSubject,
+        bodyHtml,
+        bodyText,
+        recipients: allRecipients,
+        branchId,
+        organisationId,
+        templateId,
+      });
+
+      // Calculate estimated delivery
+      const estimatedDelivery = scheduledAt
+        ? new Date(scheduledAt)
+        : new Date(Date.now() + 60000); // 1 minute from now
+
+      // If scheduled, return early
+      if (scheduledAt) {
+        return {
+          success: true,
+          messageId: emailRecord.id,
+          recipientCount,
+          scheduledFor: new Date(scheduledAt),
+          status: 'SCHEDULED',
+          estimatedDelivery,
+          message: `Email scheduled for ${new Date(scheduledAt).toLocaleString()}`,
+        };
+      }
+
+      // Send immediately
+      const provider = await this.getEmailProvider();
+      
+      // Send to all recipients (in production, you might want to batch this)
+      await provider.sendEmail({
+        from: this.defaultSender,
+        to: allRecipients,
+        subject: finalSubject,
+        html: bodyHtml,
+        text: bodyText,
+      });
+
+      await this.updateEmailStatus(emailRecord.id, 'SENT');
+
+      return {
+        success: true,
+        messageId: emailRecord.id,
+        recipientCount,
+        status: 'SENT',
+        estimatedDelivery,
+        message: `Email sent successfully to ${recipientCount} recipient(s)`,
+      };
+    } catch (error) {
+      this.logger.error('Failed to send email with tracking:', error);
+      return {
+        success: false,
+        messageId: '',
+        recipientCount: 0,
+        status: 'FAILED',
+        message: error.message || 'Failed to send email',
+      };
     }
   }
 

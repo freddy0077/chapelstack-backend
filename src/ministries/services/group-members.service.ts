@@ -178,6 +178,28 @@ export class GroupMembersService {
       },
     });
 
+    // Create audit log entry
+    const groupName = newGroupMember.smallGroup?.name || newGroupMember.ministry?.name || 'Unknown Group';
+    const memberName = `${newGroupMember.member?.firstName || ''} ${newGroupMember.member?.lastName || ''}`.trim();
+    
+    await this.prisma.auditLog.create({
+      data: {
+        entityType: 'GroupMember',
+        entityId: newGroupMember.id,
+        action: 'CREATE',
+        description: `Added ${memberName} to ${groupName} as ${input.role}`,
+        metadata: {
+          memberId: input.memberId,
+          memberName,
+          groupId: input.smallGroupId || input.ministryId,
+          groupName,
+          groupType: input.smallGroupId ? 'SmallGroup' : 'Ministry',
+          role: input.role,
+          status: input.status,
+        },
+      },
+    });
+
     // Convert Prisma result to GroupMember entity with proper null handling
     return newGroupMember as unknown as GroupMember;
   }
@@ -205,17 +227,51 @@ export class GroupMembersService {
     }) as unknown as GroupMember;
   }
 
-  async removeMemberFromGroup(id: string): Promise<boolean> {
+  async removeMemberFromGroup(id: string, leaveReason?: string): Promise<boolean> {
     const groupMember = await this.prisma.groupMember.findUnique({
       where: { id },
+      include: {
+        member: true,
+        ministry: true,
+        smallGroup: true,
+      },
     });
 
     if (!groupMember) {
       throw new NotFoundException(`Group Member with ID ${id} not found`);
     }
 
-    await this.prisma.groupMember.delete({
+    // Update to inactive instead of deleting to preserve history
+    await this.prisma.groupMember.update({
       where: { id },
+      data: {
+        status: 'INACTIVE',
+        leaveDate: new Date(),
+        leaveReason: leaveReason || 'Member removed from group',
+      },
+    });
+
+    // Create audit log entry
+    const groupName = groupMember.smallGroup?.name || groupMember.ministry?.name || 'Unknown Group';
+    const memberName = `${groupMember.member?.firstName || ''} ${groupMember.member?.lastName || ''}`.trim();
+    
+    await this.prisma.auditLog.create({
+      data: {
+        entityType: 'GroupMember',
+        entityId: groupMember.id,
+        action: 'UPDATE',
+        description: `Removed ${memberName} from ${groupName}`,
+        metadata: {
+          memberId: groupMember.memberId,
+          memberName,
+          groupId: groupMember.smallGroupId || groupMember.ministryId,
+          groupName,
+          groupType: groupMember.smallGroupId ? 'SmallGroup' : 'Ministry',
+          role: groupMember.role,
+          leaveDate: new Date(),
+          leaveReason: leaveReason || 'Member removed from group',
+        },
+      },
     });
 
     return true;

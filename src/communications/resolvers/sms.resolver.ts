@@ -2,6 +2,7 @@ import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { SmsService } from '../services/sms.service';
 import { SendSmsInput } from '../dto/send-sms.input';
 import { SmsMessageDto } from '../dto/sms-message.dto';
+import { SendMessageResponse } from '../dto/send-message-response.dto';
 
 @Resolver(() => SmsMessageDto)
 export class SmsResolver {
@@ -10,6 +11,13 @@ export class SmsResolver {
   @Mutation(() => Boolean)
   async sendSms(@Args('input') input: SendSmsInput): Promise<boolean> {
     return this.smsService.sendSms(input);
+  }
+
+  @Mutation(() => SendMessageResponse)
+  async sendSmsWithTracking(
+    @Args('input') input: SendSmsInput,
+  ): Promise<SendMessageResponse> {
+    return this.smsService.sendSmsWithTracking(input);
   }
 
   @Query(() => [SmsMessageDto])

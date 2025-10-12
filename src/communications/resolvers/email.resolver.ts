@@ -2,6 +2,7 @@ import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { EmailService } from '../services/email.service';
 import { SendEmailInput } from '../dto/send-email.input';
 import { EmailMessageDto } from '../dto/email-message.dto';
+import { SendMessageResponse } from '../dto/send-message-response.dto';
 import { CreateEmailTemplateInput } from '../dto/create-email-template.input';
 import { UpdateEmailTemplateInput } from '../dto/update-email-template.input';
 import { EmailTemplateDto } from '../dto/email-template.dto';
@@ -13,6 +14,13 @@ export class EmailResolver {
   @Mutation(() => Boolean)
   async sendEmail(@Args('input') input: SendEmailInput): Promise<boolean> {
     return this.emailService.sendEmail(input);
+  }
+
+  @Mutation(() => SendMessageResponse)
+  async sendEmailWithTracking(
+    @Args('input') input: SendEmailInput,
+  ): Promise<SendMessageResponse> {
+    return this.emailService.sendEmailWithTracking(input);
   }
 
   @Query(() => [EmailMessageDto])

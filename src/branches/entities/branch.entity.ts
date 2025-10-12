@@ -43,6 +43,18 @@ export class Branch {
   @Field(() => Boolean, { defaultValue: true })
   isActive: boolean;
 
+  @Field(() => String, { nullable: true })
+  description?: string;
+
+  @Field(() => String, { nullable: true })
+  emailDisplayName?: string;
+
+  @Field(() => String, { nullable: true })
+  emailSignature?: string;
+
+  @Field(() => String, { nullable: true })
+  smsDisplayName?: string;
+
   @Field(() => Date)
   createdAt: Date;
 

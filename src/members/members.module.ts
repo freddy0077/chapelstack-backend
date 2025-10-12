@@ -3,6 +3,7 @@ import { MembersService } from './services/members.service';
 import { MemberReportsService } from './services/member-reports.service';
 import { SpiritualMilestonesService } from './services/spiritual-milestones.service';
 import { FamiliesService } from './services/families.service';
+import { BirthdayAnniversaryAutomationService } from './services/birthday-anniversary-automation.service';
 import { MembersResolver } from './resolvers/members.resolver';
 import { SpiritualMilestonesResolver } from './resolvers/spiritual-milestones.resolver';
 import { FamiliesResolver } from './resolvers/families.resolver';
@@ -12,6 +13,7 @@ import { AttendanceModule } from '../attendance/attendance.module';
 import { ConfigModule } from '@nestjs/config';
 import { ContentModule } from '../content/content.module';
 import { WorkflowsModule } from '../workflows/workflows.module';
+import { CommunicationsModule } from '../communications/communications.module';
 import { MemberIdGenerationService } from '../common/services/member-id-generation.service';
 
 @Module({
@@ -22,12 +24,14 @@ import { MemberIdGenerationService } from '../common/services/member-id-generati
     ConfigModule,
     ContentModule,
     WorkflowsModule,
+    CommunicationsModule,
   ],
   providers: [
     MembersService,
     MemberReportsService,
     SpiritualMilestonesService,
     FamiliesService,
+    BirthdayAnniversaryAutomationService,
     MembersResolver,
     SpiritualMilestonesResolver,
     FamiliesResolver,
@@ -38,6 +42,7 @@ import { MemberIdGenerationService } from '../common/services/member-id-generati
     MemberReportsService,
     SpiritualMilestonesService,
     FamiliesService,
+    BirthdayAnniversaryAutomationService,
   ],
 })
 export class MembersModule {}

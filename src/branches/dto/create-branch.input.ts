@@ -87,4 +87,26 @@ export class CreateBranchInput {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean = true;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  emailDisplayName?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  emailSignature?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  smsDisplayName?: string;
 }

@@ -46,6 +46,7 @@ import {
   ImportMembersResult,
 } from '../dto/import-members.input';
 import { MemberActivity } from '../dto/member-activity.output';
+import { MemberHistoryEntry } from '../dto/member-history.output';
 
 @Resolver(() => Member)
 export class MembersResolver {
@@ -261,26 +262,28 @@ export class MembersResolver {
       });
     }
 
-    // Fetch contributions
-    const contributions = await this.prisma.contribution.findMany({
-      where: { memberId },
+    // Fetch contributions from transactions table
+    const transactions = await this.prisma.transaction.findMany({
+      where: { 
+        memberId,
+        type: 'CONTRIBUTION',
+      },
       orderBy: { date: 'desc' },
       take: limit,
       include: {
-        contributionType: true,
         fund: true,
       },
     });
 
-    for (const contribution of contributions) {
+    for (const transaction of transactions) {
       activities.push({
-        id: contribution.id,
+        id: transaction.id,
         type: 'CONTRIBUTION' as any,
-        title: contribution.contributionType?.name || 'Contribution',
-        description: contribution.notes || `${contribution.fund?.name || 'General Fund'}`,
-        date: contribution.date,
-        amount: contribution.amount,
-        relatedEntityId: contribution.id,
+        title: transaction.description || 'Contribution',
+        description: transaction.fund?.name || transaction.reference || 'General Fund',
+        date: transaction.date,
+        amount: Number(transaction.amount),
+        relatedEntityId: transaction.id,
       });
     }
 
@@ -322,6 +325,75 @@ export class MembersResolver {
         priority: visit.status === 'SCHEDULED' ? 'medium' : 'low',
         relatedEntityId: visit.id,
       });
+    }
+
+    // Fetch sacraments
+    const sacraments = await this.prisma.sacramentalRecord.findMany({
+      where: { memberId },
+      orderBy: { dateOfSacrament: 'desc' },
+      take: limit,
+    });
+
+    for (const sacrament of sacraments) {
+      const sacramentTypeMap: Record<string, string> = {
+        BAPTISM: 'Baptism',
+        EUCHARIST_FIRST_COMMUNION: 'Holy Communion',
+        CONFIRMATION: 'Confirmation',
+        MATRIMONY: 'Marriage',
+        HOLY_ORDERS: 'Ordination',
+        ANOINTING_OF_THE_SICK: 'Anointing of the Sick',
+        PENANCE: 'Confession',
+      };
+
+      activities.push({
+        id: sacrament.id,
+        type: 'SACRAMENT' as any,
+        title: sacramentTypeMap[sacrament.sacramentType] || sacrament.sacramentType,
+        description: sacrament.notes || sacrament.locationOfSacrament || undefined,
+        date: sacrament.dateOfSacrament,
+        status: 'completed',
+        relatedEntityId: sacrament.id,
+      });
+    }
+
+    // Fetch group memberships (both active and past)
+    const groupMemberships = await this.prisma.groupMember.findMany({
+      where: { memberId },
+      orderBy: { joinDate: 'desc' },
+      take: limit,
+      include: {
+        smallGroup: true,
+        ministry: true,
+      },
+    });
+
+    for (const membership of groupMemberships) {
+      const groupName = membership.smallGroup?.name || membership.ministry?.name || 'Unknown Group';
+      const groupType = membership.smallGroup ? 'Small Group' : 'Ministry';
+      
+      // Add join activity
+      activities.push({
+        id: `${membership.id}-join`,
+        type: 'GROUP_MEMBERSHIP' as any,
+        title: `Joined ${groupName}`,
+        description: `Joined ${groupType} as ${membership.role}`,
+        date: membership.joinDate,
+        status: membership.status,
+        relatedEntityId: membership.id,
+      });
+
+      // Add leave activity if member left
+      if (membership.leaveDate) {
+        activities.push({
+          id: `${membership.id}-leave`,
+          type: 'GROUP_MEMBERSHIP' as any,
+          title: `Left ${groupName}`,
+          description: membership.leaveReason || `Left ${groupType}`,
+          date: membership.leaveDate,
+          status: 'completed',
+          relatedEntityId: membership.id,
+        });
+      }
     }
 
     // Sort all activities by date (most recent first) and limit
@@ -1009,5 +1081,25 @@ export class MembersResolver {
       ipAddress,
       userAgent,
     );
+  }
+
+  @Query(() => [MemberHistoryEntry])
+  @UseGuards(GqlAuthGuard)
+  async memberHistory(
+    @Args('memberId', { type: () => String }, ParseUUIDPipe) memberId: string,
+    @Args('skip', { type: () => Int, nullable: true, defaultValue: 0 })
+    skip?: number,
+    @Args('take', { type: () => Int, nullable: true, defaultValue: 50 })
+    take?: number,
+  ): Promise<any[]> {
+    return this.membersService.getMemberHistory(memberId, skip, take);
+  }
+
+  @Query(() => Int)
+  @UseGuards(GqlAuthGuard)
+  async memberHistoryCount(
+    @Args('memberId', { type: () => String }, ParseUUIDPipe) memberId: string,
+  ): Promise<number> {
+    return this.membersService.getMemberHistoryCount(memberId);
   }
 }

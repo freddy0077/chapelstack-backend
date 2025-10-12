@@ -4,6 +4,11 @@ import {
   MemberFilterInput,
   BirthdayRangeEnum,
 } from '../dto/member-filter.input';
+import {
+  GetRecipientCountInput,
+  RecipientCountResponse,
+  RecipientBreakdown,
+} from '../dto/recipient-count.dto';
 
 @Injectable()
 export class RecipientService {
@@ -700,6 +705,230 @@ export class RecipientService {
     }
 
     return counts;
+  }
+
+  /**
+   * Get recipient count with breakdown by source (groups, filters, individuals, birthday)
+   * @param input - GetRecipientCountInput with memberIds, groupIds, filters, etc.
+   * @returns RecipientCountResponse with total, unique count, and breakdown
+   */
+  async getRecipientCount(
+    input: GetRecipientCountInput,
+  ): Promise<RecipientCountResponse> {
+    const breakdown: RecipientBreakdown[] = [];
+    const allMemberIds = new Set<string>();
+    let totalCount = 0;
+
+    // 1. Individual members
+    if (input.memberIds && input.memberIds.length > 0) {
+      const members = await this.prisma.member.findMany({
+        where: { id: { in: input.memberIds } },
+        select: { id: true, firstName: true, lastName: true },
+      });
+
+      members.forEach((member) => {
+        allMemberIds.add(member.id);
+        breakdown.push({
+          source: 'individual',
+          name: `${member.firstName} ${member.lastName}`,
+          count: 1,
+          id: member.id,
+        });
+      });
+      totalCount += members.length;
+    }
+
+    // 2. Groups (ministries and small groups)
+    if (input.groupIds && input.groupIds.length > 0) {
+      for (const groupId of input.groupIds) {
+        const groupMembers = await this.prisma.member.findMany({
+          where: {
+            groupMemberships: {
+              some: {
+                OR: [
+                  { ministryId: groupId },
+                  { smallGroupId: groupId },
+                ],
+                status: 'ACTIVE',
+              },
+            },
+          },
+          select: { id: true },
+        });
+
+        // Get group name
+        const ministry = await this.prisma.ministry.findUnique({
+          where: { id: groupId },
+          select: { name: true },
+        });
+
+        const smallGroup = !ministry
+          ? await this.prisma.smallGroup.findUnique({
+              where: { id: groupId },
+              select: { name: true },
+            })
+          : null;
+
+        const groupName = ministry?.name || smallGroup?.name || 'Unknown Group';
+
+        groupMembers.forEach((member) => allMemberIds.add(member.id));
+
+        breakdown.push({
+          source: 'group',
+          name: groupName,
+          count: groupMembers.length,
+          id: groupId,
+        });
+
+        totalCount += groupMembers.length;
+      }
+    }
+
+    // 3. Filters (status, role, gender, etc.)
+    if (input.filters && input.filters.length > 0) {
+      for (const filterKey of input.filters) {
+        const filterMembers = await this.getFilteredMembersByKey(
+          filterKey,
+          input.branchId,
+          input.organisationId,
+        );
+
+        filterMembers.forEach((member) => allMemberIds.add(member.id));
+
+        breakdown.push({
+          source: 'filter',
+          name: this.getFilterDisplayName(filterKey),
+          count: filterMembers.length,
+          id: filterKey,
+        });
+
+        totalCount += filterMembers.length;
+      }
+    }
+
+    // 4. Birthday range
+    if (input.birthdayRange) {
+      const birthdayMembers = await this.getMembersByBirthdayRange(
+        input.birthdayRange,
+        input.branchId,
+      );
+
+      birthdayMembers.forEach((member) => allMemberIds.add(member.id));
+
+      breakdown.push({
+        source: 'birthday',
+        name: `Birthday: ${input.birthdayRange}`,
+        count: birthdayMembers.length,
+      });
+
+      totalCount += birthdayMembers.length;
+    }
+
+    const uniqueMembers = allMemberIds.size;
+    const duplicateCount = totalCount - uniqueMembers;
+
+    return {
+      totalMembers: totalCount,
+      uniqueMembers,
+      duplicateCount,
+      breakdown,
+      message:
+        duplicateCount > 0
+          ? `${duplicateCount} member(s) appear in multiple selections`
+          : 'No duplicate members',
+    };
+  }
+
+  /**
+   * Get members by filter key
+   */
+  private async getFilteredMembersByKey(
+    filterKey: string,
+    branchId?: string,
+    organisationId?: string,
+  ): Promise<{ id: string }[]> {
+    const where: any = {};
+
+    if (branchId) where.branchId = branchId;
+    if (organisationId) where.organisationId = organisationId;
+
+    // Parse filter key (e.g., "status:ACTIVE", "role:MEMBER", "gender:MALE")
+    const [filterType, filterValue] = filterKey.split(':');
+
+    switch (filterType) {
+      case 'status':
+        where.status = filterValue;
+        break;
+      case 'role':
+        where.role = filterValue;
+        break;
+      case 'gender':
+        where.gender = filterValue;
+        break;
+      case 'maritalStatus':
+        where.maritalStatus = filterValue;
+        break;
+      default:
+        break;
+    }
+
+    return this.prisma.member.findMany({
+      where,
+      select: { id: true },
+    });
+  }
+
+  /**
+   * Get display name for filter
+   */
+  private getFilterDisplayName(filterKey: string): string {
+    const [filterType, filterValue] = filterKey.split(':');
+    return `${filterType}: ${filterValue}`;
+  }
+
+  /**
+   * Get members by birthday range
+   */
+  private async getMembersByBirthdayRange(
+    range: string,
+    branchId?: string,
+  ): Promise<{ id: string }[]> {
+    const today = new Date();
+    const where: any = {};
+
+    if (branchId) where.branchId = branchId;
+
+    // Parse range (e.g., "today", "this_week", "this_month", "next_7_days")
+    switch (range) {
+      case 'today':
+        where.dateOfBirth = {
+          gte: new Date(today.setHours(0, 0, 0, 0)),
+          lt: new Date(today.setHours(23, 59, 59, 999)),
+        };
+        break;
+      case 'this_week':
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        where.dateOfBirth = {
+          gte: startOfWeek,
+          lte: endOfWeek,
+        };
+        break;
+      case 'this_month':
+        where.dateOfBirth = {
+          gte: new Date(today.getFullYear(), today.getMonth(), 1),
+          lt: new Date(today.getFullYear(), today.getMonth() + 1, 1),
+        };
+        break;
+      // Add more cases as needed
+    }
+
+    return this.prisma.member.findMany({
+      where,
+      select: { id: true },
+    });
   }
 
   /**

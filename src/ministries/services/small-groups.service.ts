@@ -143,12 +143,60 @@ export class SmallGroupsService {
   async remove(id: string): Promise<boolean> {
     const smallGroup = await this.prisma.smallGroup.findUnique({
       where: { id },
+      include: {
+        members: {
+          include: {
+            member: true,
+          },
+        },
+      },
     });
 
     if (!smallGroup) {
       throw new NotFoundException(`Small Group with ID ${id} not found`);
     }
 
+    // Update all active group members to inactive with leave date
+    await this.prisma.groupMember.updateMany({
+      where: {
+        smallGroupId: id,
+        status: 'ACTIVE',
+      },
+      data: {
+        status: 'INACTIVE',
+        leaveDate: new Date(),
+        leaveReason: `Group "${smallGroup.name}" was deactivated`,
+      },
+    });
+
+    // Create audit log entries for each member
+    for (const groupMember of smallGroup.members) {
+      if (groupMember.status === 'ACTIVE') {
+        const memberName = `${groupMember.member?.firstName || ''} ${groupMember.member?.lastName || ''}`.trim();
+        
+        await this.prisma.auditLog.create({
+          data: {
+            entityType: 'GroupMember',
+            entityId: groupMember.id,
+            action: 'UPDATE',
+            description: `${memberName} removed from ${smallGroup.name} (group deactivated)`,
+            metadata: {
+              memberId: groupMember.memberId,
+              memberName,
+              groupId: id,
+              groupName: smallGroup.name,
+              groupType: 'SmallGroup',
+              role: groupMember.role,
+              leaveDate: new Date(),
+              leaveReason: `Group "${smallGroup.name}" was deactivated`,
+              reason: 'GROUP_DEACTIVATED',
+            },
+          },
+        });
+      }
+    }
+
+    // Now delete the group
     await this.prisma.smallGroup.delete({
       where: { id },
     });
