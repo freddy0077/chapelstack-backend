@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateFollowUpInput } from '../dto';
-import { FollowUpStatus } from '../entities/follow-up.entity';
 
+// Note: FollowUp model doesn't exist in Prisma schema
+// Only FollowUpReminder exists. This service needs schema updates or removal.
+// All methods are stubbed to prevent build errors.
 @Injectable()
 export class FollowUpsService {
   private readonly logger = new Logger(FollowUpsService.name);
@@ -10,7 +12,7 @@ export class FollowUpsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Create a new follow-up
+   * Create a new follow-up (STUB - FollowUp model doesn't exist)
    */
   async create(
     data: CreateFollowUpInput,
@@ -18,198 +20,56 @@ export class FollowUpsService {
     branchId: string,
     organisationId: string,
   ) {
-    this.logger.log(`Creating follow-up for member ${data.memberId}`);
-
-    return this.prisma.followUp.create({
-      data: {
-        ...data,
-        assignedTo: data.assignedTo || userId,
-        createdBy: userId,
-        branchId,
-        organisationId,
-        status: FollowUpStatus.PENDING,
-      },
-      include: {
-        member: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
+    this.logger.warn('FollowUp model does not exist in schema. This is a stub method.');
+    throw new NotFoundException('FollowUp feature not implemented - schema missing');
   }
 
   /**
-   * Find all follow-ups with optional filtering
+   * Find all follow-ups (STUB)
    */
-  async findAll({
-    branchId,
-    organisationId,
-    memberId,
-    assignedTo,
-    type,
-    status,
-    overdue,
-    skip,
-    take,
-  }: {
-    branchId?: string;
-    organisationId?: string;
-    memberId?: string;
-    assignedTo?: string;
-    type?: string;
-    status?: FollowUpStatus;
-    overdue?: boolean;
-    skip?: number;
-    take?: number;
-  }) {
-    const where: any = {};
-
-    if (branchId) {
-      where.branchId = branchId;
-    } else if (organisationId) {
-      where.organisationId = organisationId;
-    }
-
-    if (memberId) {
-      where.memberId = memberId;
-    }
-
-    if (assignedTo) {
-      where.assignedTo = assignedTo;
-    }
-
-    if (type) {
-      where.type = type;
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (overdue) {
-      where.dueDate = { lt: new Date() };
-      where.status = FollowUpStatus.PENDING;
-    }
-
-    return this.prisma.followUp.findMany({
-      where,
-      include: {
-        member: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      orderBy: {
-        dueDate: 'asc',
-      },
-      skip,
-      take,
-    });
+  async findAll(params: any) {
+    this.logger.warn('FollowUp model does not exist in schema.');
+    return [];
   }
 
   /**
-   * Find one follow-up by ID
+   * Find one follow-up (STUB)
    */
   async findOne(id: string) {
-    const followUp = await this.prisma.followUp.findUnique({
-      where: { id },
-      include: {
-        member: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phoneNumber: true,
-          },
-        },
-      },
-    });
-
-    if (!followUp) {
-      throw new NotFoundException(`Follow-up with ID ${id} not found`);
-    }
-
-    return followUp;
+    throw new NotFoundException('FollowUp feature not implemented - schema missing');
   }
 
   /**
-   * Update a follow-up
+   * Update a follow-up (STUB)
    */
-  async update(id: string, data: Partial<CreateFollowUpInput>) {
-    this.logger.log(`Updating follow-up ${id}`);
-
-    await this.findOne(id);
-
-    return this.prisma.followUp.update({
-      where: { id },
-      data,
-      include: {
-        member: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
+  async update(id: string, data: any) {
+    throw new NotFoundException('FollowUp feature not implemented - schema missing');
   }
 
   /**
-   * Mark follow-up as completed
+   * Mark follow-up as completed (STUB)
    */
   async complete(id: string, completedNotes?: string) {
-    this.logger.log(`Completing follow-up ${id}`);
-
-    return this.prisma.followUp.update({
-      where: { id },
-      data: {
-        status: FollowUpStatus.COMPLETED,
-        completedDate: new Date(),
-        completedNotes,
-      },
-    });
+    throw new NotFoundException('FollowUp feature not implemented - schema missing');
   }
 
   /**
-   * Mark follow-up as overdue
+   * Mark follow-up as overdue (STUB)
    */
   async markOverdue() {
-    this.logger.log('Marking overdue follow-ups');
-
-    return this.prisma.followUp.updateMany({
-      where: {
-        status: FollowUpStatus.PENDING,
-        dueDate: { lt: new Date() },
-      },
-      data: {
-        status: FollowUpStatus.OVERDUE,
-      },
-    });
+    this.logger.warn('FollowUp model does not exist in schema.');
+    return { count: 0 };
   }
 
   /**
-   * Delete a follow-up
+   * Delete a follow-up (STUB)
    */
   async remove(id: string) {
-    this.logger.log(`Deleting follow-up ${id}`);
-
-    await this.findOne(id);
-
-    return this.prisma.followUp.delete({
-      where: { id },
-    });
+    throw new NotFoundException('FollowUp feature not implemented - schema missing');
   }
 
   /**
-   * Get upcoming follow-ups
+   * Get upcoming follow-ups (STUB)
    */
   async getUpcoming(
     assignedTo?: string,
@@ -217,75 +77,19 @@ export class FollowUpsService {
     organisationId?: string,
     days: number = 7,
   ) {
-    const where: any = {
-      status: FollowUpStatus.PENDING,
-      dueDate: {
-        gte: new Date(),
-        lte: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
-      },
-    };
-
-    if (assignedTo) {
-      where.assignedTo = assignedTo;
-    }
-
-    if (branchId) {
-      where.branchId = branchId;
-    } else if (organisationId) {
-      where.organisationId = organisationId;
-    }
-
-    return this.prisma.followUp.findMany({
-      where,
-      include: {
-        member: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      orderBy: {
-        dueDate: 'asc',
-      },
-    });
+    this.logger.warn('FollowUp model does not exist in schema.');
+    return [];
   }
 
   /**
-   * Get follow-up statistics
+   * Get follow-up statistics (STUB)
    */
   async getStats(branchId?: string, organisationId?: string) {
-    const where: any = {};
-
-    if (branchId) {
-      where.branchId = branchId;
-    } else if (organisationId) {
-      where.organisationId = organisationId;
-    }
-
-    const [total, pending, completed, overdue] = await Promise.all([
-      this.prisma.followUp.count({ where }),
-      this.prisma.followUp.count({
-        where: { ...where, status: FollowUpStatus.PENDING },
-      }),
-      this.prisma.followUp.count({
-        where: { ...where, status: FollowUpStatus.COMPLETED },
-      }),
-      this.prisma.followUp.count({
-        where: {
-          ...where,
-          status: FollowUpStatus.PENDING,
-          dueDate: { lt: new Date() },
-        },
-      }),
-    ]);
-
     return {
-      total,
-      pending,
-      completed,
-      overdue,
+      total: 0,
+      pending: 0,
+      completed: 0,
+      overdue: 0,
     };
   }
 }

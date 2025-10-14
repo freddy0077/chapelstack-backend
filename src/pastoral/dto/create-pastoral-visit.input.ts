@@ -1,6 +1,6 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
 import { IsNotEmpty, IsOptional, IsEnum, IsNumber, Min } from 'class-validator';
-import { VisitType, VisitStatus } from '../entities/pastoral-visit.entity';
+import { PastoralVisitType, PastoralVisitStatus } from '@prisma/client';
 
 @InputType()
 export class CreatePastoralVisitInput {
@@ -8,13 +8,29 @@ export class CreatePastoralVisitInput {
   @IsNotEmpty()
   memberId: string;
 
-  @Field(() => VisitType)
-  @IsEnum(VisitType)
-  visitType: VisitType;
+  @Field(() => ID)
+  @IsNotEmpty()
+  pastorId: string;
 
   @Field()
   @IsNotEmpty()
-  visitDate: Date;
+  title: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  description?: string;
+
+  @Field(() => String)
+  @IsEnum(PastoralVisitType)
+  visitType: string;
+
+  @Field()
+  @IsNotEmpty()
+  scheduledDate: Date;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  actualDate?: Date;
 
   @Field({ nullable: true })
   @IsOptional()
@@ -30,16 +46,24 @@ export class CreatePastoralVisitInput {
   @IsOptional()
   notes?: string;
 
-  @Field({ nullable: true, defaultValue: false })
+  @Field({ nullable: true })
   @IsOptional()
-  followUpRequired?: boolean;
+  privateNotes?: string;
 
   @Field({ nullable: true })
   @IsOptional()
-  nextVisitDate?: Date;
+  actionItems?: string;
 
-  @Field(() => VisitStatus, { nullable: true, defaultValue: VisitStatus.SCHEDULED })
+  @Field({ nullable: true, defaultValue: false })
   @IsOptional()
-  @IsEnum(VisitStatus)
-  status?: VisitStatus;
+  followUpNeeded?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  followUpDate?: Date;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsEnum(PastoralVisitStatus)
+  status?: string;
 }

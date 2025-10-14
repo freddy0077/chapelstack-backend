@@ -4,7 +4,7 @@ import {
   CreatePastoralVisitInput,
   UpdatePastoralVisitInput,
 } from '../dto';
-import { VisitStatus } from '../entities/pastoral-visit.entity';
+import { PastoralVisitStatus, PastoralVisitType } from '@prisma/client';
 
 @Injectable()
 export class PastoralVisitsService {
@@ -26,6 +26,8 @@ export class PastoralVisitsService {
     return this.prisma.pastoralVisit.create({
       data: {
         ...data,
+        visitType: data.visitType as PastoralVisitType,
+        status: data.status ? (data.status as PastoralVisitStatus) : PastoralVisitStatus.SCHEDULED,
         createdBy: userId,
         branchId,
         organisationId,
@@ -58,7 +60,7 @@ export class PastoralVisitsService {
     organisationId?: string;
     memberId?: string;
     visitType?: string;
-    status?: VisitStatus;
+    status?: PastoralVisitStatus;
     skip?: number;
     take?: number;
   }) {
@@ -94,7 +96,7 @@ export class PastoralVisitsService {
         },
       },
       orderBy: {
-        visitDate: 'desc',
+        scheduledDate: 'desc',
       },
       skip,
       take,
@@ -140,7 +142,7 @@ export class PastoralVisitsService {
 
     return this.prisma.pastoralVisit.update({
       where: { id },
-      data: updateData,
+      data: updateData as any,
       include: {
         member: {
           select: {
@@ -162,8 +164,8 @@ export class PastoralVisitsService {
     return this.prisma.pastoralVisit.update({
       where: { id },
       data: {
-        status: VisitStatus.COMPLETED,
-        completedAt: new Date(),
+        status: PastoralVisitStatus.COMPLETED,
+        actualDate: new Date(),
         notes: completedNotes,
       },
     });
@@ -178,8 +180,10 @@ export class PastoralVisitsService {
     return this.prisma.pastoralVisit.update({
       where: { id },
       data: {
-        status: VisitStatus.CANCELLED,
-        cancelledReason: reason,
+        status: PastoralVisitStatus.CANCELLED,
+        // Note: cancelledReason field doesn't exist in schema
+        // You may want to add it or use notes field
+        notes: reason ? `Cancelled: ${reason}` : undefined,
       },
     });
   }
@@ -213,13 +217,13 @@ export class PastoralVisitsService {
     const [total, scheduled, completed, cancelled] = await Promise.all([
       this.prisma.pastoralVisit.count({ where }),
       this.prisma.pastoralVisit.count({
-        where: { ...where, status: VisitStatus.SCHEDULED },
+        where: { ...where, status: PastoralVisitStatus.SCHEDULED },
       }),
       this.prisma.pastoralVisit.count({
-        where: { ...where, status: VisitStatus.COMPLETED },
+        where: { ...where, status: PastoralVisitStatus.COMPLETED },
       }),
       this.prisma.pastoralVisit.count({
-        where: { ...where, status: VisitStatus.CANCELLED },
+        where: { ...where, status: PastoralVisitStatus.CANCELLED },
       }),
     ]);
 
@@ -236,8 +240,8 @@ export class PastoralVisitsService {
    */
   async getUpcoming(branchId?: string, organisationId?: string, days: number = 7) {
     const where: any = {
-      status: VisitStatus.SCHEDULED,
-      visitDate: {
+      status: PastoralVisitStatus.SCHEDULED,
+      scheduledDate: {
         gte: new Date(),
         lte: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
       },
@@ -261,7 +265,7 @@ export class PastoralVisitsService {
         },
       },
       orderBy: {
-        visitDate: 'asc',
+        scheduledDate: 'asc',
       },
     });
   }

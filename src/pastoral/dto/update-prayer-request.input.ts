@@ -1,6 +1,6 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
 import { IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
-import { PrayerStatus } from '../entities/prayer-request.entity';
+import { PrayerRequestStatus } from '@prisma/client';
 
 @InputType()
 export class UpdatePrayerRequestInput {
@@ -10,18 +10,14 @@ export class UpdatePrayerRequestInput {
 
   @Field({ nullable: true })
   @IsOptional()
-  title?: string;
+  requestText?: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
-  description?: string;
+  @IsEnum(PrayerRequestStatus)
+  status?: string;
 
-  @Field(() => PrayerStatus, { nullable: true })
+  @Field(() => ID, { nullable: true })
   @IsOptional()
-  @IsEnum(PrayerStatus)
-  status?: PrayerStatus;
-
-  @Field({ nullable: true })
-  @IsOptional()
-  answeredDescription?: string;
+  assignedPastorId?: string;
 }

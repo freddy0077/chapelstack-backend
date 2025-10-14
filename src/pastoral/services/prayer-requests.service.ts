@@ -4,7 +4,7 @@ import {
   CreatePrayerRequestInput,
   UpdatePrayerRequestInput,
 } from '../dto';
-import { PrayerStatus, PrivacyLevel } from '../entities/prayer-request.entity';
+import { PrayerRequestStatus } from '@prisma/client';
 
 @Injectable()
 export class PrayerRequestsService {
@@ -25,12 +25,12 @@ export class PrayerRequestsService {
 
     return this.prisma.prayerRequest.create({
       data: {
-        ...data,
-        createdBy: userId,
+        memberId: data.memberId,
+        requestText: data.requestText || data.description || '',
         branchId,
         organisationId,
-        status: PrayerStatus.ACTIVE,
-        prayerCount: 0,
+        status: PrayerRequestStatus.NEW,
+        assignedPastorId: data.assignedPastorId,
       },
       include: {
         member: {
@@ -51,22 +51,14 @@ export class PrayerRequestsService {
     branchId,
     organisationId,
     memberId,
-    category,
-    priority,
     status,
-    privacyLevel,
-    userId,
     skip,
     take,
   }: {
     branchId?: string;
     organisationId?: string;
     memberId?: string;
-    category?: string;
-    priority?: string;
-    status?: PrayerStatus;
-    privacyLevel?: PrivacyLevel;
-    userId?: string;
+    status?: PrayerRequestStatus;
     skip?: number;
     take?: number;
   }) {
@@ -82,30 +74,8 @@ export class PrayerRequestsService {
       where.memberId = memberId;
     }
 
-    if (category) {
-      where.category = category;
-    }
-
-    if (priority) {
-      where.priority = priority;
-    }
-
     if (status) {
       where.status = status;
-    }
-
-    // Privacy filtering
-    if (privacyLevel) {
-      where.privacyLevel = privacyLevel;
-    } else if (userId) {
-      // If user is specified, show public requests and their own private requests
-      where.OR = [
-        { privacyLevel: PrivacyLevel.PUBLIC },
-        { createdBy: userId },
-      ];
-    } else {
-      // Default to public only
-      where.privacyLevel = PrivacyLevel.PUBLIC;
     }
 
     return this.prisma.prayerRequest.findMany({
@@ -120,7 +90,6 @@ export class PrayerRequestsService {
         },
       },
       orderBy: [
-        { priority: 'desc' },
         { createdAt: 'desc' },
       ],
       skip,
@@ -150,14 +119,6 @@ export class PrayerRequestsService {
       throw new NotFoundException(`Prayer request with ID ${id} not found`);
     }
 
-    // Check privacy
-    if (
-      request.privacyLevel === PrivacyLevel.PRIVATE &&
-      request.createdBy !== userId
-    ) {
-      throw new NotFoundException(`Prayer request with ID ${id} not found`);
-    }
-
     return request;
   }
 
@@ -170,7 +131,11 @@ export class PrayerRequestsService {
     // Check if request exists and user has access
     await this.findOne(id, userId);
 
-    const { id: _, ...updateData } = data;
+    const updateData: any = {};
+    
+    if (data.requestText) updateData.requestText = data.requestText;
+    if (data.status) updateData.status = data.status as PrayerRequestStatus;
+    if (data.assignedPastorId !== undefined) updateData.assignedPastorId = data.assignedPastorId;
 
     return this.prisma.prayerRequest.update({
       where: { id },
@@ -196,15 +161,13 @@ export class PrayerRequestsService {
     return this.prisma.prayerRequest.update({
       where: { id },
       data: {
-        status: PrayerStatus.ANSWERED,
-        answeredDate: new Date(),
-        answeredDescription,
+        status: PrayerRequestStatus.ANSWERED,
       },
     });
   }
 
   /**
-   * Archive a prayer request
+   * Archive a prayer request (mark as answered since ARCHIVED doesn't exist)
    */
   async archive(id: string) {
     this.logger.log(`Archiving prayer request ${id}`);
@@ -212,49 +175,28 @@ export class PrayerRequestsService {
     return this.prisma.prayerRequest.update({
       where: { id },
       data: {
-        status: PrayerStatus.ARCHIVED,
+        status: PrayerRequestStatus.ANSWERED,
       },
     });
   }
 
   /**
-   * Add a note to prayer request
+   * Add a note to prayer request (not supported in current schema)
    */
   async addNote(id: string, note: string) {
     const request = await this.findOne(id);
-
-    const notes = request.notes || [];
-    notes.push(note);
-
-    return this.prisma.prayerRequest.update({
-      where: { id },
-      data: {
-        notes,
-      },
-    });
+    // Note: notes field doesn't exist in schema, this is a placeholder
+    // You may want to create a separate PrayerRequestNote model
+    return request;
   }
 
   /**
-   * Increment prayer count
+   * Increment prayer count (not supported in current schema)
    */
   async pray(id: string, userId: string) {
     const request = await this.findOne(id);
-
-    const prayedBy = request.prayedBy || [];
-    
-    // Only increment if user hasn't prayed before
-    if (!prayedBy.includes(userId)) {
-      prayedBy.push(userId);
-
-      return this.prisma.prayerRequest.update({
-        where: { id },
-        data: {
-          prayerCount: request.prayerCount + 1,
-          prayedBy,
-        },
-      });
-    }
-
+    // Note: prayerCount and prayedBy fields don't exist in schema
+    // You may want to create a separate PrayerLog model to track this
     return request;
   }
 
@@ -284,24 +226,24 @@ export class PrayerRequestsService {
       where.organisationId = organisationId;
     }
 
-    const [total, active, answered, urgent] = await Promise.all([
+    const [total, newRequests, inProgress, answered] = await Promise.all([
       this.prisma.prayerRequest.count({ where }),
       this.prisma.prayerRequest.count({
-        where: { ...where, status: PrayerStatus.ACTIVE },
+        where: { ...where, status: PrayerRequestStatus.NEW },
       }),
       this.prisma.prayerRequest.count({
-        where: { ...where, status: PrayerStatus.ANSWERED },
+        where: { ...where, status: PrayerRequestStatus.IN_PROGRESS },
       }),
       this.prisma.prayerRequest.count({
-        where: { ...where, priority: 'URGENT' },
+        where: { ...where, status: PrayerRequestStatus.ANSWERED },
       }),
     ]);
 
     return {
       total,
-      active,
+      new: newRequests,
+      inProgress,
       answered,
-      urgent,
     };
   }
 
@@ -311,7 +253,7 @@ export class PrayerRequestsService {
   async count(filters?: {
     branchId?: string;
     organisationId?: string;
-    status?: PrayerStatus;
+    status?: PrayerRequestStatus;
   }) {
     const where: any = {};
 

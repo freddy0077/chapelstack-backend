@@ -1,11 +1,5 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
-import { IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
-import {
-  PrayerCategory,
-  PrayerPriority,
-  PrayerStatus,
-  PrivacyLevel,
-} from '../entities/prayer-request.entity';
+import { IsNotEmpty, IsOptional } from 'class-validator';
 
 @InputType()
 export class CreatePrayerRequestInput {
@@ -15,23 +9,14 @@ export class CreatePrayerRequestInput {
 
   @Field()
   @IsNotEmpty()
-  title: string;
+  requestText: string;
 
-  @Field()
-  @IsNotEmpty()
-  description: string;
-
-  @Field(() => PrayerCategory)
-  @IsEnum(PrayerCategory)
-  category: PrayerCategory;
-
-  @Field(() => PrayerPriority, { nullable: true, defaultValue: PrayerPriority.NORMAL })
+  @Field(() => ID, { nullable: true })
   @IsOptional()
-  @IsEnum(PrayerPriority)
-  priority?: PrayerPriority;
+  assignedPastorId?: string;
 
-  @Field(() => PrivacyLevel, { nullable: true, defaultValue: PrivacyLevel.PUBLIC })
+  // Legacy fields for backward compatibility
+  @Field({ nullable: true })
   @IsOptional()
-  @IsEnum(PrivacyLevel)
-  privacyLevel?: PrivacyLevel;
+  description?: string;
 }
