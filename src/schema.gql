@@ -7523,6 +7523,7 @@ type UserDashboardPreference {
 }
 
 input UserFilterInput {
+  branchId: ID
   emailContains: String
   isActive: Boolean
   nameContains: String

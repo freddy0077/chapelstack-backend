@@ -113,6 +113,7 @@ export class UserAdminService {
       nameContains?: string;
       roleId?: string;
       organisationId?: string;
+      branchId?: string;
     },
   ) {
     const { skip = 0, take = 10 } = paginationInput;
@@ -152,7 +153,22 @@ export class UserAdminService {
       if (filterOptions.organisationId) {
         where.organisationId = filterOptions.organisationId;
       }
+      if (filterOptions.branchId) {
+        where.userBranches = {
+          some: { branchId: filterOptions.branchId },
+        };
+      }
     }
+
+    // Exclude system-level admin roles (SUPER_ADMIN, SUBSCRIPTION_MANAGER, ADMIN)
+    where.roles = {
+      ...(where.roles || {}),
+      none: {
+        name: {
+          in: ['SUPER_ADMIN', 'SUBSCRIPTION_MANAGER', 'ADMIN'],
+        },
+      },
+    };
 
     const [users, totalCount] = await this.prisma.$transaction([
       this.prisma.user.findMany({

@@ -27,4 +27,9 @@ export class UserFilterInput {
   @IsOptional()
   @IsUUID()
   organisationId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
 }

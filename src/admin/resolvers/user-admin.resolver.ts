@@ -127,7 +127,7 @@ export class UserAdminResolver {
   }
 
   @Mutation(() => User)
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async assignRoleToUser(
     @Args('userId', { type: () => ID }) userId: string,
     @Args('roleId', { type: () => ID }) roleId: string,
@@ -136,7 +136,7 @@ export class UserAdminResolver {
   }
 
   @Mutation(() => User)
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
   async removeRoleFromUser(
     @Args('userId', { type: () => ID }) userId: string,
     @Args('roleId', { type: () => ID }) roleId: string,
