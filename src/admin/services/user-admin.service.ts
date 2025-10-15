@@ -177,6 +177,7 @@ export class UserAdminService {
         where,
         orderBy: { createdAt: 'desc' },
         include: {
+          member: true,
           roles: true,
           userBranches: {
             include: {
@@ -545,5 +546,235 @@ export class UserAdminService {
       },
       pagination,
     );
+  }
+
+  /**
+   * Link an existing member to an existing user
+   */
+  async linkMemberToUser(userId: string, memberId: string) {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { member: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Check if user already has a linked member
+    if (user.member) {
+      throw new ConflictException(
+        `User already has a linked member: ${user.member.firstName} ${user.member.lastName}`,
+      );
+    }
+
+    // Check if member exists
+    const member = await this.prisma.member.findUnique({
+      where: { id: memberId },
+      include: { user: true },
+    });
+
+    if (!member) {
+      throw new NotFoundException(`Member with ID ${memberId} not found`);
+    }
+
+    // Check if member is already linked to another user
+    if (member.userId) {
+      throw new ConflictException(
+        `Member is already linked to another user account`,
+      );
+    }
+
+    // Link member to user
+    const updatedMember = await this.prisma.member.update({
+      where: { id: memberId },
+      data: {
+        userId: userId,
+      },
+    });
+
+    // Return updated user with member
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        member: true,
+        roles: true,
+        userBranches: {
+          include: {
+            branch: true,
+            role: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Unlink member from user
+   */
+  async unlinkMemberFromUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { member: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    if (!user.member) {
+      throw new NotFoundException(`User does not have a linked member`);
+    }
+
+    // Unlink member from user
+    await this.prisma.member.update({
+      where: { id: user.member.id },
+      data: {
+        userId: null,
+      },
+    });
+
+    // Return updated user
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        member: true,
+        roles: true,
+        userBranches: {
+          include: {
+            branch: true,
+            role: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Create a user account from an existing member
+   */
+  async createUserFromMember(data: {
+    memberId: string;
+    email: string;
+    password: string;
+    roleIds: string[];
+    organisationId: string;
+    branchId: string;
+  }) {
+    // Check if member exists
+    const member = await this.prisma.member.findUnique({
+      where: { id: data.memberId },
+      include: { user: true },
+    });
+
+    if (!member) {
+      throw new NotFoundException(`Member with ID ${data.memberId} not found`);
+    }
+
+    // Check if member already has a linked user
+    if (member.userId) {
+      throw new ConflictException(
+        `Member already has a linked user account`,
+      );
+    }
+
+    // Check if email is already in use
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException(
+        `Email ${data.email} is already in use`,
+      );
+    }
+
+    // Validate roles exist
+    const roles = await this.prisma.role.findMany({
+      where: { id: { in: data.roleIds } },
+    });
+
+    if (roles.length !== data.roleIds.length) {
+      throw new NotFoundException(`One or more role IDs are invalid`);
+    }
+
+    // Validate organisation and branch exist
+    const organisation = await this.prisma.organisation.findUnique({
+      where: { id: data.organisationId },
+    });
+
+    if (!organisation) {
+      throw new NotFoundException(
+        `Organisation with ID ${data.organisationId} not found`,
+      );
+    }
+
+    const branch = await this.prisma.branch.findUnique({
+      where: { id: data.branchId },
+    });
+
+    if (!branch) {
+      throw new NotFoundException(`Branch with ID ${data.branchId} not found`);
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
+    // Create user and link to member in a transaction
+    const user = await this.prisma.$transaction(async (prisma) => {
+      // Create user
+      const newUser = await prisma.user.create({
+        data: {
+          email: data.email,
+          passwordHash: hashedPassword,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          phoneNumber: member.phoneNumber,
+          isActive: true,
+          isEmailVerified: false,
+          organisationId: data.organisationId,
+          roles: {
+            connect: data.roleIds.map((id) => ({ id })),
+          },
+        },
+      });
+
+      // Create UserBranch entries for each role
+      for (const roleId of data.roleIds) {
+        await prisma.userBranch.create({
+          data: {
+            userId: newUser.id,
+            branchId: data.branchId,
+            roleId: roleId,
+          },
+        });
+      }
+
+      // Link member to user
+      await prisma.member.update({
+        where: { id: data.memberId },
+        data: {
+          userId: newUser.id,
+        },
+      });
+
+      return newUser;
+    });
+
+    // Return complete user with relations
+    return this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        member: true,
+        roles: true,
+        userBranches: {
+          include: {
+            branch: true,
+            role: true,
+          },
+        },
+      },
+    });
   }
 }

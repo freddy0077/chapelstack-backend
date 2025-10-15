@@ -12,6 +12,7 @@ import { UserBranch } from '../../auth/entities/user-branch.entity';
 import { CreateBranchAdminInput } from '../dto/create-branch-admin.input';
 import { UserRoleFilterInput } from '../dto/user-role-search.input';
 import { PaginatedUserResponse } from '../dto/paginated-user-response.dto';
+import { CreateUserFromMemberInput } from '../dto/create-user-from-member.input';
 
 @Resolver()
 @UseGuards(GqlAuthGuard, RolesGuard)
@@ -217,5 +218,30 @@ export class UserAdminResolver {
       { organisationId, branchId, search },
       pagination,
     );
+  }
+
+  @Mutation(() => User)
+  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  async linkMemberToUser(
+    @Args('userId', { type: () => ID }) userId: string,
+    @Args('memberId', { type: () => ID }) memberId: string,
+  ) {
+    return this.userAdminService.linkMemberToUser(userId, memberId);
+  }
+
+  @Mutation(() => User)
+  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  async unlinkMemberFromUser(
+    @Args('userId', { type: () => ID }) userId: string,
+  ) {
+    return this.userAdminService.unlinkMemberFromUser(userId);
+  }
+
+  @Mutation(() => User)
+  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  async createUserFromMember(
+    @Args('input') input: CreateUserFromMemberInput,
+  ) {
+    return this.userAdminService.createUserFromMember(input);
   }
 }

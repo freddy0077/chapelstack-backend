@@ -1,6 +1,7 @@
 import { ObjectType, Field, ID, GraphQLISODateTime } from '@nestjs/graphql';
 import { Role } from './role.entity';
 import { UserBranch } from './user-branch.entity';
+import { Member } from '../../members/entities/member.entity';
 
 @ObjectType('AuthUser')
 export class User {
@@ -33,6 +34,9 @@ export class User {
 
   @Field(() => GraphQLISODateTime)
   updatedAt: Date;
+
+  @Field(() => Member, { nullable: true })
+  member?: Member | null;
 
   @Field(() => [Role], { nullable: 'itemsAndList' })
   roles?: Role[];
