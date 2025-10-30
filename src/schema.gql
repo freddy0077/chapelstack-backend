@@ -62,6 +62,70 @@ enum AbsenteeMessageType {
   WHATSAPP
 }
 
+type AccountBalanceType {
+  accountId: String!
+  balance: Float!
+  creditTotal: Float!
+  debitTotal: Float!
+}
+
+type AccountEntity {
+  accountCode: String!
+  accountName: String!
+  accountSubType: AccountSubType
+  accountType: AccountType!
+  branchId: String
+  createdAt: DateTime!
+  createdBy: String
+  currency: String!
+  description: String
+  fundId: String
+  id: ID!
+  isActive: Boolean!
+  isRestricted: Boolean
+  isSystemAccount: Boolean!
+  ministryId: String
+  normalBalance: BalanceType!
+  notes: String
+  organisationId: String!
+  parentAccountId: String
+  updatedAt: DateTime!
+}
+
+enum AccountSubType {
+  ACCOUNTS_PAYABLE
+  ACCOUNTS_RECEIVABLE
+  ACCRUED_EXPENSE
+  ADMINISTRATIVE_EXPENSE
+  CASH_AND_BANK
+  DONATION_INCOME
+  FACILITY_EXPENSE
+  FIXED_ASSET
+  LOAN_PAYABLE
+  MINISTRY_EXPENSE
+  MOBILE_MONEY
+  NET_ASSETS_RESTRICTED
+  NET_ASSETS_UNRESTRICTED
+  OFFERING_INCOME
+  OTHER_ASSET
+  OTHER_EXPENSE
+  OTHER_INCOME
+  OTHER_LIABILITY
+  PREPAID_EXPENSE
+  PROGRAM_INCOME
+  RETAINED_EARNINGS
+  SALARY_EXPENSE
+  TITHE_INCOME
+}
+
+enum AccountType {
+  ASSET
+  EQUITY
+  EXPENSE
+  LIABILITY
+  REVENUE
+}
+
 type ActivityEngagement {
   recentEvents: [EventInfo!]!
   upcomingEvents: [EventInfo!]!
@@ -668,6 +732,7 @@ type AuthUser {
   isEmailVerified: Boolean!
   lastLoginAt: DateTime
   lastName: String
+  member: Member
   phoneNumber: String
   roles: [Role]
   updatedAt: DateTime!
@@ -727,6 +792,11 @@ type BalanceSheet {
   totalAssets: Float!
   totalLiabilities: Float!
   totalNetAssets: Float!
+}
+
+enum BalanceType {
+  CREDIT
+  DEBIT
 }
 
 type BirthRegistry {
@@ -1536,6 +1606,13 @@ enum ChurchDenomination {
   REFORMED
 }
 
+input CloseFiscalPeriodInput {
+  branchId: String!
+  fiscalYear: Int!
+  organisationId: String!
+  periodNumber: Int!
+}
+
 type CommunicationChannelStats {
   channel: String!
   deliveryRate: Int!
@@ -1828,6 +1905,23 @@ type CpuUsage {
 type CpuUsageDto {
   system: Float!
   user: Float!
+}
+
+input CreateAccountInput {
+  accountCode: String!
+  accountName: String!
+  accountSubType: AccountSubType
+  accountType: AccountType!
+  branchId: String!
+  currency: String
+  description: String
+  fundId: String
+  isRestricted: Boolean
+  ministryId: String
+  normalBalance: BalanceType!
+  notes: String
+  organisationId: String!
+  parentAccountId: String
 }
 
 input CreateAnnouncementInput {
@@ -2271,6 +2365,12 @@ input CreateFamilyRelationshipInput {
   relationshipType: FamilyRelationshipType!
 }
 
+input CreateFiscalYearInput {
+  branchId: String!
+  fiscalYear: Int!
+  organisationId: String!
+}
+
 input CreateFollowUpReminderInput {
   assignedToId: String!
   branchId: String
@@ -2350,6 +2450,19 @@ input CreateGuardianInput {
   notes: String
   phone: String!
   relationship: String!
+}
+
+input CreateJournalEntryInput {
+  branchId: String!
+  description: String!
+  entryDate: String!
+  entryType: JournalEntryType!
+  lines: [JournalEntryLineInput!]!
+  memo: String
+  organisationId: String!
+  reference: String
+  sourceModule: String!
+  sourceTransactionId: String
 }
 
 input CreateLicenseInput {
@@ -2487,6 +2600,21 @@ input CreateNotificationInput {
   title: String!
   type: NotificationType!
   userId: String!
+}
+
+input CreateOfferingBatchInput {
+  batchDate: String!
+  branchId: String!
+  cashAmount: Float!
+  cashDenominations: JSON
+  chequeAmount: Float
+  countedBy: [String!]!
+  counters: [String!]
+  foreignCurrencyAmount: Float
+  mobileMoneyAmount: Float
+  organisationId: String!
+  serviceId: String
+  serviceName: String!
 }
 
 input CreateOrganisationInput {
@@ -2732,6 +2860,15 @@ input CreateTransferRequestInput {
   reason: String!
   sourceBranchId: ID!
   transferData: [TransferDataType!]!
+}
+
+input CreateUserFromMemberInput {
+  branchId: ID!
+  email: String!
+  memberId: ID!
+  organisationId: ID!
+  password: String!
+  roleIds: [ID!]!
 }
 
 input CreateUsersWithRoleInput {
@@ -3343,6 +3480,29 @@ type FirstTimeVisitorsStat {
   period: String!
 }
 
+type FiscalPeriodEntity {
+  branchId: String
+  closedAt: DateTime
+  closedBy: String
+  createdAt: DateTime!
+  endDate: DateTime!
+  fiscalYear: Int!
+  id: ID!
+  isAdjustmentPeriod: Boolean!
+  organisationId: String!
+  periodName: String!
+  periodNumber: Int!
+  startDate: DateTime!
+  status: FiscalPeriodStatus!
+  updatedAt: DateTime!
+}
+
+enum FiscalPeriodStatus {
+  CLOSED
+  LOCKED
+  OPEN
+}
+
 type FollowUpReminder {
   actionRequired: String
   assignedToId: String
@@ -3579,12 +3739,25 @@ input GenerateQRTokenInput {
   sessionId: ID!
 }
 
+input GetChartOfAccountsInput {
+  accountType: AccountType
+  branchId: String!
+  organisationId: String!
+}
+
 input GetConversationsInput {
   branchId: String
   organisationId: String
   skip: Int = 0
   status: String
   take: Int = 20
+}
+
+input GetFiscalPeriodInput {
+  branchId: String!
+  fiscalYear: Int!
+  organisationId: String!
+  periodNumber: Int!
 }
 
 input GetMessagesInput {
@@ -3754,6 +3927,52 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 """
 scalar JSON
 
+type JournalEntryEntity {
+  branchId: String
+  createdAt: DateTime!
+  description: String!
+  entryDate: DateTime!
+  entryType: JournalEntryType!
+  fiscalPeriod: Int!
+  fiscalYear: Int!
+  id: ID!
+  isReversed: Boolean!
+  journalEntryNumber: String!
+  organisationId: String!
+  postingDate: DateTime
+  reference: String
+  sourceModule: String!
+  sourceTransactionId: String
+  status: JournalEntryStatus!
+  updatedAt: DateTime!
+}
+
+input JournalEntryLineInput {
+  accountId: String!
+  creditAmount: Float!
+  debitAmount: Float!
+  description: String
+  fundId: String
+  memberId: String
+  ministryId: String
+}
+
+enum JournalEntryStatus {
+  APPROVED
+  DRAFT
+  PENDING_APPROVAL
+  POSTED
+  VOID
+}
+
+enum JournalEntryType {
+  ADJUSTING
+  CLOSING
+  OPENING
+  REVERSING
+  STANDARD
+}
+
 type KpiCard {
   icon: String
   percentChange: Float
@@ -3802,6 +4021,35 @@ enum LicenseType {
   ENTERPRISE
   PREMIUM
   STANDARD
+}
+
+input ListFiscalPeriodsInput {
+  branchId: String!
+  fiscalYear: Int
+  organisationId: String!
+}
+
+input ListJournalEntriesInput {
+  branchId: String!
+  endDate: String
+  fiscalPeriod: Int
+  fiscalYear: Int
+  organisationId: String!
+  skip: Int
+  sourceModule: String
+  startDate: String
+  status: JournalEntryStatus
+  take: Int
+}
+
+input ListOfferingBatchesInput {
+  branchId: String!
+  endDate: String
+  organisationId: String!
+  skip: Int
+  startDate: String
+  status: OfferingBatchStatus
+  take: Int
 }
 
 type LiturgicalElement {
@@ -4520,6 +4768,7 @@ type Mutation {
   addMemberToMinistry(joinDate: String, memberId: ID!, ministryId: ID!, role: String): MinistryMember!
   addParticipants(input: AddParticipantsInput!): [ConversationParticipantDto!]!
   addUserToBranch(branchId: String!, role: String!, userId: String!): User!
+  approveOfferingBatch(id: String!): OfferingBatchEntity!
   archiveConversation(conversationId: String!): ConversationDto!
   archiveForm(id: String!): Form!
   assignBranchRoleToUser(assignedBy: ID, branchId: ID!, roleId: ID!, userId: ID!): UserBranch!
@@ -4546,10 +4795,12 @@ type Mutation {
   checkInChild(input: CheckInInput!): CheckInRecord!
   checkOut(input: AttendanceCheckOutInput!): AttendanceRecord!
   checkOutChild(input: ChildCheckOutInput!): CheckInRecord!
+  closeFiscalPeriod(input: CloseFiscalPeriodInput!): FiscalPeriodEntity!
   completeBaptism(baptismDate: String!, baptismEventId: ID, baptismLocation: String!, baptismOfficiant: String!, birthRegistryId: ID!): BirthRegistry!
   completeFollowUpReminder(id: String!, notes: String): FollowUpReminder!
   completeOnboardingStep(input: CompleteOnboardingStepInput!): OnboardingProgress!
   configureInitialSettings(branchId: ID!, input: InitialSettingsInput!): Boolean!
+  createAccount(input: CreateAccountInput!): AccountEntity!
   createAnnouncement(input: CreateAnnouncementInput!): Announcement!
   createAsset(input: CreateAssetInput!): Asset!
   createAssetType(input: CreateAssetTypeInput!): AssetType!
@@ -4583,6 +4834,7 @@ type Mutation {
   createExpenseCategory(createExpenseCategoryInput: CreateExpenseCategoryInput!): ExpenseCategory!
   createFamily(createFamilyInput: CreateFamilyInput!): Family!
   createFamilyRelationship(createFamilyRelationshipInput: CreateFamilyRelationshipInput!): FamilyRelationship!
+  createFiscalYear(input: CreateFiscalYearInput!): [FiscalPeriodEntity!]!
   createFollowUpFromCareRequest(assignedToId: String!, dueDate: String!, requestId: String!): FollowUpReminder!
   createFollowUpFromSession(assignedToId: String!, dueDate: String!, sessionId: String!): FollowUpReminder!
   createFollowUpFromVisit(assignedToId: String!, dueDate: String!, visitId: String!): FollowUpReminder!
@@ -4592,6 +4844,7 @@ type Mutation {
   createFormFields(inputs: [CreateFormFieldInput!]!): [FormField!]!
   createFund(createFundInput: CreateFundInput!): Fund!
   createGuardian(input: CreateGuardianInput!): Guardian!
+  createJournalEntry(input: CreateJournalEntryInput!): JournalEntryEntity!
   createLicense(input: CreateLicenseInput!): License!
   createMediaItem(createMediaItemInput: CreateMediaItemInput!): MediaItem!
   createMember(createMemberInput: CreateMemberInput!): Member!
@@ -4599,6 +4852,7 @@ type Mutation {
   createMembershipHistoryEntry(createMembershipHistoryInput: CreateMembershipHistoryInput!): Boolean!
   createMinistry(input: CreateMinistryInput!): Ministry!
   createNotification(input: CreateNotificationInput!): NotificationDto!
+  createOfferingBatch(input: CreateOfferingBatchInput!): OfferingBatchEntity!
   createOrganisation(input: CreateOrganisationInput!): Organisation!
   createOrganizationSubscription(input: CreateOrganizationSubscriptionInput!, organizationId: ID!, planId: ID!): Subscription!
   createPastoralVisit(input: CreatePastoralVisitInput!): PastoralVisit!
@@ -4623,10 +4877,12 @@ type Mutation {
   createTemplate(input: CreateEmailTemplateInput!): EmailTemplateDto!
   createTransaction(createTransactionInput: CreateTransactionInput!): Transaction!
   createTransferRequest(input: CreateTransferRequestInput!): TransferRequest!
+  createUserFromMember(input: CreateUserFromMemberInput!): AuthUser!
   createUsersWithRole(input: CreateUsersWithRoleInput!): [CreatedUserResult!]!
   createVendor(createVendorInput: CreateVendorInput!): Vendor!
   createWorkflowTemplate(branchId: String, input: CreateWorkflowTemplateInput!, organisationId: String!): WorkflowTemplate!
   createZone(input: CreateZoneInput!): Zone!
+  deactivateAccount(id: String!): AccountEntity!
   deleteAnnouncement(id: ID!): Announcement!
   deleteAsset(id: String!): Boolean!
   deleteAssetType(id: String!): Boolean!
@@ -4670,6 +4926,8 @@ type Mutation {
   initializeOnboarding(branchId: ID!): OnboardingProgress!
   initiateBranchSetup(input: InitialBranchSetupInput!): ID!
   leaveConversation(conversationId: String!): Boolean!
+  linkMemberToUser(memberId: ID!, userId: ID!): AuthUser!
+  lockFiscalPeriod(input: CloseFiscalPeriodInput!): FiscalPeriodEntity!
   login(input: SignInDto!): AuthPayload!
   logout(input: RefreshTokenInput!): SuccessMessage!
   markAllNotificationsAsRead(userId: ID!): Boolean!
@@ -4677,6 +4935,8 @@ type Mutation {
   markMessagesAsRead(input: MarkAsReadInput!): [MessageReadReceiptDto!]!
   markNotificationAsRead(notificationId: ID!): NotificationDto!
   permanentlyDeleteMember(memberId: String!): Boolean!
+  postJournalEntry(id: String!): JournalEntryEntity!
+  postOfferingToGL(id: String!): OfferingBatchEntity!
   processCardScan(input: CardScanInput!): AttendanceRecord!
   publishForm(id: String!): Form!
   recalculateAssetValues(organisationId: String!): Float!
@@ -4725,11 +4985,13 @@ type Mutation {
   removeUserRole(branchId: String!, role: String!, userId: String!): User!
   removeVendor(id: String!): Vendor!
   removeVolunteerFromEvent(eventId: ID!, volunteerId: ID!): Boolean!
+  reopenFiscalPeriod(input: CloseFiscalPeriodInput!): FiscalPeriodEntity!
   reorderFormFields(fieldIds: [String!]!, formId: String!): [FormField!]!
   resetOnboarding(branchId: ID!): OnboardingProgress!
   resetPassword(newPassword: String!, token: String!): SuccessMessage!
   restoreBackup(input: RestoreBackupInput!): Backup!
   retryWorkflowExecution(executionId: String!): WorkflowExecution!
+  reverseJournalEntry(input: ReverseJournalEntryInput!): JournalEntryEntity!
   saveUserDashboardPreference(branchId: ID!, dashboardType: DashboardType!, layoutConfig: JSON!, organisationId: ID): UserDashboardPreference!
   scheduleAbsenceCheck(input: AbsenceAlertConfigInput!): AbsenceAlertResult!
   scheduleBaptism(baptismDate: String!, baptismEventId: ID, baptismLocation: String, baptismOfficiant: String, birthRegistryId: ID!): BirthRegistry!
@@ -4744,7 +5006,9 @@ type Mutation {
   transferMember(fromBranchId: String!, id: String!, reason: String, toBranchId: String!): Member!
   triggerSubscriptionLifecycleCheck: SubscriptionLifecycleResult!
   triggerWorkflow(input: TriggerWorkflowInput!): WorkflowExecution!
+  unlinkMemberFromUser(userId: ID!): AuthUser!
   update(updateSermonInput: UpdateSermonInput!): Sermon!
+  updateAccount(id: String!, input: UpdateAccountInput!): AccountEntity!
   updateAnnouncement(id: ID!, input: UpdateAnnouncementInput!): Announcement!
   updateAsset(input: UpdateAssetInput!): Asset!
   updateAssetType(input: UpdateAssetTypeInput!): AssetType!
@@ -4813,7 +5077,9 @@ type Mutation {
   uploadMemberImage(file: Upload!, memberId: String!): String!
   uploadOrganisationBrandingFile(file: Upload!, organisationId: ID!): String!
   uploadSacramentalCertificate(file: Upload!, recordId: ID!): SacramentalRecord!
+  verifyOfferingBatch(input: VerifyOfferingBatchInput!): OfferingBatchEntity!
   verifyPaymentAndCreateSubscription(input: VerifyPaymentInput!): Subscription!
+  voidJournalEntry(input: VoidJournalEntryInput!): JournalEntryEntity!
   voidTransaction(input: VoidTransactionInput!): Transaction!
 }
 
@@ -4874,6 +5140,41 @@ type NotificationsWidget {
   notifications: [NotificationItem!]!
   title: String!
   widgetType: WidgetType!
+}
+
+type OfferingBatchEntity {
+  approvedBy: String
+  batchDate: DateTime!
+  batchNumber: String!
+  branchId: String!
+  cashAmount: Float!
+  cashDenominations: JSON
+  chequeAmount: Float!
+  countedBy: [String!]!
+  counters: JSON
+  createdAt: DateTime!
+  discrepancyAmount: Float
+  discrepancyNotes: String
+  foreignCurrencyAmount: Float!
+  id: ID!
+  isPostedToGL: Boolean!
+  journalEntryId: String
+  mobileMoneyAmount: Float!
+  organisationId: String!
+  serviceId: String
+  serviceName: String!
+  status: OfferingBatchStatus!
+  totalAmount: Float!
+  updatedAt: DateTime!
+  verifiedBy: String
+}
+
+enum OfferingBatchStatus {
+  APPROVED
+  COUNTING
+  DEPOSITED
+  POSTED
+  VERIFIED
 }
 
 type OfficiantStats {
@@ -5299,6 +5600,10 @@ type QRCodeToken {
 }
 
 type Query {
+  account(id: String!): AccountEntity!
+  accountBalance(accountId: String!, asOfDate: DateTime): AccountBalanceType!
+  accountByCode(accountCode: String!, branchId: String!, organisationId: String!): AccountEntity!
+  accountHierarchy(accountId: String!): JSON!
   activeCheckIns(branchId: String!, eventId: String): [CheckInRecord!]!
   adminPermission(id: ID!): Permission!
   adminPermissions: [Permission!]!
@@ -5351,6 +5656,7 @@ type Query {
   certificateTemplate(id: ID!): CertificateTemplate!
   certificateTemplatePreview(sacramentalRecordId: ID!, templateId: ID!): String!
   certificateTemplates(denomination: ChurchDenomination, sacramentType: CertificateSacramentType): [CertificateTemplate!]!
+  chartOfAccounts(input: GetChartOfAccountsInput!): [AccountEntity!]!
   checkInHistory(branchId: String!, childId: String, dateFrom: DateTime, dateTo: DateTime, eventId: String): [CheckInRecord!]!
   checkInStats(branchId: String!, dateFrom: DateTime, dateTo: DateTime): CheckInStatsOutput!
   child(id: ID!): Child!
@@ -5371,6 +5677,7 @@ type Query {
   counselingSessions(filter: CounselingSessionFilterInput!, skip: Int! = 0, take: Int! = 50): [CounselingSession!]!
   counselingSessionsCount(filter: CounselingSessionFilterInput!): Int!
   currentChildrenEvents(branchId: String!): [ChildrenEvent!]!
+  currentFiscalPeriod(branchId: String!, organisationId: String!): FiscalPeriodEntity!
   dashboardData(branchId: ID, dashboardType: DashboardType!, organisationId: ID): DashboardData!
   dataOperation(id: ID!): DataOperation!
   dataOperations(filter: DataOperationFilterInput): [DataOperation!]!
@@ -5407,6 +5714,8 @@ type Query {
   findByType(branchId: String, type: String!): [MediaItem!]!
   findOne(id: ID!): Sermon!
   findRecent(branchId: String, limit: Float): [Sermon!]!
+  fiscalPeriod(input: GetFiscalPeriodInput!): FiscalPeriodEntity!
+  fiscalPeriods(input: ListFiscalPeriodsInput!): [FiscalPeriodEntity!]!
   followUpReminder(id: String!): FollowUpReminder!
   followUpReminders(filter: FollowUpReminderFilterInput!, skip: Int! = 0, take: Int! = 50): [FollowUpReminder!]!
   followUpRemindersCount(filter: FollowUpReminderFilterInput!): Int!
@@ -5442,6 +5751,8 @@ type Query {
   guardian(id: ID!): Guardian!
   guardians(branchId: String): [Guardian!]!
   hello: String!
+  journalEntries(input: ListJournalEntriesInput!): JSON!
+  journalEntry(id: String!): JournalEntryEntity!
   license(id: ID!): License!
   licenseByKey(key: String!): License!
   licenses(filter: LicenseFilterInput): [License!]!
@@ -5471,6 +5782,8 @@ type Query {
   myCareRequests(status: String): [CareRequest!]!
   myFollowUpReminders(status: String): [FollowUpReminder!]!
   notifications(branchId: ID, organisationId: ID): [NotificationDto!]!
+  offeringBatch(id: String!): OfferingBatchEntity!
+  offeringBatches(input: ListOfferingBatchesInput!): JSON!
   onboardingProgress(branchId: ID!): OnboardingProgress!
   organisation(id: ID!): Organisation
   organisations: [Organisation!]!
@@ -5554,6 +5867,7 @@ type Query {
   transactions(branchId: String, dateRange: DateRangeInput, eventId: String, fundId: String, organisationId: String, paginationInput: PaginationInput, type: TransactionType, userId: String): PaginatedTransaction!
   transferRequest(id: ID!): TransferRequest!
   transferRequests(filterInput: TransferRequestFilterInput, paginationInput: PaginationInput): PaginatedTransferRequests!
+  trialBalance(branchId: String!, fiscalPeriod: Float!, fiscalYear: Float!, organisationId: String!): JSON!
   upcomingChildrenEvents(branchId: String!): [ChildrenEvent!]!
   upcomingCounselingSessions(counselorId: String, days: Int! = 7): [CounselingSession!]!
   upcomingPastoralVisits(days: Int! = 7): [PastoralVisit!]!
@@ -5820,6 +6134,11 @@ input RestoreBackupInput {
 type RetentionRateStat {
   period: String!
   retention_rate: Float!
+}
+
+input ReverseJournalEntryInput {
+  originalEntryId: String!
+  reason: String!
 }
 
 type Role {
@@ -6610,6 +6929,17 @@ type UpcomingEventsWidget {
   events: [EventItem!]!
   title: String!
   widgetType: WidgetType!
+}
+
+input UpdateAccountInput {
+  accountName: String
+  accountSubType: AccountSubType
+  description: String
+  fundId: String
+  isRestricted: Boolean
+  ministryId: String
+  notes: String
+  parentAccountId: String
 }
 
 input UpdateAnnouncementInput {
@@ -7582,6 +7912,12 @@ type Vendor {
   organisationId: String
 }
 
+input VerifyOfferingBatchInput {
+  discrepancyAmount: Float
+  discrepancyNotes: String
+  id: String!
+}
+
 input VerifyPaymentInput {
   contactEmail: String
   contactName: String
@@ -7593,6 +7929,11 @@ input VerifyPaymentInput {
 type VisitorsStat {
   period: String!
   visitors: Float!
+}
+
+input VoidJournalEntryInput {
+  id: String!
+  reason: String!
 }
 
 input VoidTransactionInput {

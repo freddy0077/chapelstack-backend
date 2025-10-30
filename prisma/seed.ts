@@ -2,11 +2,12 @@ import { PrismaClient } from '@prisma/client';
 import { seedUsers } from './seeders/userSeeder';
 import { seedCoreData } from './seeders/core.seeder';
 import { seedSubscriptionManager } from './seeders/subscription-manager.seeder';
+import { seedFinanceData } from './seeders/finance.seeder';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🚀 Starting user-only database seeding...');
+  console.log('🚀 Starting database seeding...');
 
   // Seed core data (Organisation, Branch, Roles)
   const coreData = await seedCoreData(prisma);
@@ -22,8 +23,8 @@ async function main() {
   console.log('✅ Users seeded for all roles.');
 
   // Seed subscription manager user (optional - can be run separately)
-  const seedSubscriptionManagerUser =
-    process.env.SEED_SUBSCRIPTION_MANAGER === 'true';
+  const seedSubscriptionManagerUser = true
+    // process.env.SEED_SUBSCRIPTION_MANAGER === 'true';
   if (seedSubscriptionManagerUser) {
     console.log('🔧 Seeding subscription manager user...');
     await seedSubscriptionManager(prisma);
@@ -32,6 +33,16 @@ async function main() {
     console.log(
       'ℹ️  Skipping subscription manager user seeding. Set SEED_SUBSCRIPTION_MANAGER=true to include it.',
     );
+  }
+
+  // Seed finance module (Chart of Accounts, Offering Types, Fiscal Periods)
+  const seedFinanceModule = process.env.SEED_FINANCE !== 'false'; // Default to true
+  if (seedFinanceModule) {
+    console.log('🏦 Seeding finance module...');
+    await seedFinanceData(prisma, coreData.organisation.id, coreData.branch.id);
+    console.log('✅ Finance module seeded.');
+  } else {
+    console.log('ℹ️  Skipping finance module seeding. Set SEED_FINANCE=true to include it.');
   }
 }
 

@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class S3UploadService {
+  private readonly logger = new Logger(S3UploadService.name);
   private readonly s3Client: S3Client;
   private readonly region: string;
   private readonly bucketName: string;
@@ -21,13 +22,13 @@ export class S3UploadService {
     try {
       const command = new HeadBucketCommand({ Bucket: this.bucketName });
       await this.s3Client.send(command);
+      this.logger.log(`S3 bucket ${this.bucketName} validated successfully`);
     } catch (error) {
-      if (error.name === 'NotFound') {
-        throw new Error(
-          `S3 bucket ${this.bucketName} does not exist in region ${this.region}`,
-        );
-      }
-      throw error;
+      // Log warning but don't crash the application
+      // This allows the app to start even with invalid/placeholder S3 credentials
+      this.logger.warn(
+        `S3 bucket validation failed: ${error.message}. S3 upload functionality may not work.`,
+      );
     }
   }
 

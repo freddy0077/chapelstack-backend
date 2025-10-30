@@ -172,6 +172,11 @@ model Branch {
   conversations                Conversation[]                @relation("BranchConversations")
   assets                       Asset[]
   assetDisposals               AssetDisposal[]
+  accounts                     Account[]
+  journalEntries               JournalEntry[]
+  fiscalPeriods                FiscalPeriod[]
+  offeringBatches              OfferingBatch[]
+  offeringTypes                OfferingType[]
 
   @@index([organisationId])
 }
@@ -658,6 +663,7 @@ model Member {
   birthRegistryAsChild     BirthRegistry?             @relation("BirthRegistryChild")
   assignedAssets           Asset[]
   approvedDisposals        AssetDisposal[]
+  journalEntryLines        JournalEntryLine[]
 
   @@index([branchId])
   @@index([status])
@@ -878,6 +884,8 @@ model Ministry {
   parent         Ministry?     @relation("SubMinistries", fields: [parentId], references: [id])
   subMinistries  Ministry[]    @relation("SubMinistries")
   smallGroups    SmallGroup[]
+  accounts       Account[]
+  journalEntryLines JournalEntryLine[]
 
   @@index([branchId])
   @@index([organisationId])
@@ -1254,6 +1262,9 @@ model Fund {
   organisation   Organisation?                 @relation(fields: [organisationId], references: [id])
   pledges        Pledge[]
   transactions   Transaction[]                 @relation("FundTransactions")
+  accounts       Account[]
+  journalEntryLines JournalEntryLine[]
+  offeringTypes  OfferingType[]
 
   @@unique([name, organisationId, branchId], name: "fund_unique_constraint")
   @@index([branchId])
@@ -1348,6 +1359,7 @@ model Contribution {
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   organisationId     String?
+  offeringBatchId    String?
   batch              Batch?           @relation(fields: [batchId], references: [id])
   branch             Branch?          @relation(fields: [branchId], references: [id])
   contributionType   ContributionType @relation(fields: [contributionTypeId], references: [id])
@@ -1356,6 +1368,7 @@ model Contribution {
   organisation       Organisation?    @relation(fields: [organisationId], references: [id])
   paymentMethod      PaymentMethod    @relation(fields: [paymentMethodId], references: [id])
   pledge             Pledge?          @relation(fields: [pledgeId], references: [id])
+  offeringBatch      OfferingBatch?   @relation(fields: [offeringBatchId], references: [id])
 
   @@index([contributionTypeId])
   @@index([fundId])
@@ -1367,6 +1380,7 @@ model Contribution {
   @@index([organisationId])
   @@index([date])
   @@index([transactionId])
+  @@index([offeringBatchId])
 }
 
 model Batch {
@@ -2088,6 +2102,11 @@ model Organisation {
   assets                       Asset[]
   assetDisposals               AssetDisposal[]
   assetMaintenances            AssetMaintenance[]
+  accounts                     Account[]
+  journalEntries               JournalEntry[]
+  fiscalPeriods                FiscalPeriod[]
+  offeringBatches              OfferingBatch[]
+  offeringTypes                OfferingType[]
 
   @@index([email])
 }
@@ -2263,6 +2282,9 @@ model Transaction {
   accountingPeriodId String?
   periodClosed       Boolean   @default(false)
 
+  // GL Integration (Backward Compatibility)
+  journalEntryId String? @unique
+
   updatedAt DateTime @updatedAt
   memberId  String?
   eventId   String?
@@ -2277,6 +2299,7 @@ model Transaction {
   auditLogs            TransactionAuditLog[]
   originalTransaction  Transaction?          @relation("TransactionReversal", fields: [originalTransactionId], references: [id])
   reversalTransactions Transaction[]         @relation("TransactionReversal")
+  journalEntry         JournalEntry?         @relation("TransactionJournalEntry", fields: [journalEntryId], references: [id])
 
   @@index([organisationId])
   @@index([branchId])
@@ -2288,6 +2311,7 @@ model Transaction {
   @@index([date])
   @@index([status])
   @@index([isReconciled])
+  @@index([journalEntryId])
 }
 
 model TransferRequest {
@@ -3606,4 +3630,551 @@ model AssetMaintenance {
   @@index([organisationId])
   @@index([assetId])
   @@index([maintenanceDate])
+}
+
+// ============================================
+// FINANCE MODULE - ACCOUNTING SYSTEM
+// ============================================
+
+// Chart of Accounts
+model Account {
+  id                String           @id @default(uuid())
+  accountCode       String           // "1010", "4010"
+  accountName       String           // "Cash - Operating", "Tithe Revenue"
+  accountType       AccountType      // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
+  accountSubType    AccountSubType?
+  parentAccountId   String?
+  normalBalance     BalanceType      // DEBIT or CREDIT
+
+  // Ghana-specific
+  fundId            String?
+  ministryId        String?
+  isRestricted      Boolean          @default(false)
+
+  // Multi-currency
+  currency          String           @default("GHS")
+
+  // Status
+  isActive          Boolean          @default(true)
+  isSystemAccount   Boolean          @default(false)
+
+  // Bank Integration
+  isBankAccount     Boolean          @default(false)
+  bankAccountId     String?          @unique
+
+  // Organization
+  branchId          String?
+  organisationId    String
+
+  // Metadata
+  description       String?
+  notes             String?
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  // Relations
+  parentAccount     Account?         @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
+  subAccounts       Account[]        @relation("AccountHierarchy")
+  journalEntries    JournalEntryLine[]
+  fund              Fund?            @relation(fields: [fundId], references: [id])
+  ministry          Ministry?        @relation(fields: [ministryId], references: [id])
+  branch            Branch?          @relation(fields: [branchId], references: [id])
+  organisation      Organisation     @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  offeringTypes     OfferingType[]
+  bankAccount       BankAccount?     @relation("AccountBankAccount")
+
+  @@unique([accountCode, organisationId, branchId])
+  @@index([accountCode])
+  @@index([accountType])
+  @@index([fundId])
+  @@index([ministryId])
+  @@index([branchId])
+  @@index([organisationId])
+  @@index([isActive])
+}
+
+// Journal Entry (Header)
+model JournalEntry {
+  id                  String              @id @default(uuid())
+  journalEntryNumber  String              @unique // JE-2024-0001
+  entryDate           DateTime
+  postingDate         DateTime?
+
+  // Entry details
+  entryType           JournalEntryType    // STANDARD, ADJUSTING, CLOSING, REVERSING
+  sourceModule        String              // "TRANSACTION", "CONTRIBUTION", "EXPENSE", "OFFERING"
+  sourceTransactionId String?             // Link to original Transaction
+
+  description         String
+  reference           String?
+  memo                String?
+
+  // Financial period
+  fiscalYear          Int
+  fiscalPeriod        Int                 // 1-12
+
+  // Status and workflow
+  status              JournalEntryStatus  @default(DRAFT) // DRAFT, POSTED, VOID
+  isReversed          Boolean             @default(false)
+  reversedById        String?             @unique
+  reversalReason      String?
+
+  // Void tracking
+  voidedBy            String?
+  voidedAt            DateTime?
+  voidReason          String?
+
+  // Approval
+  requiresApproval    Boolean             @default(false)
+  approvedBy          String?
+  approvedAt          DateTime?
+
+  // Organization
+  branchId            String?
+  organisationId      String
+
+  // Audit
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  createdBy           String?
+  updatedBy           String?
+  postedBy            String?
+
+  // Relations
+  lines               JournalEntryLine[]
+  branch              Branch?             @relation(fields: [branchId], references: [id])
+  organisation        Organisation        @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  reversedByEntry     JournalEntry?       @relation("ReversalRelation", fields: [reversedById], references: [id])
+  reversesEntry       JournalEntry?       @relation("ReversalRelation")
+  linkedTransaction   Transaction?        @relation("TransactionJournalEntry")
+  offeringBatches     OfferingBatch[]
+
+  @@index([journalEntryNumber])
+  @@index([entryDate])
+  @@index([postingDate])
+  @@index([status])
+  @@index([sourceModule])
+  @@index([sourceTransactionId])
+  @@index([branchId])
+  @@index([organisationId])
+  @@index([fiscalYear, fiscalPeriod])
+}
+
+// Journal Entry Lines (Detail)
+model JournalEntryLine {
+  id                String         @id @default(uuid())
+  journalEntryId    String
+  lineNumber        Int
+
+  accountId         String
+  description       String?
+
+  // Double-entry amounts
+  debitAmount       Decimal        @default(0) @db.Decimal(15, 2)
+  creditAmount      Decimal        @default(0) @db.Decimal(15, 2)
+
+  // Multi-currency
+  currency          String         @default("GHS")
+  exchangeRate      Decimal?       @db.Decimal(10, 6)
+
+  // Dimensions
+  fundId            String?
+  ministryId        String?
+  memberId          String?        // For contribution tracking
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  journalEntry      JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account           Account        @relation(fields: [accountId], references: [id])
+  fund              Fund?          @relation(fields: [fundId], references: [id])
+  ministry          Ministry?      @relation(fields: [ministryId], references: [id])
+  member            Member?        @relation(fields: [memberId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@index([fundId])
+  @@index([ministryId])
+  @@index([memberId])
+}
+
+// Fiscal Period Management
+model FiscalPeriod {
+  id               String           @id @default(uuid())
+  fiscalYear       Int
+  periodNumber     Int              // 1-12
+  periodName       String           // "January 2024"
+  startDate        DateTime
+  endDate          DateTime
+
+  status           FiscalPeriodStatus @default(OPEN)
+  closedAt         DateTime?
+  closedBy         String?
+
+  isAdjustmentPeriod Boolean        @default(false)
+
+  organisationId   String
+  branchId         String?
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  organisation     Organisation     @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  branch           Branch?          @relation(fields: [branchId], references: [id])
+
+  @@unique([fiscalYear, periodNumber, organisationId, branchId])
+  @@index([fiscalYear, periodNumber])
+  @@index([status])
+  @@index([organisationId])
+  @@index([branchId])
+}
+
+// Offering Batch
+model OfferingBatch {
+  id String @id @default(uuid())
+  batchNumber String @unique // OFR-2024-001
+  batchDate DateTime
+  serviceId String?
+  serviceName String // "Sunday 1st Service"
+
+  // Offering type
+  offeringType OfferingTypeEnum @default(GENERAL)
+
+  // Offering breakdown
+  cashAmount Decimal @db.Decimal(15, 2)
+  mobileMoneyAmount Decimal @default(0) @db.Decimal(15, 2)
+  chequeAmount Decimal @default(0) @db.Decimal(15, 2)
+  foreignCurrencyAmount Decimal @default(0) @db.Decimal(15, 2)
+  totalAmount Decimal @db.Decimal(15, 2)
+
+  // Counting details
+  cashDenominations Json? // {"200": 10, "100": 20, ...}
+  counters Json? // ["John Doe", "Jane Smith"]
+
+  status OfferingBatchStatus @default(COUNTING)
+  countedBy String[]
+  verifierId String?
+  verifiedBy String?
+  verifiedAt DateTime?
+  verificationNotes String?
+  approvedBy String?
+  approvedAt DateTime?
+
+  discrepancyAmount Decimal? @db.Decimal(15, 2)
+  discrepancyNotes String?
+
+  // Deposit
+  depositDate DateTime?
+  depositSlipNumber String?
+
+  // GL Integration
+  journalEntryId String? @unique
+  isPostedToGL Boolean @default(false)
+
+  branchId String
+  organisationId String
+
+  contributions Contribution[]
+  journalEntry JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  version Int @default(1)
+
+  @@index([batchNumber])
+  @@index([batchDate])
+  @@index([status])
+  @@index([isPostedToGL])
+  @@index([branchId])
+  @@index([organisationId])
+}
+
+// Offering Type
+model OfferingType {
+  id String @id @default(uuid())
+  name String // "Tithes", "Harvest", "Building Fund"
+  description String?
+
+  // GL Integration
+  revenueAccountId String? // Auto-post to this account
+  fundId String? // Auto-allocate to fund
+
+  isActive Boolean @default(true)
+  displayOrder Int @default(0)
+
+  branchId String?
+  organisationId String
+
+  revenueAccount Account? @relation(fields: [revenueAccountId], references: [id])
+  fund Fund? @relation(fields: [fundId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, organisationId, branchId])
+  @@index([isActive])
+  @@index([branchId])
+  @@index([organisationId])
+  @@index([fundId])
+  @@index([revenueAccountId])
+}
+
+// Enums
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum AccountSubType {
+  // Assets
+  CASH_AND_BANK
+  MOBILE_MONEY
+  ACCOUNTS_RECEIVABLE
+  PREPAID_EXPENSE
+  FIXED_ASSET
+  OTHER_ASSET
+
+  // Liabilities
+  ACCOUNTS_PAYABLE
+  ACCRUED_EXPENSE
+  LOAN_PAYABLE
+  OTHER_LIABILITY
+
+  // Equity
+  NET_ASSETS_UNRESTRICTED
+  NET_ASSETS_RESTRICTED
+  RETAINED_EARNINGS
+
+  // Revenue
+  TITHE_INCOME
+  OFFERING_INCOME
+  DONATION_INCOME
+  PROGRAM_INCOME
+  OTHER_INCOME
+
+  // Expenses
+  MINISTRY_EXPENSE
+  ADMINISTRATIVE_EXPENSE
+  FACILITY_EXPENSE
+  SALARY_EXPENSE
+  OTHER_EXPENSE
+}
+
+enum BalanceType {
+  DEBIT
+  CREDIT
+}
+
+enum JournalEntryType {
+  STANDARD
+  ADJUSTING
+  CLOSING
+  REVERSING
+  OPENING
+}
+
+enum JournalEntryStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  POSTED
+  VOID
+}
+
+enum FiscalPeriodStatus {
+  OPEN
+  CLOSED
+  LOCKED
+}
+
+enum OfferingBatchStatus {
+  COUNTING
+  PENDING_VERIFICATION
+  VERIFIED
+  APPROVED
+  DEPOSITED
+  POSTED
+  REJECTED
+}
+
+enum BankAccountStatus {
+  ACTIVE
+  INACTIVE
+  CLOSED
+}
+
+enum ReconciliationStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  RECONCILED
+  REJECTED
+  VOIDED
+}
+
+enum OfferingTypeEnum {
+  GENERAL
+  TITHE
+  SPECIAL
+  BUILDING
+  MISSIONS
+  THANKSGIVING
+}
+
+// ============================================
+// BANK ACCOUNT MODELS
+// ============================================
+
+model BankAccount {
+  id                String                @id @default(uuid())
+  
+  // GL Integration
+  glAccountId       String                @unique
+  glAccount         Account               @relation("AccountBankAccount", fields: [glAccountId], references: [id])
+  
+  // Bank Details
+  accountName       String
+  bankName          String
+  accountNumber     String
+  accountType       String
+  currency          String                @default("GHS")
+  
+  // Balances
+  bankBalance       Decimal               @default(0) @db.Decimal(15, 2)
+  lastReconciled    DateTime?
+  status            BankAccountStatus     @default(ACTIVE)
+  
+  organisationId    String
+  branchId          String
+  
+  // Relations
+  reconciliations   BankReconciliation[]
+  statements        BankStatement[]
+  
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  @@index([organisationId, branchId])
+  @@index([status])
+}
+
+model BankReconciliation {
+  id                    String                @id @default(uuid())
+  
+  // Bank Account
+  bankAccountId         String
+  bankAccount           BankAccount           @relation(fields: [bankAccountId], references: [id])
+  
+  // Reconciliation Details
+  reconciliationDate    DateTime
+  bankStatementBalance  Decimal               @db.Decimal(15, 2)
+  bookBalance           Decimal               @db.Decimal(15, 2)
+  adjustedBalance       Decimal               @db.Decimal(15, 2)
+  difference            Decimal               @db.Decimal(15, 2)
+  
+  // Cleared Transactions
+  clearedTransactions   Json                  // Array of transaction IDs
+  notes                 String?
+  
+  // Reconciliation Tracking
+  reconciledBy          String
+  reconciledAt          DateTime              @default(now())
+  status                ReconciliationStatus  @default(DRAFT)
+  
+  // Maker-Checker Fields
+  preparedBy            String?
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  approvedBy            String?
+  approvedAt            DateTime?
+  
+  // Supporting Documentation
+  bankStatementFileUrl  String?
+  
+  organisationId        String
+  branchId              String
+  
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  version               Int                   @default(1)
+  
+  @@index([bankAccountId])
+  @@index([organisationId, branchId])
+  @@index([reconciliationDate])
+  @@index([status])
+}
+
+model BankStatement {
+  id                String       @id @default(uuid())
+  
+  // Bank Account
+  bankAccountId     String
+  bankAccount       BankAccount  @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  
+  // File Details
+  fileUrl           String
+  fileName          String
+  fileSize          Int          // Size in bytes
+  fileType          String       // MIME type (e.g., 'application/pdf', 'text/csv')
+  
+  // Statement Details
+  statementDate     DateTime     // Date of the bank statement
+  statementPeriod   String?      // e.g., "January 2025", "Q1 2025"
+  
+  // Metadata
+  uploadedBy        String
+  uploadedAt        DateTime     @default(now())
+  
+  organisationId    String
+  branchId          String
+  
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  @@index([bankAccountId])
+  @@index([organisationId, branchId])
+  @@index([statementDate])
+}
+
+model BankAccountAuditLog {
+  id              String   @id @default(uuid())
+  
+  // Entity Information
+  entityType      String   // 'BANK_ACCOUNT', 'BANK_RECONCILIATION', 'BANK_STATEMENT'
+  entityId        String
+  
+  // Action Details
+  action          String   // 'CREATE', 'UPDATE', 'DELETE', 'VIEW', 'RECONCILE', 'UPLOAD'
+  changes         Json?    // Before/after values for updates
+  
+  // User Information
+  userId          String
+  userEmail       String?
+  ipAddress       String?
+  userAgent       String?
+  
+  // Context
+  organisationId  String
+  branchId        String?
+  
+  // Metadata
+  timestamp       DateTime @default(now())
+  
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([organisationId])
+  @@index([timestamp])
+  @@index([action])
 }

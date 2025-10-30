@@ -15,6 +15,8 @@ import { BranchesModule } from './branches/branches.module';
 import { OrganisationModule } from './organisation/organisation.module';
 import { SettingsModule } from './settings/settings.module';
 import { Branch } from './branches/entities/branch.entity';
+import { BankAccountEntity } from './finance/entities/bank-account.entity';
+import { AccountEntity } from './finance/entities/account.entity';
 import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { AdminModule } from './admin/admin.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -83,7 +85,7 @@ registerEnumType(AttendanceStatsPeriod, {
         'subscriptions-transport-ws': true,
       },
       buildSchemaOptions: {
-        orphanedTypes: [Branch],
+        orphanedTypes: [Branch, BankAccountEntity, AccountEntity],
         scalarsMap: [
           { type: Date, scalar: GraphQLISODateTime },
           { type: () => Object, scalar: GraphQLJSON },

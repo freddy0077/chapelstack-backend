@@ -1,0 +1,338 @@
+// ============================================
+// FINANCE MODULE - PRISMA SCHEMA ADDITIONS
+// ============================================
+// Date: 2025-10-28
+// Purpose: Add finance models to main schema.prisma
+// Instructions: Copy these models into schema.prisma
+// ============================================
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum AccountSubType {
+  CURRENT_ASSET
+  FIXED_ASSET
+  CURRENT_LIABILITY
+  LONG_TERM_LIABILITY
+  RETAINED_EARNINGS
+  OPERATING_REVENUE
+  NON_OPERATING_REVENUE
+  OPERATING_EXPENSE
+  NON_OPERATING_EXPENSE
+  BANK_ACCOUNT
+  CASH
+  ACCOUNTS_RECEIVABLE
+  ACCOUNTS_PAYABLE
+}
+
+enum BalanceType {
+  DEBIT
+  CREDIT
+}
+
+enum BankAccountStatus {
+  ACTIVE
+  INACTIVE
+  CLOSED
+}
+
+enum ReconciliationStatus {
+  RECONCILED
+  PENDING
+  VOIDED
+}
+
+enum OfferingType {
+  GENERAL
+  TITHE
+  SPECIAL
+  BUILDING
+  MISSIONS
+  THANKSGIVING
+}
+
+enum OfferingBatchStatus {
+  COUNTING
+  PENDING_VERIFICATION
+  VERIFIED
+  APPROVED
+  POSTED
+  REJECTED
+}
+
+enum JournalEntryType {
+  STANDARD
+  ADJUSTING
+  CLOSING
+  REVERSING
+  OPENING
+}
+
+enum JournalEntryStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+model Account {
+  id                String            @id @default(uuid())
+  accountCode       String            @unique
+  accountName       String
+  accountType       AccountType
+  accountSubType    AccountSubType?
+  normalBalance     BalanceType
+  description       String?
+  notes             String?
+  parentAccountId   String?
+  fundId            String?
+  ministryId        String?
+  isActive          Boolean           @default(true)
+  isSystemAccount   Boolean           @default(false)
+  isRestricted      Boolean           @default(false)
+  currency          String            @default("GHS")
+  
+  // Bank Integration
+  isBankAccount     Boolean           @default(false)
+  bankAccountId     String?           @unique
+  
+  organisationId    String
+  branchId          String?
+  createdBy         String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  // Relations
+  journalEntryLines JournalEntryLine[]
+  parentAccount     Account?          @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
+  subAccounts       Account[]         @relation("AccountHierarchy")
+  bankAccount       BankAccount?      @relation("AccountBankAccount")
+  
+  @@index([organisationId, branchId])
+  @@index([accountType])
+  @@index([parentAccountId])
+}
+
+model BankAccount {
+  id                String                @id @default(uuid())
+  
+  // GL Integration
+  glAccountId       String                @unique
+  glAccount         Account               @relation("AccountBankAccount", fields: [glAccountId], references: [id])
+  
+  // Bank Details
+  accountName       String
+  bankName          String
+  accountNumber     String
+  accountType       String
+  currency          String                @default("GHS")
+  
+  // Balances
+  bankBalance       Decimal               @default(0) @db.Decimal(15, 2)
+  lastReconciled    DateTime?
+  status            BankAccountStatus     @default(ACTIVE)
+  
+  organisationId    String
+  branchId          String
+  
+  // Relations
+  reconciliations   BankReconciliation[]
+  
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  @@index([organisationId, branchId])
+  @@index([status])
+}
+
+model BankReconciliation {
+  id                    String                @id @default(uuid())
+  
+  // Bank Account
+  bankAccountId         String
+  bankAccount           BankAccount           @relation(fields: [bankAccountId], references: [id])
+  
+  // Reconciliation Details
+  reconciliationDate    DateTime
+  bankStatementBalance  Decimal               @db.Decimal(15, 2)
+  bookBalance           Decimal               @db.Decimal(15, 2)
+  adjustedBalance       Decimal               @db.Decimal(15, 2)
+  difference            Decimal               @db.Decimal(15, 2)
+  
+  // Cleared Transactions
+  clearedTransactions   Json                  // Array of transaction IDs
+  notes                 String?
+  
+  // Reconciliation Tracking
+  reconciledBy          String
+  reconciledAt          DateTime              @default(now())
+  status                ReconciliationStatus  @default(RECONCILED)
+  
+  organisationId        String
+  branchId              String
+  
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  @@index([bankAccountId])
+  @@index([organisationId, branchId])
+  @@index([reconciliationDate])
+}
+
+model OfferingBatch {
+  id                    String                @id @default(uuid())
+  batchNumber           String                @unique
+  batchDate             DateTime
+  serviceName           String
+  serviceId             String?
+  
+  // Offering Type
+  offeringType          OfferingType          @default(GENERAL)
+  
+  // Amounts
+  cashAmount            Decimal               @default(0) @db.Decimal(15, 2)
+  mobileMoneyAmount     Decimal               @default(0) @db.Decimal(15, 2)
+  chequeAmount          Decimal               @default(0) @db.Decimal(15, 2)
+  foreignCurrencyAmount Decimal               @default(0) @db.Decimal(15, 2)
+  totalAmount           Decimal               @db.Decimal(15, 2)
+  
+  // Details
+  cashDenominations     Json?                 // Cash breakdown
+  counters              Json?                 // Counter details
+  countedBy             String[]              // Array of user IDs
+  
+  // Verification
+  verifierId            String?               // Who should verify
+  verifiedBy            String?               // Who verified
+  verifiedAt            DateTime?
+  verificationNotes     String?
+  
+  // Approval
+  approvedBy            String?
+  approvedAt            DateTime?
+  
+  // Discrepancy
+  discrepancyAmount     Decimal?              @db.Decimal(15, 2)
+  discrepancyNotes      String?
+  
+  // Status
+  status                OfferingBatchStatus
+  isPostedToGL          Boolean               @default(false)
+  journalEntryId        String?
+  
+  organisationId        String
+  branchId              String
+  
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  @@index([organisationId, branchId])
+  @@index([status])
+  @@index([batchDate])
+}
+
+model JournalEntry {
+  id                  String              @id @default(uuid())
+  journalEntryNumber  String              @unique
+  entryDate           DateTime
+  postingDate         DateTime?
+  entryType           JournalEntryType
+  sourceModule        String
+  sourceTransactionId String?
+  description         String
+  reference           String?
+  fiscalYear          Int
+  fiscalPeriod        Int
+  status              JournalEntryStatus
+  isReversed          Boolean             @default(false)
+  
+  // Void Tracking
+  voidedBy            String?
+  voidedAt            DateTime?
+  voidReason          String?
+  
+  // Creator
+  createdBy           String?
+  postedBy            String?
+  
+  organisationId      String
+  branchId            String?
+  
+  // Relations
+  lines               JournalEntryLine[]
+  
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  
+  @@index([organisationId, branchId])
+  @@index([status])
+  @@index([fiscalYear, fiscalPeriod])
+  @@index([entryDate])
+}
+
+model JournalEntryLine {
+  id              String        @id @default(uuid())
+  journalEntryId  String
+  journalEntry    JournalEntry  @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  
+  accountId       String
+  account         Account       @relation(fields: [accountId], references: [id])
+  
+  debitAmount     Decimal       @default(0) @db.Decimal(15, 2)
+  creditAmount    Decimal       @default(0) @db.Decimal(15, 2)
+  
+  description     String?
+  fundId          String?
+  ministryId      String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([journalEntryId])
+  @@index([accountId])
+}
+
+model FiscalPeriod {
+  id              String    @id @default(uuid())
+  fiscalYear      Int
+  periodNumber    Int
+  periodName      String
+  startDate       DateTime
+  endDate         DateTime
+  status          String    // OPEN, CLOSED, LOCKED
+  
+  organisationId  String
+  branchId        String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@unique([organisationId, fiscalYear, periodNumber])
+  @@index([organisationId, branchId])
+  @@index([status])
+}
+
+// ============================================
+// MIGRATION NOTES
+// ============================================
+// 
+// To add these models to your schema:
+// 1. Copy all enums to the top of schema.prisma
+// 2. Copy all models to schema.prisma
+// 3. Run: npx prisma format
+// 4. Run: npx prisma migrate dev --name add_finance_models
+// 5. Run: npx prisma generate
+//
+// ============================================

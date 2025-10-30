@@ -856,8 +856,8 @@ export class TransactionService {
       memberId,
       memberName: `${member.firstName} ${member.lastName}`,
       memberEmail: member.email || undefined,
-      periodStart: dateRange.startDate,
-      periodEnd: dateRange.endDate,
+      periodStart: dateRange.startDate || new Date(0), // Default to epoch if not provided
+      periodEnd: dateRange.endDate || new Date(), // Default to now if not provided
       totalGiving,
       contributionCount,
       averageGift,
