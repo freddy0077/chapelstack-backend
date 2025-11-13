@@ -51,14 +51,14 @@ export class SettingsResolver {
   // ==================== BRANCH SETTINGS ====================
 
   @Query(() => BranchSettingsEntity, { name: 'branchSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getBranchSettings(@Context() context: any) {
     const branchId = context.req.user.branchId;
     return this.branchSettings.getBranchSettings(branchId);
   }
 
   @Mutation(() => BranchSettingsEntity, { name: 'updateBranchSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updateBranchSettings(
     @Args('input') input: UpdateBranchSettingsInput,
     @Context() context: any,
@@ -69,7 +69,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => BranchSettingsEntity, { name: 'updateBranding' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updateBranding(
     @Args('input') input: UpdateBrandingInput,
     @Context() context: any,
@@ -80,7 +80,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => BranchSettingsEntity, { name: 'updateCurrency' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updateCurrency(
     @Args('input') input: UpdateCurrencyInput,
     @Context() context: any,
@@ -91,7 +91,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => BranchSettingsEntity, { name: 'updateAttendanceType' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updateAttendanceType(
     @Args('input') input: UpdateAttendanceTypeInput,
     @Context() context: any,
@@ -104,7 +104,7 @@ export class SettingsResolver {
   // ==================== EMAIL SETTINGS ====================
 
   @Query(() => EmailSettingsEntity, { name: 'emailSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getEmailSettings(
     @Args('branchId', { nullable: true }) branchId?: string,
     @Context() context?: any,
