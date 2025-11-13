@@ -72,7 +72,7 @@ export class SermonsResolver {
 
   @Query(() => [SermonEntity])
   async findRecent(
-    @Args('limit', { nullable: true }) limit?: number,
+    @Args('limit', { type: () => Number, nullable: true }) limit?: number,
     @Args('branchId', { nullable: true }) branchId?: string,
   ): Promise<SermonEntity[]> {
     const sermons = await this.sermonsService.findRecent(limit, branchId);

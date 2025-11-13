@@ -146,7 +146,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => Boolean, { name: 'sendTestEmail' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async sendTestEmail(
     @Args('input') input: SendTestEmailInput,
     @Args('branchId', { nullable: true }) branchId?: string,
@@ -163,14 +163,14 @@ export class SettingsResolver {
   // ==================== SMS SETTINGS ====================
 
   @Query(() => SmsSettingsEntity, { name: 'smsSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getSmsSettings(@Context() context: any) {
     const branchId = context.req.user.branchId;
     return this.smsSettings.getSmsSettings(branchId);
   }
 
   @Mutation(() => SmsSettingsEntity, { name: 'updateSmsSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updateSmsSettings(
     @Args('input') input: UpdateSmsSettingsInput,
     @Context() context: any,
@@ -181,7 +181,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => Boolean, { name: 'testSmsConnection' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async testSmsConnection(@Context() context: any) {
     const branchId = context.req.user.branchId;
     const userId = context.req.user.id;
@@ -189,7 +189,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => Boolean, { name: 'sendTestSms' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async sendTestSms(
     @Args('input') input: SendTestSmsInput,
     @Context() context: any,
@@ -202,14 +202,14 @@ export class SettingsResolver {
   // ==================== PAYMENT SETTINGS ====================
 
   @Query(() => PaymentSettingsEntity, { name: 'paymentSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getPaymentSettings(@Context() context: any) {
     const branchId = context.req.user.branchId;
     return this.paymentSettings.getPaymentSettings(branchId);
   }
 
   @Mutation(() => PaymentSettingsEntity, { name: 'updatePaymentSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updatePaymentSettings(
     @Args('input') input: UpdatePaymentSettingsInput,
     @Context() context: any,
@@ -220,7 +220,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => PaymentSettingsEntity, { name: 'updatePaymentGateway' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updatePaymentGateway(
     @Args('input') input: UpdateGatewayInput,
     @Context() context: any,
@@ -231,7 +231,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => Boolean, { name: 'validatePaymentGateway' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async validatePaymentGateway(@Args('input') input: ValidateGatewayInput) {
     return this.paymentSettings.validateGatewayCredentials(input.gateway, input.credentials);
   }
@@ -239,14 +239,14 @@ export class SettingsResolver {
   // ==================== MODULE SETTINGS ====================
 
   @Query(() => ModuleSettingsEntity, { name: 'moduleSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getModuleSettings(@Context() context: any) {
     const branchId = context.req.user.branchId;
     return this.moduleSettings.getModuleSettings(branchId);
   }
 
   @Mutation(() => ModuleSettingsEntity, { name: 'updateModuleSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updateModuleSettings(
     @Args('input') input: UpdateModuleSettingsInput,
     @Context() context: any,
@@ -257,7 +257,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => ModuleSettingsEntity, { name: 'toggleModule' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async toggleModule(
     @Args('input') input: ToggleModuleInput,
     @Context() context: any,
@@ -268,7 +268,7 @@ export class SettingsResolver {
   }
 
   @Query(() => EnabledModulesEntity, { name: 'enabledModules' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getEnabledModules(@Context() context: any) {
     const branchId = context.req.user.branchId;
     const modules = await this.moduleSettings.getEnabledModules(branchId);
@@ -278,14 +278,14 @@ export class SettingsResolver {
   // ==================== MOBILE APP SETTINGS ====================
 
   @Query(() => MobileAppSettingsEntity, { name: 'mobileAppSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getMobileAppSettings(@Context() context: any) {
     const branchId = context.req.user.branchId;
     return this.mobileAppSettings.getMobileAppSettings(branchId);
   }
 
   @Mutation(() => MobileAppSettingsEntity, { name: 'updateMobileAppSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updateMobileAppSettings(
     @Args('input') input: UpdateMobileAppSettingsInput,
     @Context() context: any,
@@ -296,7 +296,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => MobileAppSettingsEntity, { name: 'updateAppBranding' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updateAppBranding(
     @Args('input') input: UpdateAppBrandingInput,
     @Context() context: any,
@@ -307,7 +307,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => MobileAppSettingsEntity, { name: 'toggleAppFeature' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async toggleAppFeature(
     @Args('input') input: ToggleFeatureInput,
     @Context() context: any,
@@ -320,14 +320,14 @@ export class SettingsResolver {
   // ==================== BACKUP SETTINGS ====================
 
   @Query(() => BackupSettingsEntity, { name: 'backupSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getBackupSettings(@Context() context: any) {
     const branchId = context.req.user.branchId;
     return this.backupService.getBackupSettings(branchId);
   }
 
   @Mutation(() => BackupSettingsEntity, { name: 'updateBackupSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async updateBackupSettings(
     @Args('input') input: UpdateBackupSettingsInput,
     @Context() context: any,
@@ -338,7 +338,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => BackupEntity, { name: 'createBackup' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async createBackup(@Context() context: any) {
     const branchId = context.req.user.branchId;
     const userId = context.req.user.id;
@@ -346,7 +346,7 @@ export class SettingsResolver {
   }
 
   @Query(() => [BackupEntity], { name: 'backups' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async listBackups(
     @Args('limit', { type: () => Number, nullable: true, defaultValue: 50 }) limit: number,
     @Context() context: any,
@@ -356,7 +356,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => Boolean, { name: 'deleteBackup' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async deleteBackup(
     @Args('backupId', { type: () => ID }) backupId: string,
     @Context() context: any,
@@ -366,7 +366,7 @@ export class SettingsResolver {
   }
 
   @Mutation(() => Boolean, { name: 'restoreBackup' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN')
   async restoreBackup(
     @Args('input') input: RestoreBackupInput,
     @Context() context: any,
@@ -378,7 +378,7 @@ export class SettingsResolver {
   // ==================== AUDIT LOGS ====================
 
   @Query(() => AuditLogListEntity, { name: 'settingsAuditLogs' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getAuditLogs(
     @Args('filters', { nullable: true }) filters: AuditLogFilterInput,
     @Context() context: any,
@@ -392,7 +392,7 @@ export class SettingsResolver {
   }
 
   @Query(() => AuditStatisticsEntity, { name: 'auditStatistics' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getAuditStatistics(
     @Args('days', { type: () => Number, nullable: true, defaultValue: 30 }) days: number,
     @Context() context: any,
@@ -402,7 +402,7 @@ export class SettingsResolver {
   }
 
   @Query(() => [ActiveUserEntity], { name: 'mostActiveUsers' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getMostActiveUsers(
     @Args('limit', { type: () => Number, nullable: true, defaultValue: 10 }) limit: number,
     @Context() context: any,
@@ -412,7 +412,7 @@ export class SettingsResolver {
   }
 
   @Query(() => [ChangedSettingEntity], { name: 'mostChangedSettings' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getMostChangedSettings(
     @Args('limit', { type: () => Number, nullable: true, defaultValue: 10 }) limit: number,
     @Context() context: any,
@@ -422,7 +422,7 @@ export class SettingsResolver {
   }
 
   @Query(() => String, { name: 'exportAuditLogs' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async exportAuditLogs(
     @Args('filters', { nullable: true }) filters: AuditLogFilterInput,
     @Context() context: any,
