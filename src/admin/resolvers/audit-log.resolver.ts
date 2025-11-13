@@ -47,7 +47,7 @@ export class AuditLogResolver {
   }
 
   @Query(() => AuditLogsResponse, { name: 'auditLogs' })
-  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async getAuditLogs(
     @CurrentUser() user: any,
     @Args('organisationId', { type: () => String }) organisationId: string,

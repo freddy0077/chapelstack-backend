@@ -65,13 +65,13 @@ export class FinanceMonthlyTrendDto {
   @Field(() => Int)
   year: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   contributions: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   expenses: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   netIncome: number;
 }
 

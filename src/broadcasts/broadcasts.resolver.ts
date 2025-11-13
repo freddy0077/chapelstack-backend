@@ -4,6 +4,7 @@ import GraphQLJSON from 'graphql-type-json';
 import { BroadcastsService } from './broadcasts.service';
 import { BroadcastEntity } from './entities/broadcast.entity';
 import { BroadcastPlatformEntity } from './entities/broadcast-platform.entity';
+import { ConnectedPlatformEntity } from './entities/connected-platform.entity';
 import { CreateBroadcastInput } from './dto/create-broadcast.input';
 import { UpdateBroadcastInput } from './dto/update-broadcast.input';
 import { BroadcastFilterInput } from './dto/broadcast-filter.input';
@@ -182,7 +183,7 @@ export class BroadcastsResolver {
   }
 
   // Platform Credentials Management
-  @Query(() => [GraphQLJSON], { name: 'connectedPlatforms' })
+  @Query(() => [ConnectedPlatformEntity], { name: 'connectedPlatforms' })
   async getConnectedPlatforms(@Context() context: any) {
     const organisationId = context.req.user.organisationId;
     return this.platformCredentials.getConnectedPlatforms(organisationId);

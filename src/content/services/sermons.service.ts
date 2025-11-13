@@ -128,6 +128,7 @@ export class SermonsService {
       categoryId,
       notesUrl,
       organisationId,
+      branchId,
       ...data
     } = updateSermonInput;
 
@@ -171,6 +172,9 @@ export class SermonsService {
     }
     if (organisationId) {
       updateData.organisationId = organisationId;
+    }
+    if (branchId) {
+      updateData.branch = { connect: { id: branchId } };
     }
 
     return this.prisma.sermon.update({
