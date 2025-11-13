@@ -57,31 +57,31 @@ export class TopGivingBranch {
   @Field(() => String)
   branchName: string;
 
-  @Field(() => Int)
+  @Field(() => Number)
   totalGiven: number;
 }
 
 @ObjectType()
 export class FinancialOverview {
-  @Field(() => Int)
+  @Field(() => Number)
   totalContributions: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   tithes: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   expenses: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   pledge: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   offering: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   donation: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   specialContribution: number;
 
   @Field(() => [TopGivingBranch])

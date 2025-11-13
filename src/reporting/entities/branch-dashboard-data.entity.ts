@@ -50,7 +50,7 @@ export class MemberStatsDto {
   @Field(() => Int)
   newMembersThisMonth: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   growthRate: number;
 
   @Field(() => [MemberMonthlyTrendDto])
@@ -134,7 +134,7 @@ export class AttendanceStatsDto {
   @Field(() => Int)
   averageAttendance: number;
 
-  @Field(() => Int)
+  @Field(() => Number)
   growthRate: number;
 
   @Field(() => [AttendanceMonthlyTrendDto])
