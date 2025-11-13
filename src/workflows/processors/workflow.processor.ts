@@ -3,8 +3,8 @@ import { Process, Processor } from '@nestjs/bull';
 import type { Job } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WorkflowExecutionService } from '../services/workflow-execution.service';
-import { EmailService } from '../../communications/services/email.service';
-import { SmsService } from '../../communications/services/sms.service';
+import { InjectQueue } from '@nestjs/bull';
+import type { Queue } from 'bull';
 import { NotificationService } from '../../communications/services/notification.service';
 
 @Injectable()
@@ -15,8 +15,7 @@ export class WorkflowProcessor {
   constructor(
     private prisma: PrismaService,
     private workflowExecutionService: WorkflowExecutionService,
-    private emailService: EmailService,
-    private smsService: SmsService,
+    @InjectQueue('notifications') private readonly notificationsQueue: Queue,
     private notificationService: NotificationService,
   ) {}
 
@@ -176,12 +175,15 @@ export class WorkflowProcessor {
     // Determine recipients
     const recipientList = await this.resolveRecipients(recipients, execution);
 
-    // Send email
-    const result = await this.emailService.sendEmail({
-      subject: personalizedSubject,
-      bodyHtml: htmlBody,
-      bodyText: personalizedBody, // Fallback plain text version
-      recipients: recipientList,
+    // Enqueue email via notifications queue (processed by Engagement NotificationsProcessor)
+    const result = await this.notificationsQueue.add('send', {
+      channel: 'EMAIL',
+      recipients: recipientList.map((id: string) => ({ id })),
+      variables: {
+        subject: personalizedSubject,
+        html: htmlBody,
+        text: personalizedBody,
+      },
       branchId: execution.branchId,
       organisationId: execution.organisationId,
     });
@@ -206,10 +208,13 @@ export class WorkflowProcessor {
     // Determine recipients
     const recipientList = await this.resolveRecipients(recipients, execution);
 
-    // Send SMS
-    const result = await this.smsService.sendSms({
-      message: personalizedMessage,
-      recipients: recipientList,
+    // Enqueue SMS via notifications queue (processed by Engagement NotificationsProcessor)
+    const result = await this.notificationsQueue.add('send', {
+      channel: 'SMS',
+      recipients: recipientList.map((id: string) => ({ id })),
+      variables: {
+        message: personalizedMessage,
+      },
       branchId: execution.branchId,
       organisationId: execution.organisationId,
     });

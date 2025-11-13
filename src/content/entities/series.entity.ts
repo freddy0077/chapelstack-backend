@@ -5,7 +5,7 @@ export class SeriesEntity {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   title: string;
 
   @Field({ nullable: true })
@@ -23,15 +23,15 @@ export class SeriesEntity {
   @Field({ nullable: true })
   artworkUrl?: string;
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 
-  @Field()
+  @Field(() => String)
   branchId: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

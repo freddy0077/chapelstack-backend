@@ -9,10 +9,10 @@ export class SmsMessage {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   body: string;
 
-  @Field()
+  @Field(() => String)
   senderNumber: string;
 
   @Field(() => [String])
@@ -36,9 +36,9 @@ export class SmsMessage {
   @Field(() => String, { nullable: true })
   organisationId?: string | null;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

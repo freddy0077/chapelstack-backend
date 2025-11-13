@@ -18,7 +18,7 @@ export class BackupResolver {
   constructor(private readonly backupService: BackupService) {}
 
   @Mutation(() => Backup)
-  @Roles('SUPER_ADMIN') // Restrict to super admins only for security
+  @Roles('ADMIN') // Restrict to super admins only for security
   async createBackup(
     @Args('input') input: CreateBackupInput,
     @Context() context: any,
@@ -36,7 +36,7 @@ export class BackupResolver {
   }
 
   @Query(() => Backup)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async backup(
     @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
   ): Promise<Backup> {
@@ -44,7 +44,7 @@ export class BackupResolver {
   }
 
   @Query(() => [Backup])
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async backups(
     @Args('filter', { nullable: true }) filter?: BackupFilterInput,
   ): Promise<Backup[]> {
@@ -52,7 +52,7 @@ export class BackupResolver {
   }
 
   @Mutation(() => Backup)
-  @Roles('SUPER_ADMIN') // Restrict to super admins only for security
+  @Roles('ADMIN') // Restrict to super admins only for security
   async restoreBackup(
     @Args('input') input: RestoreBackupInput,
     @Context() context: any,

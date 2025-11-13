@@ -1,7 +1,7 @@
 import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
 import { SystemAdminService } from '../services/system-admin.service';
 import { SystemHealth } from '../entities/system-health.entity';
-import { Announcement } from '../entities/announcement.entity';
+import { SystemAnnouncement } from '../entities/announcement.entity';
 import { UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -18,12 +18,12 @@ export class SystemAdminResolver {
   constructor(private readonly systemAdminService: SystemAdminService) {}
 
   @Query(() => SystemHealth, { name: 'systemHealth' })
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  @Roles('ADMIN', 'SYSTEM_ADMIN')
   async getSystemHealth() {
     return this.systemAdminService.getSystemHealth();
   }
 
-  @Query(() => [Announcement], { name: 'announcements' })
+  @Query(() => [SystemAnnouncement], { name: 'announcements' })
   async getAnnouncements(
     @CurrentUser() user: any,
     @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
@@ -31,8 +31,8 @@ export class SystemAdminResolver {
     return this.systemAdminService.getActiveAnnouncements(user.id, branchId);
   }
 
-  @Mutation(() => Announcement)
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  @Mutation(() => SystemAnnouncement)
+  @Roles('ADMIN', 'SYSTEM_ADMIN')
   async createAnnouncement(
     @Args('input') createAnnouncementInput: CreateAnnouncementInput,
   ) {
@@ -55,8 +55,8 @@ export class SystemAdminResolver {
     );
   }
 
-  @Mutation(() => Announcement)
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  @Mutation(() => SystemAnnouncement)
+  @Roles('ADMIN', 'SYSTEM_ADMIN')
   async updateAnnouncement(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') updateAnnouncementInput: UpdateAnnouncementInput,
@@ -83,8 +83,8 @@ export class SystemAdminResolver {
     );
   }
 
-  @Mutation(() => Announcement)
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  @Mutation(() => SystemAnnouncement)
+  @Roles('ADMIN', 'SYSTEM_ADMIN')
   async deleteAnnouncement(@Args('id', { type: () => ID }) id: string) {
     return this.systemAdminService.deleteAnnouncement(id);
   }

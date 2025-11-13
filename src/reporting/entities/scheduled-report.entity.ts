@@ -8,10 +8,10 @@ export class ScheduledReport {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
-  @Field()
+  @Field(() => String)
   reportType: string;
 
   @Field(() => ReportFrequency)
@@ -29,10 +29,10 @@ export class ScheduledReport {
   @Field(() => OutputFormat)
   outputFormat: OutputFormat;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   branchId: string | null;
 
-  @Field()
+  @Field(() => String)
   createdById: string;
 
   @Field(() => GraphQLISODateTime)
@@ -41,7 +41,7 @@ export class ScheduledReport {
   @Field(() => GraphQLISODateTime)
   updatedAt: Date;
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 
   @Field(() => String, { nullable: true })

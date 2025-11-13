@@ -23,13 +23,13 @@ export class Subscription {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   customerId: string;
 
   @Field(() => Organisation, { nullable: true })
   customer?: Organisation;
 
-  @Field()
+  @Field(() => String)
   planId: string;
 
   @Field(() => SubscriptionPlan, { nullable: true })
@@ -44,10 +44,10 @@ export class Subscription {
   @Field({ nullable: true })
   paystackCustomerCode?: string;
 
-  @Field()
+  @Field(() => Date)
   currentPeriodStart: Date;
 
-  @Field()
+  @Field(() => Date)
   currentPeriodEnd: Date;
 
   @Field({ nullable: true })
@@ -77,7 +77,7 @@ export class Subscription {
   @Field(() => GraphQLJSON, { nullable: true })
   metadata?: any;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
   @Field(() => Organisation, { nullable: true })
@@ -86,9 +86,9 @@ export class Subscription {
   @Field(() => [SubscriptionPayment], { nullable: true })
   payments?: SubscriptionPayment[];
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

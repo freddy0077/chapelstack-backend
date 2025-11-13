@@ -57,10 +57,20 @@ export class WebhookService {
             await this.handleInvoicePaymentFailed(data);
             break;
           case 'charge.success':
-            await this.handleChargeSuccess(data);
+            // Check if this is an event registration payment
+            if (data.metadata?.eventId) {
+              await this.handleEventRegistrationPayment(data);
+            } else {
+              await this.handleChargeSuccess(data);
+            }
             break;
           case 'charge.failed':
-            await this.handleChargeFailed(data);
+            // Check if this is an event registration payment
+            if (data.metadata?.eventId) {
+              await this.handleEventRegistrationPaymentFailed(data);
+            } else {
+              await this.handleChargeFailed(data);
+            }
             break;
           case 'customeridentification.success':
             await this.handleCustomerIdentificationSuccess(data);
@@ -610,6 +620,119 @@ export class WebhookService {
     } catch (error) {
       this.logger.error(
         `Failed to retry webhook events: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Handle event registration payment success
+   */
+  private async handleEventRegistrationPayment(data: any): Promise<void> {
+    try {
+      const reference = data.reference;
+      const { eventId } = data.metadata || {};
+
+      this.logger.log(
+        `💳 [EVENT REGISTRATION PAYMENT] Processing payment: ${reference}`,
+      );
+
+      if (!eventId) {
+        this.logger.warn(
+          `❌ [EVENT REGISTRATION PAYMENT] No eventId in metadata for reference: ${reference}`,
+        );
+        return;
+      }
+
+      // Find registration by transaction ID
+      const registration = await this.prisma.eventRegistration.findFirst({
+        where: {
+          transactionId: reference,
+        },
+      });
+
+      if (!registration) {
+        this.logger.warn(
+          `⚠️ [EVENT REGISTRATION PAYMENT] Registration not found for reference: ${reference}`,
+        );
+        return;
+      }
+
+      // Update registration with payment info
+      await this.prisma.eventRegistration.update({
+        where: {
+          id: registration.id,
+        },
+        data: {
+          paymentStatus: 'completed',
+          amountPaid: data.amount / 100, // Convert from kobo
+          transactionId: reference,
+        },
+      });
+
+      this.logger.log(
+        `✅ [EVENT REGISTRATION PAYMENT] Payment recorded successfully: ${reference}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `❌ [EVENT REGISTRATION PAYMENT] Failed to process: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Handle event registration payment failure
+   */
+  private async handleEventRegistrationPaymentFailed(data: any): Promise<void> {
+    try {
+      const reference = data.reference;
+      const { eventId } = data.metadata || {};
+
+      this.logger.log(
+        `❌ [EVENT REGISTRATION PAYMENT] Payment failed: ${reference}`,
+      );
+
+      if (!eventId) {
+        this.logger.warn(
+          `⚠️ [EVENT REGISTRATION PAYMENT] No eventId in metadata for reference: ${reference}`,
+        );
+        return;
+      }
+
+      // Find registration by transaction ID
+      const registration = await this.prisma.eventRegistration.findFirst({
+        where: {
+          transactionId: reference,
+        },
+      });
+
+      if (!registration) {
+        this.logger.warn(
+          `⚠️ [EVENT REGISTRATION PAYMENT] Registration not found for reference: ${reference}`,
+        );
+        return;
+      }
+
+      // Update registration with failure info
+      await this.prisma.eventRegistration.update({
+        where: {
+          id: registration.id,
+        },
+        data: {
+          paymentStatus: 'failed',
+          notes: `Payment failed: ${data.gateway_response || 'Unknown reason'}`,
+        },
+      });
+
+      this.logger.log(
+        `✅ [EVENT REGISTRATION PAYMENT] Failure recorded: ${reference}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `❌ [EVENT REGISTRATION PAYMENT] Failed to record failure: ${error.message}`,
         error.stack,
       );
       throw error;

@@ -15,9 +15,10 @@ import { WorkflowsResolver } from './resolvers/workflows.resolver';
     PrismaModule,
     CommunicationsModule,
     ScheduleModule.forRoot(),
-    BullModule.registerQueue({
-      name: 'workflow-execution',
-    }),
+    BullModule.registerQueue(
+      { name: 'workflow-execution' },
+      { name: 'notifications' },
+    ),
   ],
   providers: [
     WorkflowsService,

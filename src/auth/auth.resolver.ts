@@ -13,10 +13,15 @@ import type { Response } from 'express';
 import { Res } from '@nestjs/common';
 import { ForgotPasswordInput } from './dto/forgot-password.input';
 import { ResetPasswordInput } from './dto/reset-password.input';
+import { MemberLookupService } from '../members/services/member-lookup.service';
+import { MemberLinkingInfo } from './dto/member-linking.dto';
 
 @Resolver()
 export class AuthResolver {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly memberLookupService: MemberLookupService,
+  ) {}
 
   @Query(() => UserType, { name: 'me' })
   @UseGuards(JwtAuthGuard)
@@ -26,6 +31,47 @@ export class AuthResolver {
       throw new Error('User not found');
     }
     return userData;
+  }
+
+  @Query(() => MemberLinkingInfo, { name: 'checkEmailForMemberLinking' })
+  async checkEmailForMemberLinking(
+    @Args('email') email: string,
+    @Args('organisationId') organisationId: string,
+  ): Promise<MemberLinkingInfo> {
+    try {
+      const memberInfo = await this.memberLookupService.getMemberInfoForLinking(
+        email,
+        organisationId,
+      );
+
+      if (!memberInfo) {
+        return {
+          isMember: false,
+          canLink: false,
+          message: 'No member found with this email',
+        };
+      }
+
+      return {
+        isMember: true,
+        canLink: memberInfo.canLink,
+        memberInfo: {
+          firstName: memberInfo.firstName,
+          lastName: memberInfo.lastName,
+          status: memberInfo.status,
+        },
+        message: memberInfo.canLink
+          ? `Welcome back, ${memberInfo.firstName}! Your member account will be linked.`
+          : 'This email is already linked to an account',
+      };
+    } catch (error) {
+      console.error('Error checking email for member linking:', error);
+      return {
+        isMember: false,
+        canLink: false,
+        message: 'Error checking member status',
+      };
+    }
   }
 
   @Mutation(() => UserType, { name: 'register' })

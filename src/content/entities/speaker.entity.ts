@@ -5,7 +5,7 @@ export class SpeakerEntity {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
@@ -32,12 +32,12 @@ export class SpeakerEntity {
   @Field({ nullable: true })
   website?: string;
 
-  @Field()
+  @Field(() => String)
   branchId: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

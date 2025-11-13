@@ -10,13 +10,13 @@ export class SermonEntity {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   title: string;
 
   @Field({ nullable: true })
   description?: string;
 
-  @Field()
+  @Field(() => String)
   datePreached: string;
 
   @Field({ nullable: true })
@@ -58,7 +58,7 @@ export class SermonEntity {
   @Field(() => SeriesEntity, { nullable: true })
   series?: SeriesEntity;
 
-  @Field()
+  @Field(() => String)
   branchId: string;
 
   @Field({ nullable: true })
@@ -67,10 +67,10 @@ export class SermonEntity {
   @Field(() => ContentStatus)
   status: ContentStatus;
 
-  @Field()
+  @Field(() => String)
   createdAt: string;
 
-  @Field()
+  @Field(() => String)
   updatedAt: string;
 
   @Field(() => [TagEntity], { nullable: true })

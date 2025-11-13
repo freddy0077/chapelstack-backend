@@ -279,27 +279,9 @@ export class SubscriptionsResolver {
     return this.subscriptionDashboardService.getTabCounts();
   }
 
-  @Mutation(() => Subscription, { name: 'verifyPaymentAndCreateSubscription' })
-  async verifyPaymentAndCreateSubscription(
-    @Args('input', { type: () => VerifyPaymentInput })
-    input: VerifyPaymentInput,
-  ): Promise<Subscription> {
-    const subscription =
-      await this.subscriptionsService.verifyPaymentAndCreateSubscription(input);
-
-    return {
-      ...subscription,
-      paystackSubscriptionCode:
-        subscription.paystackSubscriptionCode || undefined,
-      paystackCustomerCode: subscription.paystackCustomerCode || undefined,
-      trialStart: subscription.trialStart || undefined,
-      trialEnd: subscription.trialEnd || undefined,
-      cancelledAt: subscription.cancelledAt || undefined,
-      cancelReason: subscription.cancelReason || undefined,
-      nextBillingDate: subscription.nextBillingDate || undefined,
-      lastPaymentDate: subscription.lastPaymentDate || undefined,
-    };
-  }
+  // REMOVED: verifyPaymentAndCreateSubscription() mutation
+  // Use verifyPayment and initiatePayment from EngagementModule instead
+  // See: src/engagement/payments/resolvers/payments.resolver.ts
 
   @ResolveField('payments', () => [SubscriptionPayment])
   async payments(

@@ -9,9 +9,10 @@ import { BranchEventsResolver } from './resolvers/branch-events.resolver';
 import { BranchEventsService } from './services/branch-events.service';
 import { UsersModule } from '../users/users.module';
 import { MembersModule } from '../members/members.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, MembersModule],
+  imports: [PrismaModule, UsersModule, MembersModule, AuditModule],
   providers: [
     BranchesResolver,
     BranchesService,

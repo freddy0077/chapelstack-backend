@@ -5,42 +5,42 @@ export class BankStatementEntity {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   bankAccountId: string;
 
-  @Field()
+  @Field(() => String)
   fileUrl: string;
 
-  @Field()
+  @Field(() => String)
   fileName: string;
 
   @Field(() => Int)
   fileSize: number;
 
-  @Field()
+  @Field(() => String)
   fileType: string;
 
-  @Field()
+  @Field(() => Date)
   statementDate: Date;
 
   @Field({ nullable: true })
   statementPeriod?: string;
 
-  @Field()
+  @Field(() => String)
   uploadedBy: string;
 
-  @Field()
+  @Field(() => Date)
   uploadedAt: Date;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
-  @Field()
+  @Field(() => String)
   branchId: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

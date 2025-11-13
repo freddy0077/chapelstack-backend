@@ -127,7 +127,7 @@ export class BranchSettingsResolver {
             id: user.id,
           },
         },
-        name: 'SUPER_ADMIN',
+        name: 'ADMIN',
       },
     });
 
@@ -259,7 +259,7 @@ export class BranchSettingsResolver {
             id: user.id,
           },
         },
-        name: 'SUPER_ADMIN',
+        name: 'ADMIN',
       },
     });
 

@@ -13,10 +13,10 @@ export class BranchSetting {
   // @Field(() => Branch, { description: 'The branch these settings belong to' })
   // branch: Branch;
 
-  @Field()
+  @Field(() => String)
   key: string;
 
-  @Field()
+  @Field(() => String)
   value: string;
 
   @Field(() => GraphQLISODateTime)

@@ -31,10 +31,10 @@ export class OrganizationStatusMiddleware implements NestMiddleware {
       return next();
     }
 
-    // Skip if user is SUPER_ADMIN or SUBSCRIPTION_MANAGER
+    // Skip if user is ADMIN or SUBSCRIPTION_MANAGER
     const userRoles = req.user.roles?.map((role) => role.name) || [];
     if (
-      userRoles.includes('SUPER_ADMIN') ||
+      userRoles.includes('ADMIN') ||
       userRoles.includes('SUBSCRIPTION_MANAGER')
     ) {
       return next();

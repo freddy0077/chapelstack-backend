@@ -71,21 +71,38 @@ export class ZonesService {
   }
 
   async updateZone(id: string, input: UpdateZoneInput) {
+    console.log('UpdateZone service received:', { id, input: JSON.stringify(input, null, 2) });
+    
     const zone = await this.prisma.zone.findUnique({ where: { id } });
 
     if (!zone) {
       throw new NotFoundException(`Zone with ID ${id} not found`);
     }
 
-    return this.prisma.zone.update({
+    // Build update data, filtering out undefined values
+    const updateData: any = {};
+    if (input.name !== undefined) updateData.name = input.name;
+    if (input.description !== undefined) updateData.description = input.description;
+    if (input.location !== undefined) updateData.location = input.location;
+    if (input.leaderName !== undefined) updateData.leaderName = input.leaderName;
+    if (input.leaderPhone !== undefined) updateData.leaderPhone = input.leaderPhone;
+    if (input.leaderEmail !== undefined) updateData.leaderEmail = input.leaderEmail;
+    if (input.status !== undefined) updateData.status = input.status;
+
+    console.log('Prisma update data:', JSON.stringify(updateData, null, 2));
+
+    const result = await this.prisma.zone.update({
       where: { id },
-      data: input,
+      data: updateData,
       include: {
         _count: {
           select: { members: true },
         },
       },
     });
+
+    console.log('Update result:', JSON.stringify(result, null, 2));
+    return result;
   }
 
   async deleteZone(id: string) {

@@ -30,7 +30,7 @@ export class WorkflowsResolver {
 
   // Workflow Template Queries
   @Query(() => WorkflowTemplate)
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async workflowTemplate(
     @Args('id') id: string,
     @Args('organisationId') organisationId: string,
@@ -45,7 +45,7 @@ export class WorkflowsResolver {
   }
 
   @Query(() => [WorkflowTemplate])
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async workflowTemplates(
     @Args('organisationId') organisationId: string,
     @Args('branchId', { nullable: true }) branchId?: string,
@@ -60,7 +60,7 @@ export class WorkflowsResolver {
   }
 
   @Query(() => WorkflowStats)
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async workflowStats(
     @Args('organisationId') organisationId: string,
     @Args('branchId', { nullable: true }) branchId?: string,
@@ -71,7 +71,7 @@ export class WorkflowsResolver {
 
   // Workflow Execution Queries
   @Query(() => WorkflowExecution)
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async workflowExecution(
     @Args('id') id: string,
     @Args('organisationId') organisationId: string,
@@ -86,7 +86,7 @@ export class WorkflowsResolver {
   }
 
   @Query(() => [WorkflowExecution])
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async workflowExecutions(
     @Args('organisationId') organisationId: string,
     @Args('branchId', { nullable: true }) branchId?: string,
@@ -104,7 +104,7 @@ export class WorkflowsResolver {
 
   // Workflow Template Mutations
   @Mutation(() => WorkflowTemplate)
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async createWorkflowTemplate(
     @Args('input') input: CreateWorkflowTemplateInput,
     @Args('organisationId') organisationId: string,
@@ -124,7 +124,7 @@ export class WorkflowsResolver {
   }
 
   @Mutation(() => WorkflowTemplate)
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async updateWorkflowTemplate(
     @Args('id') id: string,
     @Args('input') input: UpdateWorkflowTemplateInput,
@@ -141,7 +141,7 @@ export class WorkflowsResolver {
   }
 
   @Mutation(() => Boolean)
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async deleteWorkflowTemplate(
     @Args('id') id: string,
     @Args('organisationId') organisationId: string,
@@ -157,7 +157,7 @@ export class WorkflowsResolver {
 
   // Workflow Execution Mutations
   @Mutation(() => WorkflowExecution)
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async triggerWorkflow(
     @Args('input') input: TriggerWorkflowInput,
     @Context() context: any,
@@ -167,14 +167,14 @@ export class WorkflowsResolver {
   }
 
   @Mutation(() => Boolean)
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async cancelWorkflowExecution(
     @Args('executionId') executionId: string,
     @Context() context: any,
   ): Promise<boolean> {
     const user = context.req.user;
     const organisationId = user.organisationId;
-    const branchId = user.role === 'SUPER_ADMIN' ? undefined : user.branchId;
+    const branchId = user.role === 'ADMIN' ? undefined : user.branchId;
 
     return this.workflowsService.cancelExecution(
       executionId,
@@ -184,14 +184,14 @@ export class WorkflowsResolver {
   }
 
   @Mutation(() => WorkflowExecution)
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN')
   async retryWorkflowExecution(
     @Args('executionId') executionId: string,
     @Context() context: any,
   ): Promise<WorkflowExecution> {
     const user = context.req.user;
     const organisationId = user.organisationId;
-    const branchId = user.role === 'SUPER_ADMIN' ? undefined : user.branchId;
+    const branchId = user.role === 'ADMIN' ? undefined : user.branchId;
 
     return this.workflowsService.retryExecution(
       executionId,
@@ -202,7 +202,7 @@ export class WorkflowsResolver {
 
   // Utility Mutations
   @Mutation(() => [WorkflowTemplate])
-  // @Roles('SUPER_ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'ADMIN', 'MODERATOR', 'USER')
+  // @Roles('ADMIN', 'BRANCH_ADMIN', 'SYSTEM_ADMIN', 'MODERATOR', 'USER')
   async createPredefinedWorkflows(
     @Args('organisationId', { nullable: true }) organisationId?: string,
     @Args('branchId', { nullable: true }) branchId?: string,
@@ -213,7 +213,7 @@ export class WorkflowsResolver {
     // Use provided organisationId or fallback to user context
     const finalOrganisationId = organisationId || user?.organisationId;
     const finalBranchId =
-      branchId || (user?.role === 'SUPER_ADMIN' ? undefined : user?.branchId);
+      branchId || (user?.role === 'ADMIN' ? undefined : user?.branchId);
 
     console.log('createPredefinedWorkflows called with:', {
       providedOrganisationId: organisationId,

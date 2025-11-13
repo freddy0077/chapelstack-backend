@@ -16,7 +16,7 @@ export class AttendanceRecord {
   @Field(() => GraphQLISODateTime, { nullable: true })
   checkOutTime?: Date;
 
-  @Field()
+  @Field(() => String)
   checkInMethod: string;
 
   @Field({ nullable: true })

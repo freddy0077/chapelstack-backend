@@ -47,24 +47,38 @@ export class CreateZoneInput {
 @InputType()
 export class UpdateZoneInput {
   @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
   name?: string;
 
   @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
   description?: string;
 
   @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
   location?: string;
 
   @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
   leaderName?: string;
 
   @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
   leaderPhone?: string;
 
   @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
   leaderEmail?: string;
 
   @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
   status?: string;
 }
 

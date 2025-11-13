@@ -19,6 +19,11 @@ registerEnumType(JournalEntryStatus, { name: 'JournalEntryStatus' });
 
 @InputType()
 export class JournalEntryLineInput {
+  @Field(() => Int, { nullable: true })
+  @IsInt()
+  @IsOptional()
+  lineNumber?: number;
+
   @Field()
   @IsString()
   @IsNotEmpty()
@@ -42,6 +47,11 @@ export class JournalEntryLineInput {
   @Field({ nullable: true })
   @IsString()
   @IsOptional()
+  currency?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
   fundId?: string;
 
   @Field({ nullable: true })
@@ -61,6 +71,11 @@ export class CreateJournalEntryInput {
   @IsDateString()
   @IsNotEmpty()
   entryDate: string;
+
+  @Field({ nullable: true })
+  @IsDateString()
+  @IsOptional()
+  postingDate?: string;
 
   @Field(() => JournalEntryType)
   @IsEnum(JournalEntryType)
@@ -92,6 +107,21 @@ export class CreateJournalEntryInput {
   @IsOptional()
   memo?: string;
 
+  @Field(() => Int, { nullable: true })
+  @IsInt()
+  @IsOptional()
+  fiscalYear?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsInt()
+  @IsOptional()
+  fiscalPeriod?: number;
+
+  @Field(() => JournalEntryStatus, { nullable: true })
+  @IsEnum(JournalEntryStatus)
+  @IsOptional()
+  status?: JournalEntryStatus;
+
   @Field(() => [JournalEntryLineInput])
   @IsArray()
   @ValidateNested({ each: true })
@@ -107,6 +137,11 @@ export class CreateJournalEntryInput {
   @IsString()
   @IsNotEmpty()
   branchId: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  createdBy?: string;
 }
 
 @InputType()

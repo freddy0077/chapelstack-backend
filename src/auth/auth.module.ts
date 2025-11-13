@@ -7,8 +7,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthController } from './auth.controller';
 import { AuthResolver } from './auth.resolver';
 import { PermissionResolver } from './resolvers/permission.resolver';
+import { RoleResolver } from './resolvers/role.resolver';
+import { ModuleResolver } from './resolvers/module.resolver';
+import { RoleRegistryService } from './services/role-registry.service';
 import { CommunicationsModule } from '../communications/communications.module';
 import { EmailModule } from '../email/email.module';
+import { AuditModule } from '../audit/audit.module';
+import { MembersModule } from '../members/members.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   controllers: [AuthController],
@@ -27,8 +33,19 @@ import { EmailModule } from '../email/email.module';
       }),
     }),
     CommunicationsModule,
+    AuditModule,
+    MembersModule, // Provide MemberLookupService for AuthService/AuthResolver
+    CommonModule, // Provide LoggerService for AuthService
   ],
-  providers: [AuthService, JwtStrategy, AuthResolver, PermissionResolver],
-  exports: [AuthService, JwtModule, PassportModule],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    AuthResolver,
+    PermissionResolver,
+    RoleResolver,
+    ModuleResolver,
+    RoleRegistryService,
+  ],
+  exports: [AuthService, JwtModule, PassportModule, RoleRegistryService],
 })
 export class AuthModule {}

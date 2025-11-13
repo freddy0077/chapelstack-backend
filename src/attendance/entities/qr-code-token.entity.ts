@@ -6,10 +6,10 @@ export class QRCodeToken {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   token: string;
 
-  @Field()
+  @Field(() => String)
   sessionId: string;
 
   @Field(() => GraphQLISODateTime)

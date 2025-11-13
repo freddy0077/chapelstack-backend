@@ -6,7 +6,7 @@ export class AssetType {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
@@ -27,15 +27,18 @@ export class AssetType {
   @Field(() => GraphQLJSON, { nullable: true })
   customFields?: any;
 
-  @Field()
+  @Field({ nullable: true })
+  branchId?: string;
+
+  @Field(() => String)
   organisationId: string;
 
   @Field(() => Int, { nullable: true })
   assetCount?: number;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

@@ -12,7 +12,7 @@ export class Event {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   title: string;
 
   @Field(() => String, { nullable: true })
@@ -40,16 +40,16 @@ export class Event {
   @Field(() => Int, { nullable: true })
   capacity?: number | null;
 
-  @Field()
+  @Field(() => Boolean)
   registrationRequired: boolean;
 
   @Field(() => GraphQLISODateTime, { nullable: true })
   registrationDeadline?: Date | null;
 
-  @Field()
+  @Field(() => Boolean)
   isPublic: boolean;
 
-  @Field()
+  @Field(() => Boolean)
   requiresApproval: boolean;
 
   @Field(() => String, { nullable: true })
@@ -69,7 +69,7 @@ export class Event {
   organizerPhone?: string | null;
 
   // Pricing (for paid events)
-  @Field()
+  @Field(() => Boolean)
   isFree: boolean;
 
   @Field(() => Float, { nullable: true })

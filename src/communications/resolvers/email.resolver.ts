@@ -11,17 +11,9 @@ import { EmailTemplateDto } from '../dto/email-template.dto';
 export class EmailResolver {
   constructor(private readonly emailService: EmailService) {}
 
-  @Mutation(() => Boolean)
-  async sendEmail(@Args('input') input: SendEmailInput): Promise<boolean> {
-    return this.emailService.sendEmail(input);
-  }
-
-  @Mutation(() => SendMessageResponse)
-  async sendEmailWithTracking(
-    @Args('input') input: SendEmailInput,
-  ): Promise<SendMessageResponse> {
-    return this.emailService.sendEmailWithTracking(input);
-  }
+  // REMOVED: sendEmail() and sendEmailWithTracking() mutations
+  // Use sendNotification from EngagementModule instead
+  // See: src/engagement/notifications/resolvers/notifications.resolver.ts
 
   @Query(() => [EmailMessageDto])
   async emails(

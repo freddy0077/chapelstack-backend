@@ -6,10 +6,10 @@ export class Setting {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   key: string;
 
-  @Field()
+  @Field(() => String)
   value: string; // Can be simple string or JSON stringified
 
   @Field(() => ID, { nullable: true })

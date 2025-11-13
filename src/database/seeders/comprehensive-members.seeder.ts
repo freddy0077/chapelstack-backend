@@ -40,7 +40,7 @@ export class ComprehensiveMembersSeeder {
       where: {
         roles: {
           some: {
-            name: 'super_admin',
+            name: 'admin',
           },
         },
       },

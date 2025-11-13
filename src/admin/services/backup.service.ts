@@ -7,7 +7,7 @@ import {
   BackupFilterInput,
 } from '../dto/backup.input';
 import { Backup, BackupStatus, BackupType } from '../entities/backup.entity';
-import { AuditLogService } from './audit-log.service';
+import { AuditLogService } from '../../audit/services/audit-log.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
@@ -35,7 +35,7 @@ export class BackupService {
   private mapToEntity(backup: any): Backup {
     return {
       ...backup,
-      type: backup.type as BackupType,
+      type: backup.backupType as BackupType,
       status: backup.status as BackupStatus,
       metadata: backup.metadata || undefined,
       filePath: backup.filePath || undefined,
@@ -63,7 +63,10 @@ export class BackupService {
     const backup = await this.prisma.backup.create({
       // @ts-ignore - Type compatibility issues with userId
       data: {
-        type: input.type as unknown as string, // Cast to string for Prisma
+        branchId: input.branchId || 'default-branch', // TODO: Get from context
+        filename: `backup-${Date.now()}.dump`,
+        storageLocation: 'LOCAL',
+        backupType: input.type as unknown as string, // Cast to string for Prisma
         status: BackupStatus.PENDING as unknown as string, // Cast to string for Prisma
         description: input.description,
         metadata: input.metadata || {},
@@ -72,7 +75,7 @@ export class BackupService {
     });
 
     // Log the action
-    await this.auditLogService.createAuditLog({
+    await this.auditLogService.create({
       action: 'BACKUP_CREATED',
       entityType: 'Backup',
       entityId: backup.id,
@@ -174,7 +177,10 @@ export class BackupService {
     const restore = await this.prisma.backup.create({
       // @ts-ignore - Type compatibility issues with userId
       data: {
-        type: BackupType.MANUAL as unknown as string, // Cast to string for Prisma - using MANUAL for restore operations
+        branchId: sourceBackup.branchId || 'default-branch',
+        filename: `restore-${Date.now()}.dump`,
+        storageLocation: 'LOCAL',
+        backupType: BackupType.MANUAL as unknown as string, // Cast to string for Prisma - using MANUAL for restore operations
         status: BackupStatus.PENDING as unknown as string, // Cast to string for Prisma
         description: input.description,
         metadata: {
@@ -186,7 +192,7 @@ export class BackupService {
     });
 
     // Log the action
-    await this.auditLogService.createAuditLog({
+    await this.auditLogService.create({
       action: 'BACKUP_RESTORE_INITIATED',
       entityType: 'Backup',
       entityId: restore.id,
@@ -265,7 +271,7 @@ export class BackupService {
 
       // Generate backup file name and path
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileName = `backup_${backup.type.toLowerCase()}_${timestamp}.sql`;
+      const fileName = `backup_${backup.backupType.toLowerCase()}_${timestamp}.sql`;
       const filePath = path.join(this.backupsDir, fileName);
 
       // Get database connection info from environment variables or config

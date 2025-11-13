@@ -2,7 +2,7 @@ import { Field, ObjectType, Int } from '@nestjs/graphql';
 
 @ObjectType()
 export class AttendanceTrendPoint {
-  @Field()
+  @Field(() => String)
   date: string;
 
   @Field(() => Int)
@@ -11,7 +11,7 @@ export class AttendanceTrendPoint {
 
 @ObjectType()
 export class MembershipGrowthPoint {
-  @Field()
+  @Field(() => String)
   month: string;
 
   @Field(() => Int)
@@ -50,7 +50,7 @@ export class BranchAgeDistribution {
 
 @ObjectType()
 export class MinistryParticipation {
-  @Field()
+  @Field(() => String)
   ministryName: string;
 
   @Field(() => Int)

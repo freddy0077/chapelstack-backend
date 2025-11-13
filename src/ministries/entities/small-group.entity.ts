@@ -1,5 +1,6 @@
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 import { GroupMember } from './group-member.entity';
+import { GroupExecutive } from './group-executive.entity';
 import { Ministry } from './ministry.entity';
 
 @ObjectType()
@@ -7,13 +8,13 @@ export class SmallGroup {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field(() => String, { nullable: true })
   description: string | null;
 
-  @Field()
+  @Field(() => String)
   type: string;
 
   @Field(() => String, { nullable: true })
@@ -25,7 +26,7 @@ export class SmallGroup {
   @Field(() => Int, { nullable: true })
   maximumCapacity: number | null;
 
-  @Field()
+  @Field(() => String)
   status: string;
 
   @Field(() => String, { nullable: true })
@@ -37,14 +38,17 @@ export class SmallGroup {
   @Field(() => String, { nullable: true })
   ministryId: string | null;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   @Field(() => [GroupMember], { nullable: true })
   members?: GroupMember[] | null;
+
+  @Field(() => [GroupExecutive], { nullable: true })
+  executives?: GroupExecutive[] | null;
 
   @Field(() => Ministry, { nullable: true })
   ministry?: Ministry | null;

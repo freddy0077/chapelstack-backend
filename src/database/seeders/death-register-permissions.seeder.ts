@@ -70,7 +70,7 @@ class DeathRegisterPermissionsSeeder {
       const roles = await this.prisma.role.findMany({
         where: {
           name: {
-            in: ['SUPER_ADMIN', 'ADMIN', 'MODERATOR'],
+            in: ['ADMIN', 'MODERATOR'],
           },
         },
         include: {
@@ -122,7 +122,7 @@ class DeathRegisterPermissionsSeeder {
       console.log(`   • Created ${createdPermissions.length} permissions`);
       console.log(`   • Assigned permissions to ${roles.length} roles`);
       console.log(
-        '   • Roles with Death Register access: SUPER_ADMIN, ADMIN, MODERATOR',
+        '   • Roles with Death Register access: ADMIN, MODERATOR',
       );
       console.log('');
       console.log(

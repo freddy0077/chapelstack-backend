@@ -19,7 +19,7 @@ export class LicenseResolver {
   constructor(private readonly licenseService: LicenseService) {}
 
   @Mutation(() => License)
-  @Roles('SUPER_ADMIN') // Restrict to super admins only
+  @Roles('ADMIN') // Restrict to super admins only
   async createLicense(
     @Args('input') input: CreateLicenseInput,
     @Context() context: any,
@@ -38,7 +38,7 @@ export class LicenseResolver {
   }
 
   @Query(() => License)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN', 'ADMIN')
   async license(
     @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
   ): Promise<License> {
@@ -46,13 +46,13 @@ export class LicenseResolver {
   }
 
   @Query(() => License)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN', 'ADMIN')
   async licenseByKey(@Args('key') key: string): Promise<License> {
     return this.licenseService.getLicenseByKey(key);
   }
 
   @Query(() => [License])
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN', 'ADMIN')
   async licenses(
     @Args('filter', { nullable: true }) filter?: LicenseFilterInput,
   ): Promise<License[]> {
@@ -60,7 +60,7 @@ export class LicenseResolver {
   }
 
   @Mutation(() => License)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async updateLicense(
     @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
     @Args('input') input: UpdateLicenseInput,
@@ -81,7 +81,7 @@ export class LicenseResolver {
   }
 
   @Mutation(() => Boolean)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async deleteLicense(
     @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
     @Context() context: any,
@@ -95,7 +95,7 @@ export class LicenseResolver {
   }
 
   @Query(() => String)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async generateLicenseKey(): Promise<string> {
     return this.licenseService.generateLicenseKey();
   }

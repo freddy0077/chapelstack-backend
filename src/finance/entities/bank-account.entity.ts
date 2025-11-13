@@ -9,28 +9,28 @@ export class BankAccountEntity {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   glAccountId: string;
 
-  @Field()
+  @Field(() => String)
   glAccountCode: string;
 
-  @Field()
+  @Field(() => String)
   glAccountName: string;
 
-  @Field()
+  @Field(() => String)
   accountName: string;
 
-  @Field()
+  @Field(() => String)
   bankName: string;
 
-  @Field()
+  @Field(() => String)
   accountNumber: string;
 
-  @Field()
+  @Field(() => String)
   accountType: string;
 
-  @Field()
+  @Field(() => String)
   currency: string;
 
   @Field(() => Float)
@@ -48,19 +48,19 @@ export class BankAccountEntity {
   @Field(() => BankAccountStatus)
   status: BankAccountStatus;
 
-  @Field()
+  @Field(() => Boolean)
   isReconciled: boolean;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
-  @Field()
+  @Field(() => String)
   branchId: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   // GL Account relation

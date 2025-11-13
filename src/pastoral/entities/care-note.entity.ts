@@ -36,13 +36,13 @@ export class CareNoteEntity extends BaseEntity {
   @Field({ nullable: true })
   memberName?: string;
 
-  @Field()
+  @Field(() => Date)
   noteDate: Date;
 
   @Field(() => CareNoteCategory)
   category: CareNoteCategory;
 
-  @Field()
+  @Field(() => String)
   content: string; // Should be encrypted in production
 
   @Field(() => [String], { nullable: true })

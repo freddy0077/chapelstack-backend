@@ -13,16 +13,16 @@ export class Notification {
   @Field(() => User)
   user: User;
 
-  @Field()
+  @Field(() => String)
   userId: string;
 
-  @Field()
+  @Field(() => String)
   title: string;
 
-  @Field()
+  @Field(() => String)
   message: string;
 
-  @Field()
+  @Field(() => Boolean)
   isRead: boolean;
 
   @Field({ nullable: true })
@@ -52,9 +52,9 @@ export class Notification {
   @Field(() => String, { nullable: true })
   organisationId?: string | null;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

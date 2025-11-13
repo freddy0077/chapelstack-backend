@@ -42,8 +42,9 @@ export class ZonesResolver {
   @Mutation(() => Zone)
   async updateZone(
     @Args('id') id: string,
-    @Args('input') input: UpdateZoneInput,
+    @Args('input', { type: () => UpdateZoneInput }) input: UpdateZoneInput,
   ): Promise<Zone> {
+    console.log('UpdateZone resolver received:', { id, input: JSON.stringify(input, null, 2) });
     return this.zonesService.updateZone(id, input);
   }
 

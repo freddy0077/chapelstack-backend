@@ -6,24 +6,28 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { User } from '@prisma/client';
 import { PaginationInput } from '../../common/dto/pagination.input';
+import { AuditLogService } from '../../audit/services/audit-log.service';
 
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserAdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   /**
-   * Get the roleId for the 'SUPER_ADMIN' role, creating it if it does not exist
+   * Get the roleId for the 'ADMIN' role, creating it if it does not exist
    */
   async getSuperAdminRoleId(): Promise<string> {
     let role = await this.prisma.role.findFirst({
-      where: { name: 'SUPER_ADMIN' },
+      where: { name: 'ADMIN' },
     });
     if (!role) {
       role = await this.prisma.role.create({
         data: {
-          name: 'SUPER_ADMIN',
+          name: 'ADMIN',
           description: 'Full system access',
         },
       });
@@ -76,7 +80,7 @@ export class UserAdminService {
     }
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         email,
         passwordHash,
@@ -100,6 +104,24 @@ export class UserAdminService {
         },
       },
     });
+
+    // Log the user creation
+    await this.auditLogService.create({
+      action: 'CREATE_USER',
+      entityType: 'User',
+      entityId: user.id,
+      description: `User created: ${email} (${firstName} ${lastName})`,
+      userId: user.id,
+      metadata: {
+        email,
+        firstName,
+        lastName,
+        isActive,
+        organisationId,
+      },
+    });
+
+    return user;
   }
 
   /**
@@ -160,12 +182,12 @@ export class UserAdminService {
       }
     }
 
-    // Exclude system-level admin roles (SUPER_ADMIN, SUBSCRIPTION_MANAGER, ADMIN)
+    // Exclude system-level admin roles (ADMIN, SUBSCRIPTION_MANAGER, ADMIN)
     where.roles = {
       ...(where.roles || {}),
       none: {
         name: {
-          in: ['SUPER_ADMIN', 'SUBSCRIPTION_MANAGER', 'ADMIN'],
+          in: ['ADMIN', 'SUBSCRIPTION_MANAGER', 'ADMIN'],
         },
       },
     };
@@ -224,10 +246,10 @@ export class UserAdminService {
   /**
    * Update a user's active status (activate/deactivate)
    */
-  async updateUserActiveStatus(id: string, isActive: boolean) {
+  async updateUserActiveStatus(id: string, isActive: boolean, adminUserId?: string) {
     const user = await this.findUserById(id);
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id },
       data: { isActive },
       include: {
@@ -240,6 +262,80 @@ export class UserAdminService {
         },
       },
     });
+
+    // Log the status change
+    await this.auditLogService.create({
+      action: isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
+      entityType: 'User',
+      entityId: id,
+      description: `User ${user.email} ${isActive ? 'activated' : 'deactivated'}`,
+      userId: adminUserId || id,
+      branchId: user.userBranches?.[0]?.branchId || undefined,
+      metadata: {
+        email: user.email,
+        isActive,
+      },
+    });
+
+    return updatedUser;
+  }
+
+  /**
+   * Update user details (firstName, lastName, email, phoneNumber)
+   */
+  async updateUser(
+    id: string,
+    updateData: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      phoneNumber?: string;
+    },
+  ) {
+    const user = await this.findUserById(id);
+
+    // If email is being updated, check if it's already in use by another user
+    if (updateData.email && updateData.email !== user.email) {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: updateData.email },
+      });
+      if (existingUser && existingUser.id !== id) {
+        throw new ConflictException(
+          'A user with this email already exists.',
+        );
+      }
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: updateData,
+      include: {
+        roles: true,
+        member: true,
+        userBranches: {
+          include: {
+            branch: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    // Log the user update
+    await this.auditLogService.create({
+      action: 'UPDATE_USER',
+      entityType: 'User',
+      entityId: id,
+      description: `User ${user.email} details updated`,
+      userId: id,
+      branchId: user.userBranches?.[0]?.branchId || undefined,
+      metadata: {
+        email: user.email,
+        changes: updateData,
+      },
+    });
+
+    return updatedUser;
   }
 
   /**
@@ -261,7 +357,7 @@ export class UserAdminService {
       throw new ConflictException(`User already has role ${role.name}`);
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         roles: {
@@ -278,6 +374,23 @@ export class UserAdminService {
         },
       },
     });
+
+    // Log the role assignment
+    await this.auditLogService.create({
+      action: 'ASSIGN_ROLE',
+      entityType: 'User',
+      entityId: userId,
+      description: `Role ${role.name} assigned to user ${user.email}`,
+      userId: userId,
+      branchId: user.userBranches?.[0]?.branchId || undefined,
+      metadata: {
+        email: user.email,
+        roleName: role.name,
+        roleId: roleId,
+      },
+    });
+
+    return updatedUser;
   }
 
   /**
@@ -299,7 +412,7 @@ export class UserAdminService {
       throw new NotFoundException(`User does not have role ${role.name}`);
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         roles: {
@@ -316,6 +429,23 @@ export class UserAdminService {
         },
       },
     });
+
+    // Log the role removal
+    await this.auditLogService.create({
+      action: 'REVOKE_ROLE',
+      entityType: 'User',
+      entityId: userId,
+      description: `Role ${role.name} removed from user ${user.email}`,
+      userId: userId,
+      branchId: user.userBranches?.[0]?.branchId || undefined,
+      metadata: {
+        email: user.email,
+        roleName: role.name,
+        roleId: roleId,
+      },
+    });
+
+    return updatedUser;
   }
 
   /**
@@ -370,6 +500,24 @@ export class UserAdminService {
         role: true,
       },
     });
+
+    // Log the branch role assignment
+    await this.auditLogService.create({
+      action: 'ASSIGN_TO_BRANCH',
+      entityType: 'User',
+      entityId: userId,
+      description: `User ${user.email} assigned role ${role.name} in branch ${branch.name}`,
+      userId: assignedBy || userId,
+      branchId: branchId,
+      metadata: {
+        email: user.email,
+        branchName: branch.name,
+        roleName: role.name,
+        roleId: roleId,
+        branchId: branchId,
+      },
+    });
+
     // Fix null values for optional fields to undefined for GraphQL compatibility
     // NOTE: Returning as-is because Prisma returns null for nullable fields, but GraphQL expects undefined for optional fields.
     // This type mismatch is a known issue between Prisma and GraphQL code-first.

@@ -1,17 +1,17 @@
 import { ObjectType, Field, ID, GraphQLISODateTime } from '@nestjs/graphql';
 
 @ObjectType()
-export class Announcement {
+export class SystemAnnouncement {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   key: string;
 
-  @Field()
+  @Field(() => String)
   title: string;
 
-  @Field()
+  @Field(() => String)
   content: string;
 
   @Field(() => GraphQLISODateTime)
@@ -26,6 +26,6 @@ export class Announcement {
   @Field(() => [ID], { nullable: true })
   targetBranchIds?: string[];
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 }

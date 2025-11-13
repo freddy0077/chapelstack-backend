@@ -8,17 +8,9 @@ import { SendMessageResponse } from '../dto/send-message-response.dto';
 export class SmsResolver {
   constructor(private readonly smsService: SmsService) {}
 
-  @Mutation(() => Boolean)
-  async sendSms(@Args('input') input: SendSmsInput): Promise<boolean> {
-    return this.smsService.sendSms(input);
-  }
-
-  @Mutation(() => SendMessageResponse)
-  async sendSmsWithTracking(
-    @Args('input') input: SendSmsInput,
-  ): Promise<SendMessageResponse> {
-    return this.smsService.sendSmsWithTracking(input);
-  }
+  // REMOVED: sendSms() and sendSmsWithTracking() mutations
+  // Use sendNotification from EngagementModule instead
+  // See: src/engagement/notifications/resolvers/notifications.resolver.ts
 
   @Query(() => [SmsMessageDto])
   async sms(

@@ -5,13 +5,13 @@ export class ContributionType {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field(() => String, { nullable: true })
   description?: string | null;
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 
   @Field(() => String, { nullable: true })

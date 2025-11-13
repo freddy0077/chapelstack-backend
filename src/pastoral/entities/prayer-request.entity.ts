@@ -60,10 +60,10 @@ export class PrayerRequestEntity extends BaseEntity {
   @Field({ nullable: true })
   memberName?: string;
 
-  @Field()
+  @Field(() => String)
   title: string;
 
-  @Field()
+  @Field(() => String)
   description: string;
 
   @Field(() => PrayerCategory)

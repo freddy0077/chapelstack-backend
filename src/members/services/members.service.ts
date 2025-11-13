@@ -1,10 +1,11 @@
 import {
     Injectable,
-    Logger,
     NotFoundException,
     ConflictException, BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CrudService } from '../../base/services/crud.service';
+import { LoggerService } from '../../common/services/logger.service';
 import { AuditLogService } from '../../audit/services';
 import { CreateMemberInput } from '../dto/create-member.input';
 import { UpdateMemberInput } from '../dto/update-member.input';
@@ -39,7 +40,24 @@ import {
 } from '../dto/import-members.input';
 
 @Injectable()
-export class MembersService {
+export class MembersService extends CrudService<Member, CreateMemberInput, UpdateMemberInput> {
+  constructor(
+    protected readonly prisma: PrismaService,
+    protected readonly logger: LoggerService,
+    private readonly auditLogService: AuditLogService,
+    private readonly workflowsService: WorkflowsService,
+    private readonly memberIdGenerationService: MemberIdGenerationService,
+  ) {
+    super(prisma, logger);
+  }
+
+  /**
+   * Returns the Prisma member repository for CRUD operations
+   */
+  protected getRepository() {
+    return this.prisma.member;
+  }
+
   /**
    * Returns the number of members with assigned RFID cards.
    * TODO: Implement actual count logic.
@@ -57,15 +75,6 @@ export class MembersService {
     // TODO: Implement actual count logic
     return 0;
   }
-
-  private readonly logger = new Logger(MembersService.name);
-
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly auditLogService: AuditLogService,
-    private readonly workflowsService: WorkflowsService,
-    private readonly memberIdGenerationService: MemberIdGenerationService,
-  ) {}
 
   async createMember(data: {
     firstName: string;
@@ -116,13 +125,21 @@ export class MembersService {
         },
       });
 
-      await this.auditLogService.create({
-        action: 'CREATE',
-        entityType: 'Member',
-        entityId: member.id,
-        description: `Created member: ${member.firstName} ${member.lastName} via user creation flow.`,
-        userId: data.userId,
-      });
+      try {
+        await this.auditLogService.create({
+          action: 'CREATE',
+          entityType: 'Member',
+          entityId: member.id,
+          description: `Created member: ${member.firstName} ${member.lastName} via user creation flow.`,
+          userId: data.userId,
+          branchId: data.branchId || undefined, // 🔒 Branch-scoped: log belongs to member's branch
+        });
+      } catch (auditError) {
+        this.logger.error(
+          `Failed to create audit log for member ${member.id}: ${(auditError as Error).message}`,
+        );
+        // Continue - don't let audit logging failure prevent member creation
+      }
 
       // Trigger workflow automation for new member
       try {
@@ -355,15 +372,23 @@ export class MembersService {
         });
       }
 
-      await this.auditLogService.create({
-        action: 'CREATE',
-        entityType: 'Member',
-        entityId: member.id,
-        description: `Created member: ${member.firstName} ${member.lastName}`,
-        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
-        ipAddress,
-        userAgent,
-      });
+      try {
+        await this.auditLogService.create({
+          action: 'CREATE',
+          entityType: 'Member',
+          entityId: member.id,
+          description: `Created member: ${member.firstName} ${member.lastName}`,
+          userId, // ✅ userId from authenticated user
+          branchId: member.branchId || undefined, // 🔒 Branch-scoped: log belongs to member's branch
+          ipAddress,
+          userAgent,
+        });
+      } catch (auditError) {
+        this.logger.error(
+          `Failed to create audit log for member ${member.id}: ${(auditError as Error).message}`,
+        );
+        // Continue - don't let audit logging failure prevent member creation
+      }
 
       // Trigger workflow automation for new member
       try {
@@ -700,17 +725,6 @@ export class MembersService {
     }
   }
 
-  async count(where?: Prisma.MemberWhereInput): Promise<number> {
-    try {
-      return await this.prisma.member.count({ where });
-    } catch (error) {
-      this.logger.error(
-        `Error counting members: ${(error as Error).message}`,
-        (error as Error).stack,
-      );
-      throw error;
-    }
-  }
 
   async assignRfidCard(
     assignRfidCardInput: AssignRfidCardInput,
@@ -1901,134 +1915,6 @@ export class MembersService {
     return 'ADULT';
   }
 
-  async findAll(
-    skip = 0,
-    take = 10,
-    where?: Prisma.MemberWhereInput,
-    orderBy?: Prisma.MemberOrderByWithRelationInput,
-    search?: string,
-  ): Promise<Member[]> {
-    try {
-      let queryConditions: Prisma.MemberWhereInput = where || {};
-
-      if (search && search.trim().length > 0) {
-        const searchTerms = search.trim().split(/\s+/);
-        const searchFilter: Prisma.MemberWhereInput = {
-          OR: [
-            {
-              firstName: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            {
-              lastName: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            { email: { contains: search, mode: Prisma.QueryMode.insensitive } },
-            {
-              phoneNumber: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            {
-              memberId: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            ...(searchTerms.length > 1
-              ? [
-                  {
-                    AND: [
-                      {
-                        firstName: {
-                          contains: searchTerms[0],
-                          mode: Prisma.QueryMode.insensitive,
-                        },
-                      },
-                      {
-                        lastName: {
-                          contains: searchTerms.slice(1).join(' '),
-                          mode: Prisma.QueryMode.insensitive,
-                        },
-                      },
-                    ],
-                  },
-                ]
-              : []),
-          ],
-        };
-
-        queryConditions = {
-          ...queryConditions,
-          AND: [
-            ...(Array.isArray(queryConditions.AND)
-              ? queryConditions.AND
-              : queryConditions.AND
-                ? [queryConditions.AND]
-                : []),
-            searchFilter,
-          ],
-        };
-      }
-
-      const members = await this.prisma.member.findMany({
-        skip,
-        take,
-        where: queryConditions,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          branch: true,
-          communicationPrefs: true,
-          memberAnalytics: true,
-        },
-      });
-
-      return members as unknown as Member[];
-    } catch (error) {
-      this.logger.error(
-        `Error finding members: ${(error as Error).message}`,
-        (error as Error).stack,
-      );
-      throw error;
-    }
-  }
-
-  async findOne(id: string): Promise<Member> {
-    try {
-      const member = await this.prisma.member.findUnique({
-        where: { id },
-        include: {
-          branch: true,
-          communicationPrefs: true,
-          memberAnalytics: true,
-          membershipHistory: {
-            orderBy: { createdAt: 'desc' },
-            take: 10,
-          },
-        },
-      });
-
-      if (!member) {
-        throw new NotFoundException(`Member with ID ${id} not found`);
-      }
-
-      return member as unknown as Member;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        `Error finding member: ${(error as Error).message}`,
-        (error as Error).stack,
-      );
-      throw error;
-    }
-  }
 
   /**
    * Issue a physical card for a member
@@ -2289,8 +2175,15 @@ export class MembersService {
   ): Prisma.MemberWhereInput {
     const where: Prisma.MemberWhereInput = {};
 
-    // Exclude deactivated members by default
-    where.isDeactivated = false;
+    // Handle deactivated filter - exclude by default unless explicitly requested
+    if (filters.isDeactivated === true) {
+      where.isDeactivated = true;
+    } else if (filters.isDeactivated === false) {
+      where.isDeactivated = false;
+    } else {
+      // Default: exclude deactivated members
+      where.isDeactivated = false;
+    }
 
     if (filters.branchId) {
       where.branchId = filters.branchId;

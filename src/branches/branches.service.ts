@@ -11,6 +11,7 @@ import { PaginationInput } from '../common/dto/pagination.input';
 import { UpdateBranchSettingInput } from './dto/update-branch-setting.input';
 import { Prisma, Branch as PrismaBranch } from '@prisma/client'; // Using standard @prisma/client
 import { Branch } from './entities/branch.entity'; // For GQL type
+import { AuditLogService } from '../audit/services/audit-log.service';
 
 // Helper function to map Prisma Branch to GraphQL Branch
 function toGraphQLBranch(
@@ -88,7 +89,10 @@ export class BranchesService {
     return this.prisma.branch.count({ where: { isActive: true } });
   }
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   async create(createBranchInput: CreateBranchInput) {
     if (createBranchInput.email) {
@@ -118,6 +122,22 @@ export class BranchesService {
         organisationId: createBranchInput.organisationId,
       },
     });
+
+    // Log the branch creation - logs are scoped to this branch
+    await this.auditLogService.create({
+      action: 'CREATE_BRANCH',
+      entityType: 'Branch',
+      entityId: newBranch.id,
+      description: `Branch created: ${newBranch.name}`,
+      branchId: newBranch.id, // Branch-scoped: log belongs to this branch
+      metadata: {
+        name: newBranch.name,
+        email: newBranch.email,
+        city: newBranch.city,
+        organisationId: newBranch.organisationId,
+      },
+    });
+
     return this.mapPrismaBranchToEntity(newBranch);
   }
 
@@ -223,6 +243,20 @@ export class BranchesService {
       where: { id },
       data: updateBranchInput,
     });
+
+    // Log the branch update - scoped to this branch
+    await this.auditLogService.create({
+      action: 'UPDATE_BRANCH',
+      entityType: 'Branch',
+      entityId: id,
+      description: `Branch updated: ${updatedBranch.name}`,
+      branchId: id, // Branch-scoped: log belongs to this branch
+      metadata: {
+        name: updatedBranch.name,
+        changes: updateBranchInput,
+      },
+    });
+
     return this.mapPrismaBranchToEntity(updatedBranch);
   }
 
@@ -235,6 +269,19 @@ export class BranchesService {
       where: { id },
       data: { isActive: false }, // Soft delete
     });
+
+    // Log the branch deactivation - scoped to this branch
+    await this.auditLogService.create({
+      action: 'DELETE_BRANCH',
+      entityType: 'Branch',
+      entityId: id,
+      description: `Branch deactivated: ${branch.name}`,
+      branchId: id, // Branch-scoped: log belongs to this branch
+      metadata: {
+        name: branch.name,
+      },
+    });
+
     return this.mapPrismaBranchToEntity(removedBranch);
   }
 
@@ -259,18 +306,35 @@ export class BranchesService {
       },
     });
 
+    let setting;
     if (existingSetting) {
       // Update existing setting
-      return this.prisma.branchSetting.update({
+      setting = await this.prisma.branchSetting.update({
         where: { id: existingSetting.id },
         data: { value },
       });
     } else {
       // Create new setting
-      return this.prisma.branchSetting.create({
+      setting = await this.prisma.branchSetting.create({
         data: { branchId, key, value },
       });
     }
+
+    // Log the setting change - scoped to this branch
+    await this.auditLogService.create({
+      action: 'UPDATE_BRANCH_SETTINGS',
+      entityType: 'BranchSetting',
+      entityId: setting.id,
+      description: `Branch setting ${existingSetting ? 'updated' : 'created'}: ${key}`,
+      branchId: branchId, // Branch-scoped: log belongs to this branch
+      metadata: {
+        key,
+        value,
+        action: existingSetting ? 'update' : 'create',
+      },
+    });
+
+    return setting;
   }
 
   // Helper to load settings for a branch, can be used by DataLoader

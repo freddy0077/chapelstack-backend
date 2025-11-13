@@ -156,7 +156,7 @@ export class PermissionsGuard implements CanActivate {
 
       if (isSuperAdmin) {
         this.logger.log(
-          `User ${user.email || user.id} is SUPER_ADMIN. Access granted.`,
+          `User ${user.email || user.id} is ADMIN. Access granted.`,
         );
         return true;
       }

@@ -41,7 +41,7 @@ export class FollowUpEntity extends BaseEntity {
   @Field(() => FollowUpType)
   type: FollowUpType;
 
-  @Field()
+  @Field(() => Date)
   dueDate: Date;
 
   @Field({ nullable: true })

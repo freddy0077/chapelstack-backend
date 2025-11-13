@@ -3,7 +3,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { MembersModule } from '../members/members.module';
 
 // Services
-import { AuditLogService } from './services/audit-log.service';
+import { AuditLogService } from '../audit/services/audit-log.service';
 import { UserAdminService } from './services/user-admin.service';
 import { RolePermissionService } from './services/role-permission.service';
 import { SystemAdminService } from './services/system-admin.service';

@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
-import { EmailService } from '../../communications/services/email.service';
-import { SmsService } from '../../communications/services/sms.service';
+import { NotificationsFacade } from '../../engagement/notifications/notifications.facade';
 
 @Injectable()
 export class BirthdayAnniversaryAutomationService {
@@ -12,8 +11,7 @@ export class BirthdayAnniversaryAutomationService {
 
   constructor(
     private prisma: PrismaService,
-    private emailService: EmailService,
-    private smsService: SmsService,
+    private notificationsFacade: NotificationsFacade,
   ) {}
 
   /**
@@ -141,7 +139,10 @@ export class BirthdayAnniversaryAutomationService {
       this.logger.log(`Found ${thisWeekMembers.length} birthdays this week`);
 
       // Send reminder to admins
-      await this.sendBirthdayReminderToAdmins(thisWeekMembers);
+      // Extract branchId and organisationId from first member if available
+      const branchId = thisWeekMembers[0]?.branch?.id;
+      const organisationId = undefined; // Not available in the query result
+      await this.sendBirthdayReminderToAdmins(thisWeekMembers, branchId, organisationId);
 
       this.logger.log('Weekly birthday reminder sent successfully');
     } catch (error) {
@@ -390,17 +391,20 @@ export class BirthdayAnniversaryAutomationService {
 
         // Send email if available
         if (member.email) {
-          await this.emailService.sendEmail({
-            recipients: [member.email],
-            subject: `Happy Birthday ${member.firstName}! 🎉`,
-            bodyHtml: this.getBirthdayEmailTemplate(
-              member.firstName,
-              member.lastName,
-              age,
-              branchName,
-              emailSignature,
-            ),
-            bodyText: message,
+          await this.notificationsFacade.send({
+            channel: 'EMAIL',
+            recipients: [{ email: member.email }],
+            variables: {
+              subject: `Happy Birthday ${member.firstName}! 🎉`,
+              html: this.getBirthdayEmailTemplate(
+                member.firstName,
+                member.lastName,
+                age,
+                branchName,
+                emailSignature,
+              ),
+              text: message,
+            },
             branchId: member.branch?.id,
             organisationId: member.branch?.organisationId,
           });
@@ -408,9 +412,12 @@ export class BirthdayAnniversaryAutomationService {
 
         // Send SMS if available
         if (member.phoneNumber) {
-          await this.smsService.sendSms({
-            recipients: [member.phoneNumber],
-            message: message,
+          await this.notificationsFacade.send({
+            channel: 'SMS',
+            recipients: [{ phone: member.phoneNumber }],
+            variables: {
+              message: message,
+            },
             branchId: member.branch?.id,
             organisationId: member.branch?.organisationId,
           });
@@ -442,16 +449,19 @@ export class BirthdayAnniversaryAutomationService {
 
         // Send email if available
         if (member.email) {
-          await this.emailService.sendEmail({
-            recipients: [member.email],
-            subject: `Happy ${years}${this.getOrdinalSuffix(years)} Anniversary! 💍`,
-            bodyHtml: this.getAnniversaryEmailTemplate(
-              member.firstName,
-              member.lastName,
-              member.spouseName,
-              years,
-            ),
-            bodyText: message,
+          await this.notificationsFacade.send({
+            channel: 'EMAIL',
+            recipients: [{ email: member.email }],
+            variables: {
+              subject: `Happy ${years}${this.getOrdinalSuffix(years)} Anniversary! 💍`,
+              html: this.getAnniversaryEmailTemplate(
+                member.firstName,
+                member.lastName,
+                member.spouseName,
+                years,
+              ),
+              text: message,
+            },
             branchId: member.branch?.id,
             organisationId: member.branch?.organisationId,
           });
@@ -459,9 +469,12 @@ export class BirthdayAnniversaryAutomationService {
 
         // Send SMS if available
         if (member.phoneNumber) {
-          await this.smsService.sendSms({
-            recipients: [member.phoneNumber],
-            message: message,
+          await this.notificationsFacade.send({
+            channel: 'SMS',
+            recipients: [{ phone: member.phoneNumber }],
+            variables: {
+              message: message,
+            },
             branchId: member.branch?.id,
             organisationId: member.branch?.organisationId,
           });
@@ -495,16 +508,19 @@ export class BirthdayAnniversaryAutomationService {
 
         // Send email if available
         if (member.email) {
-          await this.emailService.sendEmail({
-            recipients: [member.email],
-            subject: `${years}${this.getOrdinalSuffix(years)} ${sacramentName} Anniversary! ✝️`,
-            bodyHtml: this.getSacramentalAnniversaryEmailTemplate(
-              member.firstName,
-              member.lastName,
-              sacramentName,
-              years,
-            ),
-            bodyText: message,
+          await this.notificationsFacade.send({
+            channel: 'EMAIL',
+            recipients: [{ email: member.email }],
+            variables: {
+              subject: `${years}${this.getOrdinalSuffix(years)} ${sacramentName} Anniversary! ✝️`,
+              html: this.getSacramentalAnniversaryEmailTemplate(
+                member.firstName,
+                member.lastName,
+                sacramentName,
+                years,
+              ),
+              text: message,
+            },
             branchId: member.branch?.id,
             organisationId: member.branch?.organisationId,
           });
@@ -512,9 +528,12 @@ export class BirthdayAnniversaryAutomationService {
 
         // Send SMS if available
         if (member.phoneNumber) {
-          await this.smsService.sendSms({
-            recipients: [member.phoneNumber],
-            message: message,
+          await this.notificationsFacade.send({
+            channel: 'SMS',
+            recipients: [{ phone: member.phoneNumber }],
+            variables: {
+              message: message,
+            },
             branchId: member.branch?.id,
             organisationId: member.branch?.organisationId,
           });
@@ -534,14 +553,14 @@ export class BirthdayAnniversaryAutomationService {
   /**
    * Send weekly birthday reminder to admins
    */
-  private async sendBirthdayReminderToAdmins(members: any[]) {
+  private async sendBirthdayReminderToAdmins(members: any[], branchId?: string, organisationId?: string) {
     // Get all admin users
     const admins = await this.prisma.user.findMany({
       where: {
         roles: {
           some: {
             name: {
-              in: ['SUPER_ADMIN', 'ADMIN'],
+              in: ['ADMIN', 'ADMIN'],
             },
           },
         },
@@ -569,14 +588,19 @@ export class BirthdayAnniversaryAutomationService {
 
     for (const admin of admins) {
       try {
-        await this.emailService.sendEmail({
-          recipients: [admin.email],
-          subject: subject,
-          bodyText: message,
-          bodyHtml: this.getBirthdayReminderEmailTemplate(
-            admin.firstName || 'Admin',
-            members,
-          ),
+        await this.notificationsFacade.send({
+          channel: 'EMAIL',
+          recipients: [{ email: admin.email }],
+          variables: {
+            subject: subject,
+            text: message,
+            html: this.getBirthdayReminderEmailTemplate(
+              admin.firstName || 'Admin',
+              members,
+            ),
+          },
+          branchId: branchId,
+          organisationId: organisationId,
         });
       } catch (error) {
         this.logger.error(

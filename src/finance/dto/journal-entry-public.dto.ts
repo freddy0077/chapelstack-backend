@@ -8,12 +8,33 @@ import { GraphQLJSON } from 'graphql-type-json';
  */
 
 @ObjectType()
+export class AccountDTO {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  accountCode: string;
+
+  @Field()
+  accountName: string;
+
+  @Field()
+  accountType: string;
+}
+
+@ObjectType()
 export class JournalEntryLinePublicDTO {
   @Field(() => ID)
   id: string;
 
   @Field()
+  lineNumber: number;
+
+  @Field()
   accountId: string;
+
+  @Field(() => AccountDTO, { nullable: true })
+  account?: AccountDTO;
 
   @Field({ nullable: true })
   accountCode?: string;
@@ -29,6 +50,9 @@ export class JournalEntryLinePublicDTO {
 
   @Field(() => Float)
   creditAmount: number;
+
+  @Field({ nullable: true })
+  currency?: string;
 
   @Field({ nullable: true })
   fundId?: string;
@@ -50,6 +74,9 @@ export class JournalEntryPublicDTO {
 
   @Field()
   entryDate: Date;
+
+  @Field({ nullable: true })
+  postingDate?: Date;
 
   @Field()
   entryType: string;
@@ -78,6 +105,12 @@ export class JournalEntryPublicDTO {
   @Field()
   status: string;
 
+  @Field()
+  organisationId: string;
+
+  @Field({ nullable: true })
+  branchId?: string;
+
   @Field(() => Float)
   totalDebit: number;
 
@@ -91,30 +124,38 @@ export class JournalEntryPublicDTO {
   createdAt: Date;
 
   @Field({ nullable: true })
+  updatedAt?: Date;
+
+  @Field({ nullable: true })
+  createdBy?: string;
+
+  @Field({ nullable: true })
   postedAt?: Date;
 
   @Field({ nullable: true })
   postedBy?: string;
-
-  // ===== EXCLUDED FIELDS =====
-  // - createdBy (internal tracking)
-  // - updatedBy (internal tracking)
-  // - updatedAt (not needed by client)
-  // - version (internal concurrency control)
-  // - organisationId (already in context)
-  // - branchId (already in context)
-  // - deletedAt (soft delete internal)
-  // - deletedBy (soft delete internal)
 }
 
 /**
  * Map database entity to public DTO
  */
 export function mapToJournalEntryPublicDTO(entity: any): JournalEntryPublicDTO {
+  // Calculate totals from lines
+  let totalDebit = 0;
+  let totalCredit = 0;
+  
+  if (entity.lines && entity.lines.length > 0) {
+    entity.lines.forEach((line: any) => {
+      totalDebit += Number(line.debitAmount || 0);
+      totalCredit += Number(line.creditAmount || 0);
+    });
+  }
+
   return {
     id: entity.id,
     journalEntryNumber: entity.journalEntryNumber,
     entryDate: entity.entryDate,
+    postingDate: entity.postingDate,
     entryType: entity.entryType,
     sourceModule: entity.sourceModule,
     sourceTransactionId: entity.sourceTransactionId,
@@ -124,21 +165,33 @@ export function mapToJournalEntryPublicDTO(entity: any): JournalEntryPublicDTO {
     fiscalYear: entity.fiscalYear,
     fiscalPeriod: entity.fiscalPeriod,
     status: entity.status,
-    totalDebit: Number(entity.totalDebit || 0),
-    totalCredit: Number(entity.totalCredit || 0),
+    organisationId: entity.organisationId,
+    branchId: entity.branchId,
+    totalDebit,
+    totalCredit,
     lines: entity.lines?.map((line: any) => ({
       id: line.id,
+      lineNumber: line.lineNumber,
       accountId: line.accountId,
+      account: line.account ? {
+        id: line.account.id,
+        accountCode: line.account.accountCode,
+        accountName: line.account.accountName,
+        accountType: line.account.accountType,
+      } : undefined,
       accountCode: line.account?.accountCode,
       accountName: line.account?.accountName,
       description: line.description,
       debitAmount: Number(line.debitAmount),
       creditAmount: Number(line.creditAmount),
+      currency: line.currency,
       fundId: line.fundId,
       ministryId: line.ministryId,
       memberId: line.memberId,
     })) || [],
     createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt,
+    createdBy: entity.createdBy,
     postedAt: entity.postedAt,
     postedBy: entity.postedBy,
   };

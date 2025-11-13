@@ -29,6 +29,11 @@ export class CreateBackupInput {
   @IsOptional()
   @IsUUID()
   userId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
 }
 
 @InputType()

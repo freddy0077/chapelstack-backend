@@ -20,6 +20,9 @@ import { SuccessMessageDto } from './dto/success-message.dto';
 import { ForgotPasswordInput } from './dto/forgot-password.input';
 import { ResetPasswordInput } from './dto/reset-password.input';
 import { EmailService } from '../communications/services/email.service';
+import { AuditLogService } from '../audit/services/audit-log.service';
+import { MemberLookupService } from '../members/services/member-lookup.service';
+import { LoggerService } from '../common/services/logger.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +31,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
+    private readonly auditLogService: AuditLogService,
+    private readonly memberLookupService: MemberLookupService,
+    private readonly logger: LoggerService,
   ) {}
 
   // --- Helper method to generate access token ---
@@ -73,7 +79,10 @@ export class AuthService {
       firstName,
       lastName,
       phoneNumber,
+      organisationId,
+      branchId,
     } = signUpDto;
+
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -85,6 +94,20 @@ export class AuthService {
     const saltRounds = 10;
     const passwordHash: string = await bcrypt.hash(passwordInput, saltRounds);
 
+    // Get MEMBER role
+    const memberRole = await this.prisma.role.findFirst({
+      where: { name: 'MEMBER' },
+    });
+
+    if (!memberRole) {
+      this.logger.error(
+        'MEMBER role not found in database',
+        'AuthService.signUp',
+      );
+      throw new BadRequestException('System configuration error: MEMBER role not found');
+    }
+
+    // Create user
     const user = await this.prisma.user.create({
       data: {
         email,
@@ -92,8 +115,71 @@ export class AuthService {
         firstName,
         lastName,
         phoneNumber,
-        // roles: { connect: [{ name: 'MEMBER' }] } // Example: Assign a default role
+        organisation: organisationId
+          ? { connect: { id: organisationId } }
+          : undefined,
+        roles: { connect: { id: memberRole.id } },
+        userBranches: branchId
+          ? {
+              create: {
+                branch: { connect: { id: branchId } },
+                role: { connect: { id: memberRole.id } },
+              },
+            }
+          : undefined,
       },
+    });
+
+    // Try to link to member if organisationId is provided
+    let memberLinked = false;
+    if (organisationId) {
+      try {
+        const existingMember = await this.memberLookupService.findMemberByEmail(
+          email,
+          organisationId,
+        );
+
+        if (existingMember && !existingMember.userId) {
+          // Link user to member
+          await this.memberLookupService.linkUserToMember(
+            existingMember.id,
+            user.id,
+          );
+          memberLinked = true;
+
+          // Audit log for member linking
+          await this.auditLogService.create({
+            action: 'MEMBER_USER_LINKED',
+            entityType: 'Member',
+            entityId: existingMember.id,
+            description: `User ${email} linked to member record during registration`,
+            userId: user.id,
+            branchId,
+          });
+
+          this.logger.log(
+            `Member linked successfully for email: ${email}`,
+            'AuthService.signUp',
+          );
+        }
+      } catch (error) {
+        // Log but don't fail registration if member linking fails
+        this.logger.warn(
+          `Failed to link member during registration for email: ${email}`,
+          error,
+          'AuthService.signUp',
+        );
+      }
+    }
+
+    // Audit log for registration
+    await this.auditLogService.create({
+      action: 'USER_REGISTERED',
+      entityType: 'User',
+      entityId: user.id,
+      description: `User registered${memberLinked ? ' and linked to member' : ''}`,
+      userId: user.id,
+      branchId,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -184,20 +270,23 @@ export class AuthService {
     }
 
     // Check organization subscription status before allowing login
-    // Skip subscription validation for SUBSCRIPTION_MANAGER role
+    // Skip subscription validation for:
+    // 1. Users without organization (GOD_MODE, SUBSCRIPTION_MANAGER - system-level admins)
+    // 2. Users with exempt roles (SYSTEM_ADMIN, ADMIN)
     console.log('🔍 Checking user roles for subscription exemption...');
     console.log(
       'User roles:',
       user.roles.map((r) => r.name),
     );
+    console.log('User organisationId:', user.organisationId);
 
-    const isSubscriptionManager = user.roles.some(
-      (role) => role.name === 'SUBSCRIPTION_MANAGER',
+    const isSubscriptionExempt = !user.organisationId || user.roles.some(
+      (role) => ['GOD_MODE', 'SUBSCRIPTION_MANAGER', 'SYSTEM_ADMIN', 'ADMIN'].includes(role.name),
     );
 
-    console.log('Is subscription manager:', isSubscriptionManager);
+    console.log('Is subscription exempt:', isSubscriptionExempt);
 
-    if (!isSubscriptionManager && user.organisationId) {
+    if (!isSubscriptionExempt && user.organisationId) {
       console.log(
         '⚠️ User is not a subscription manager, checking subscription status...',
       );
@@ -244,9 +333,10 @@ export class AuthService {
           );
         }
       } else {
+          console.log("User object", user)
         // No subscription found - block access
         throw new UnauthorizedException(
-          'Your organization does not have an active subscription. Please contact your administrator.',
+          'Your organization does not have an active subscription. Please contact your administrator....',
         );
       }
     }
@@ -342,6 +432,20 @@ export class AuthService {
       typeof authPayload.user.organisationId,
     );
 
+    // Log the login action
+    await this.auditLogService.create({
+      action: 'LOGIN',
+      entityType: 'User',
+      entityId: user.id,
+      description: `User ${user.email} logged in successfully`,
+      userId: user.id,
+      branchId: user.userBranches?.[0]?.branchId || undefined,
+      metadata: {
+        email: user.email,
+        organisationId: user.organisationId,
+      },
+    });
+
     return authPayload;
   }
 
@@ -407,6 +511,15 @@ export class AuthService {
             role: true,
           },
         },
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImageUrl: true,
+            status: true,
+          },
+        },
       },
     });
     if (user && user.isActive) {
@@ -432,6 +545,13 @@ export class AuthService {
               branch: ub.branch ?? undefined,
             }))
           : [],
+        member: userData.member ? {
+          id: userData.member.id,
+          firstName: userData.member.firstName,
+          lastName: userData.member.lastName,
+          profileImageUrl: userData.member.profileImageUrl ?? undefined,
+          status: userData.member.status,
+        } : undefined,
       };
     }
     return null;
@@ -463,6 +583,31 @@ export class AuthService {
       where: { id: storedToken.id },
       data: { isRevoked: true },
     });
+
+    // Get user info for audit log
+    const user = await this.prisma.user.findUnique({
+      where: { id: storedToken.userId },
+      include: {
+        userBranches: {
+          select: { branchId: true },
+        },
+      },
+    });
+
+    // Log the logout action
+    if (user) {
+      await this.auditLogService.create({
+        action: 'LOGOUT',
+        entityType: 'User',
+        entityId: user.id,
+        description: `User ${user.email} logged out`,
+        userId: user.id,
+        branchId: user.userBranches?.[0]?.branchId || undefined,
+        metadata: {
+          email: user.email,
+        },
+      });
+    }
 
     return { message: 'Successfully logged out.' };
   }

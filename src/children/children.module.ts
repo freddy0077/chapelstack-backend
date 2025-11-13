@@ -15,9 +15,10 @@ import { GuardiansController } from './controllers/guardians.controller';
 import { CheckinController } from './controllers/checkin.controller';
 import { VolunteersController } from './controllers/volunteers.controller';
 import { EventsController } from './controllers/events.controller';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuditModule],
   providers: [
     // Services
     ChildrenService,

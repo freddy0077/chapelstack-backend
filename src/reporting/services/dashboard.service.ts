@@ -69,7 +69,7 @@ export class DashboardService {
     // Populate widgets based on dashboard type
     if (
       resolvedDashboardType === DashboardType.ADMIN ||
-      resolvedDashboardType === DashboardType.SUPER_ADMIN
+      resolvedDashboardType === DashboardType.SYSTEM_ADMIN
     ) {
       const adminWidgets = await Promise.all([
         this.getMemberDemographicsWidget(resolvedBranchId, organisationId),
@@ -80,7 +80,7 @@ export class DashboardService {
         this.getBudgetVsActualWidget(resolvedBranchId, organisationId),
         await this.getFinancialSummaryWidget(resolvedBranchId, organisationId),
         // --- SUPER ADMIN: Add new transaction-based widgets ---
-        ...(resolvedDashboardType === DashboardType.SUPER_ADMIN
+        ...(resolvedDashboardType === DashboardType.ADMIN
           ? [
               await this.getTransactionSummaryWidget(undefined, organisationId),
               await this.getTopGivingBranchesWidget(organisationId),

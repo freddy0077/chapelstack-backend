@@ -2,15 +2,22 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CheckInRecord } from '../entities/check-in-record.entity';
 import { CheckInInput } from '../dto/check-in.input';
 import { CheckOutInput } from '../dto/check-out.input';
+import { AuditLogService } from '../../audit/services/audit-log.service';
 
 @Injectable()
 export class CheckinService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CheckinService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   async checkIn(checkInInput: CheckInInput): Promise<CheckInRecord> {
     // Verify child exists
@@ -77,7 +84,7 @@ export class CheckinService {
     }
 
     // Create check-in record
-    return this.prisma.checkInRecord.create({
+    const checkInRecord = await this.prisma.checkInRecord.create({
       data: {
         childId: checkInInput.childId,
         eventId: checkInInput.eventId,
@@ -92,6 +99,29 @@ export class CheckinService {
         checkedInBy: true,
       },
     });
+
+    // Log child check-in - scoped to branch
+    try {
+      await this.auditLogService.create({
+        action: 'CHECK_IN_CHILD',
+        entityType: 'CheckInRecord',
+        entityId: checkInRecord.id,
+        description: `Child checked in: ${child.firstName} ${child.lastName}`,
+        userId: checkInInput.checkedInById,
+        branchId: checkInInput.branchId || undefined, // 🔒 Branch-scoped: log belongs to check-in's branch
+        metadata: {
+          childName: `${child.firstName} ${child.lastName}`,
+          guardianId: checkInInput.guardianIdAtCheckIn,
+          eventId: checkInInput.eventId,
+        },
+      });
+    } catch (auditError) {
+      this.logger.error(
+        `Failed to create audit log for check-in ${checkInRecord.id}: ${(auditError as Error).message}`,
+      );
+    }
+
+    return checkInRecord;
   }
 
   async checkOut(checkOutInput: CheckOutInput): Promise<CheckInRecord> {
@@ -136,8 +166,13 @@ export class CheckinService {
       );
     }
 
+    // Get child info for logging
+    const child = await this.prisma.child.findUnique({
+      where: { id: checkInRecord.childId },
+    });
+
     // Update check-in record with check-out information
-    return this.prisma.checkInRecord.update({
+    const updatedRecord = await this.prisma.checkInRecord.update({
       where: { id: checkOutInput.checkInRecordId },
       data: {
         checkedOutById: checkOutInput.checkedOutById,
@@ -154,6 +189,28 @@ export class CheckinService {
         checkedOutBy: true,
       },
     });
+
+    // Log child check-out - scoped to branch
+    try {
+      await this.auditLogService.create({
+        action: 'CHECK_OUT_CHILD',
+        entityType: 'CheckInRecord',
+        entityId: updatedRecord.id,
+        description: `Child checked out: ${child?.firstName} ${child?.lastName}`,
+        userId: checkOutInput.checkedOutById,
+        branchId: checkInRecord.branchId || undefined, // 🔒 Branch-scoped: log belongs to check-in's branch
+        metadata: {
+          childName: child ? `${child.firstName} ${child.lastName}` : undefined,
+          guardianId: checkOutInput.guardianIdAtCheckOut,
+        },
+      });
+    } catch (auditError) {
+      this.logger.error(
+        `Failed to create audit log for check-out ${updatedRecord.id}: ${(auditError as Error).message}`,
+      );
+    }
+
+    return updatedRecord;
   }
 
   async findActiveCheckIns(

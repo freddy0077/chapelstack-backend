@@ -14,7 +14,7 @@ import {
   LicenseStatus,
   LicenseType,
 } from '../entities/license.entity';
-import { AuditLogService } from './audit-log.service';
+import { AuditLogService } from '../../audit/services/audit-log.service';
 import * as crypto from 'crypto';
 import {
   PrismaLicense,
@@ -95,7 +95,7 @@ export class LicenseService {
       });
 
       // Log the action
-      await this.auditLogService.createAuditLog({
+      await this.auditLogService.create({
         action: 'LICENSE_CREATED',
         entityType: 'License',
         entityId: license.id,
@@ -230,7 +230,7 @@ export class LicenseService {
       });
 
       // Log the action
-      await this.auditLogService.createAuditLog({
+      await this.auditLogService.create({
         action: 'LICENSE_UPDATED',
         entityType: 'License',
         entityId: id,
@@ -280,7 +280,7 @@ export class LicenseService {
       });
 
       // Log the action
-      await this.auditLogService.createAuditLog({
+      await this.auditLogService.create({
         action: 'LICENSE_DELETED',
         entityType: 'License',
         entityId: id,

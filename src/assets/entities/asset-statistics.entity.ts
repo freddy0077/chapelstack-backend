@@ -26,10 +26,10 @@ export class AssetStatistics {
 
 @ObjectType()
 export class AssetsByType {
-  @Field()
+  @Field(() => String)
   assetTypeId: string;
 
-  @Field()
+  @Field(() => String)
   assetTypeName: string;
 
   @Field(() => Int)

@@ -13,7 +13,7 @@ export class BranchEventsResolver {
   constructor(private branchEventsService: BranchEventsService) {}
 
   @Query(() => [Event], { name: 'branchUpcomingEvents' })
-  // @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MODERATOR, Role.USER, Role.MEMBER)
+  // @Roles(Role.ADMIN, Role.ADMIN, Role.MODERATOR, Role.USER, Role.MEMBER)
   async getBranchUpcomingEvents(
     @Args('branchId', { type: () => String }) branchId: string,
     @Args('limit', { type: () => Number, nullable: true }) limit?: number,

@@ -104,4 +104,9 @@ export class MemberFiltersInput {
   @IsOptional()
   @IsBoolean()
   hasMemberId?: boolean;
+
+  @Field(() => Boolean, { nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  isDeactivated?: boolean;
 }

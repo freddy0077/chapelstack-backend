@@ -3,7 +3,7 @@ import { GraphQLISODateTime } from '@nestjs/graphql';
 
 @ObjectType()
 export class DatabaseHealth {
-  @Field()
+  @Field(() => String)
   status: string;
 
   @Field(() => Int)
@@ -54,10 +54,10 @@ export class SystemInfo {
   @Field(() => Float)
   processUptime: number;
 
-  @Field()
+  @Field(() => String)
   platform: string;
 
-  @Field()
+  @Field(() => String)
   nodeVersion: string;
 }
 

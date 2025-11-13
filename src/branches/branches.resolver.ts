@@ -33,6 +33,7 @@ import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
+import { BranchFinancialSummary } from './dto/branch-financial-summary.output';
 
 @Resolver(() => Branch)
 export class BranchesResolver {
@@ -60,7 +61,7 @@ export class BranchesResolver {
 
   @Query(() => [User], { name: 'branchUsers' })
   @UseGuards(GqlAuthGuard, RolesGuard)
-  // @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MODERATOR)
+  // @Roles(Role.ADMIN, Role.ADMIN, Role.MODERATOR)
   async getBranchUsers(
     @Args('branchId', { type: () => String }) branchId: string,
   ): Promise<User[]> {
@@ -218,7 +219,7 @@ export class BranchesResolver {
             id: user.id,
           },
         },
-        name: 'SUPER_ADMIN',
+        name: 'ADMIN',
       },
     });
 
@@ -341,7 +342,7 @@ export class BranchesResolver {
 
   @Mutation(() => User)
   @UseGuards(GqlAuthGuard, RolesGuard)
-  // @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  // @Roles(Role.ADMIN, Role.ADMIN)
   async assignUserRole(
     @Args('userId', { type: () => String }) userId: string,
     @Args('branchId', { type: () => String }) branchId: string,
@@ -376,7 +377,7 @@ export class BranchesResolver {
     }
 
     // Check if the current user has permission to assign this role
-    // Only SUPER_ADMIN can assign ADMIN role
+    // Only ADMIN can assign ADMIN role
     const currentUserRoles = await this.prisma.userBranch.findMany({
       where: { userId: currentUser.id },
       include: { role: true },
@@ -386,9 +387,9 @@ export class BranchesResolver {
 
     if (
       roleName === Role.ADMIN &&
-      !currentUserRoleNames.includes(Role.SUPER_ADMIN)
+      !currentUserRoleNames.includes(Role.ADMIN)
     ) {
-      throw new ForbiddenException('Only SUPER_ADMIN can assign ADMIN role');
+      throw new ForbiddenException('Only ADMIN can assign ADMIN role');
     }
 
     // Check if the user already has this role in this branch
@@ -429,7 +430,7 @@ export class BranchesResolver {
 
   @Mutation(() => User)
   @UseGuards(GqlAuthGuard, RolesGuard)
-  // @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  // @Roles(Role.ADMIN, Role.ADMIN)
   async removeUserRole(
     @Args('userId', { type: () => String }) userId: string,
     @Args('branchId', { type: () => String }) branchId: string,
@@ -464,7 +465,7 @@ export class BranchesResolver {
     }
 
     // Check if the current user has permission to remove this role
-    // Only SUPER_ADMIN can remove ADMIN role
+    // Only ADMIN can remove ADMIN role
     const currentUserRoles = await this.prisma.userBranch.findMany({
       where: { userId: currentUser.id },
       include: { role: true },
@@ -474,9 +475,9 @@ export class BranchesResolver {
 
     if (
       roleName === Role.ADMIN &&
-      !currentUserRoleNames.includes(Role.SUPER_ADMIN)
+      !currentUserRoleNames.includes(Role.ADMIN)
     ) {
-      throw new ForbiddenException('Only SUPER_ADMIN can remove ADMIN role');
+      throw new ForbiddenException('Only ADMIN can remove ADMIN role');
     }
 
     // Find the user branch role to remove
@@ -512,7 +513,7 @@ export class BranchesResolver {
 
   @Mutation(() => User)
   @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.ADMIN, Role.ADMIN)
   async addUserToBranch(
     @Args('userId', { type: () => String }) userId: string,
     @Args('branchId', { type: () => String }) branchId: string,
@@ -547,7 +548,7 @@ export class BranchesResolver {
     }
 
     // Check if the current user has permission to assign this role
-    // Only SUPER_ADMIN can assign ADMIN role
+    // Only ADMIN can assign ADMIN role
     const currentUserRoles = await this.prisma.userBranch.findMany({
       where: { userId: currentUser.id },
       include: { role: true },
@@ -557,9 +558,9 @@ export class BranchesResolver {
 
     if (
       roleName === Role.ADMIN &&
-      !currentUserRoleNames.includes(Role.SUPER_ADMIN)
+      !currentUserRoleNames.includes(Role.ADMIN)
     ) {
-      throw new ForbiddenException('Only SUPER_ADMIN can assign ADMIN role');
+      throw new ForbiddenException('Only ADMIN can assign ADMIN role');
     }
 
     // Check if the user is already in the branch
@@ -990,5 +991,78 @@ export class BranchesResolver {
     });
 
     return branchAdmin as unknown as User;
+  }
+
+  @Query(() => BranchFinancialSummary, { name: 'branchFinancialSummary' })
+  async getBranchFinancialSummary(
+    @Args('branchId', { type: () => String }) branchId: string,
+  ): Promise<BranchFinancialSummary> {
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    // Current month totals
+    const currentIncome = await this.prisma.transaction.aggregate({
+      where: {
+        branchId,
+        type: 'CONTRIBUTION',
+        date: { gte: currentMonthStart, lte: currentMonthEnd },
+      },
+      _sum: { amount: true },
+    });
+
+    const currentExpenses = await this.prisma.transaction.aggregate({
+      where: {
+        branchId,
+        type: 'EXPENSE',
+        date: { gte: currentMonthStart, lte: currentMonthEnd },
+      },
+      _sum: { amount: true },
+    });
+
+    // Previous month totals for comparison
+    const prevIncome = await this.prisma.transaction.aggregate({
+      where: {
+        branchId,
+        type: 'CONTRIBUTION',
+        date: { gte: prevMonthStart, lte: prevMonthEnd },
+      },
+      _sum: { amount: true },
+    });
+
+    const prevExpenses = await this.prisma.transaction.aggregate({
+      where: {
+        branchId,
+        type: 'EXPENSE',
+        date: { gte: prevMonthStart, lte: prevMonthEnd },
+      },
+      _sum: { amount: true },
+    });
+
+    // Convert Decimal to number
+    const totalIncome = Number(currentIncome._sum.amount || 0);
+    const totalExpenses = Number(currentExpenses._sum.amount || 0);
+    const balance = totalIncome - totalExpenses;
+
+    const prevTotalIncome = Number(prevIncome._sum.amount || 0);
+    const prevTotalExpenses = Number(prevExpenses._sum.amount || 0);
+    const prevBalance = prevTotalIncome - prevTotalExpenses;
+
+    // Calculate percentage changes
+    const incomeChange = prevTotalIncome > 0 ? ((totalIncome - prevTotalIncome) / prevTotalIncome) * 100 : 0;
+    const expensesChange = prevTotalExpenses > 0 ? ((totalExpenses - prevTotalExpenses) / prevTotalExpenses) * 100 : 0;
+    const balanceChange = prevBalance !== 0 ? ((balance - prevBalance) / Math.abs(prevBalance)) * 100 : 0;
+
+    return {
+      totalIncome,
+      totalExpenses,
+      balance,
+      incomeChange,
+      expensesChange,
+      balanceChange,
+    };
   }
 }

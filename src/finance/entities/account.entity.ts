@@ -11,10 +11,10 @@ export class AccountEntity {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   accountCode: string;
 
-  @Field()
+  @Field(() => String)
   accountName: string;
 
   @Field(() => AccountType)
@@ -41,16 +41,16 @@ export class AccountEntity {
   @Field(() => String, { nullable: true })
   ministryId?: string | null;
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 
-  @Field()
+  @Field(() => Boolean)
   isSystemAccount: boolean;
 
   @Field(() => Boolean, { nullable: true })
   isRestricted?: boolean | null;
 
-  @Field()
+  @Field(() => String)
   currency: string;
 
   // Bank Integration
@@ -60,7 +60,7 @@ export class AccountEntity {
   @Field(() => String, { nullable: true })
   bankAccountId?: string | null;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
   @Field(() => String, { nullable: true })
@@ -69,10 +69,10 @@ export class AccountEntity {
   @Field(() => String, { nullable: true })
   createdBy?: string | null;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   // Calculated field

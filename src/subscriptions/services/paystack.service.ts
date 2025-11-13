@@ -18,10 +18,33 @@ export class PaystackService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
+    this.logger = new Logger(PaystackService.name);
+    
     this.secretKey =
       this.configService.get<string>('PAYSTACK_SECRET_KEY') || '';
     this.publicKey =
       this.configService.get<string>('PAYSTACK_PUBLIC_KEY') || '';
+
+    // Log key status (masked for security)
+    if (!this.secretKey) {
+      this.logger.warn('⚠️ [PAYSTACK BACKEND] Secret key not found in environment variables');
+    } else {
+      const maskedSecretKey = this.secretKey.length > 12 
+        ? `${this.secretKey.substring(0, 8)}...${this.secretKey.substring(this.secretKey.length - 4)}`
+        : '***';
+      this.logger.log(`✅ [PAYSTACK BACKEND] Secret key loaded: ${maskedSecretKey}`);
+      this.logger.log(`🔑 [PAYSTACK BACKEND] Secret key type: ${this.secretKey.startsWith('sk_live') ? 'LIVE' : this.secretKey.startsWith('sk_test') ? 'TEST' : 'UNKNOWN'}`);
+    }
+
+    if (!this.publicKey) {
+      this.logger.warn('⚠️ [PAYSTACK BACKEND] Public key not found in environment variables');
+    } else {
+      const maskedPublicKey = this.publicKey.length > 12 
+        ? `${this.publicKey.substring(0, 8)}...${this.publicKey.substring(this.publicKey.length - 4)}`
+        : '***';
+      this.logger.log(`✅ [PAYSTACK BACKEND] Public key loaded: ${maskedPublicKey}`);
+      this.logger.log(`🔑 [PAYSTACK BACKEND] Public key type: ${this.publicKey.startsWith('pk_live') ? 'LIVE' : this.publicKey.startsWith('pk_test') ? 'TEST' : 'UNKNOWN'}`);
+    }
 
     // Only require keys in production environment
     const nodeEnv = this.configService.get<string>('NODE_ENV');
@@ -32,8 +55,6 @@ export class PaystackService {
     if (nodeEnv === 'production' && !this.publicKey) {
       throw new Error('PAYSTACK_PUBLIC_KEY is required in production');
     }
-
-    this.logger = new Logger(PaystackService.name);
   }
 
   /**
@@ -314,7 +335,7 @@ export class PaystackService {
    */
   async verifyTransaction(reference: string): Promise<PaystackResponse> {
     try {
-      this.logger.log(`Verifying Paystack transaction: ${reference}`);
+      this.logger.log(`🔍 [PAYSTACK BACKEND] Verifying transaction: ${reference}`);
 
       const response = await firstValueFrom(
         this.httpService.get(
@@ -324,7 +345,10 @@ export class PaystackService {
       );
 
       this.logger.log(
-        `Paystack transaction verified successfully: ${reference}`,
+        `✅ [PAYSTACK BACKEND] Transaction verified successfully: ${reference}`,
+      );
+      this.logger.log(
+        `💰 [PAYSTACK BACKEND] Transaction status: ${response.data.data.status}, Amount: ${response.data.data.currency} ${response.data.data.amount / 100}`,
       );
       return response.data;
     } catch (error) {
@@ -381,7 +405,10 @@ export class PaystackService {
   }): Promise<PaystackResponse> {
     try {
       this.logger.log(
-        `Initializing Paystack transaction for: ${transactionData.email}`,
+        `💳 [PAYSTACK BACKEND] Initializing transaction for: ${transactionData.email}`,
+      );
+      this.logger.log(
+        `💰 [PAYSTACK BACKEND] Amount: ${transactionData.currency || 'NGN'} ${transactionData.amount}`,
       );
 
       const response = await firstValueFrom(
@@ -397,7 +424,7 @@ export class PaystackService {
       );
 
       this.logger.log(
-        `Paystack transaction initialized successfully: ${response.data.data.reference}`,
+        `✅ [PAYSTACK BACKEND] Transaction initialized successfully: ${response.data.data.reference}`,
       );
       return response.data;
     } catch (error) {
@@ -417,12 +444,11 @@ export class PaystackService {
   verifyWebhookSignature(payload: any, signature: string): boolean {
     try {
       const crypto = require('crypto');
-      const webhookSecret = this.configService.get<string>(
-        'PAYSTACK_WEBHOOK_SECRET',
-      );
+      // ✅ FIXED: Use PAYSTACK_SECRET_KEY (not PAYSTACK_WEBHOOK_SECRET)
+      const webhookSecret = this.secretKey;
 
       if (!webhookSecret) {
-        this.logger.warn('PAYSTACK_WEBHOOK_SECRET not configured');
+        this.logger.error('❌ [PAYSTACK WEBHOOK] Secret key not configured');
         return false;
       }
 
@@ -431,10 +457,18 @@ export class PaystackService {
         .update(JSON.stringify(payload))
         .digest('hex');
 
-      return hash === signature;
+      const isValid = hash === signature;
+      
+      if (!isValid) {
+        this.logger.warn('❌ [PAYSTACK WEBHOOK] Invalid signature');
+      } else {
+        this.logger.log('✅ [PAYSTACK WEBHOOK] Signature verified successfully');
+      }
+
+      return isValid;
     } catch (error) {
       this.logger.error(
-        `Failed to verify webhook signature: ${error.message}`,
+        `❌ [PAYSTACK WEBHOOK] Failed to verify signature: ${error.message}`,
         error.stack,
       );
       return false;

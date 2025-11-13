@@ -21,20 +21,20 @@ export class RolePermissionResolver {
 
   // Role Queries
   @Query(() => [Role], { name: 'adminRoles' })
-  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN')
   async findAllRoles() {
     return this.rolePermissionService.findAllRoles();
   }
 
   @Query(() => Role, { name: 'adminRole' })
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  @Roles('ADMIN', 'SYSTEM_ADMIN')
   async findRoleById(@Args('id', { type: () => ID }) id: string) {
     return this.rolePermissionService.findRoleById(id);
   }
 
   // Role Mutations
   @Mutation(() => Role)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async createRole(@Args('input') createRoleInput: CreateRoleInput) {
     return this.rolePermissionService.createRole(
       createRoleInput.name,
@@ -43,7 +43,7 @@ export class RolePermissionResolver {
   }
 
   @Mutation(() => Role)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async updateRole(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') updateRoleInput: UpdateRoleInput,
@@ -56,13 +56,13 @@ export class RolePermissionResolver {
   }
 
   @Mutation(() => Role)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async deleteRole(@Args('id', { type: () => ID }) id: string) {
     return this.rolePermissionService.deleteRole(id);
   }
 
   @Mutation(() => Role)
-  // @Roles('SUPER_ADMIN')
+  // @Roles('ADMIN')
   async createRoleWithPermissions(
     @Args('input') input: CreateRoleWithPermissionsInput,
   ) {
@@ -75,20 +75,20 @@ export class RolePermissionResolver {
 
   // Permission Queries
   @Query(() => [Permission], { name: 'adminPermissions' })
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  @Roles('ADMIN', 'SYSTEM_ADMIN')
   async findAllPermissions() {
     return this.rolePermissionService.findAllPermissions();
   }
 
   @Query(() => Permission, { name: 'adminPermission' })
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  @Roles('ADMIN', 'SYSTEM_ADMIN')
   async findPermissionById(@Args('id', { type: () => ID }) id: string) {
     return this.rolePermissionService.findPermissionById(id);
   }
 
   // Permission Mutations
   @Mutation(() => Permission)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async createPermission(
     @Args('input') createPermissionInput: CreatePermissionInput,
   ) {
@@ -100,7 +100,7 @@ export class RolePermissionResolver {
   }
 
   @Mutation(() => Permission)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async updatePermission(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') updatePermissionInput: UpdatePermissionInput,
@@ -114,14 +114,14 @@ export class RolePermissionResolver {
   }
 
   @Mutation(() => Permission)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async deletePermission(@Args('id', { type: () => ID }) id: string) {
     return this.rolePermissionService.deletePermission(id);
   }
 
   // Role-Permission Mutations
   @Mutation(() => Role)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async assignPermissionToRole(
     @Args('roleId', { type: () => ID }) roleId: string,
     @Args('permissionId', { type: () => ID }) permissionId: string,
@@ -133,7 +133,7 @@ export class RolePermissionResolver {
   }
 
   @Mutation(() => Role)
-  @Roles('SUPER_ADMIN')
+  @Roles('ADMIN')
   async removePermissionFromRole(
     @Args('roleId', { type: () => ID }) roleId: string,
     @Args('permissionId', { type: () => ID }) permissionId: string,

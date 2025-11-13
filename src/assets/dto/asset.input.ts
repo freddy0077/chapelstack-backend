@@ -1,5 +1,6 @@
 import { InputType, Field, Float, ID } from '@nestjs/graphql';
-import { IsString, IsOptional, IsNumber, IsDateString, IsArray, Min } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsDate, IsArray, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { GraphQLJSON } from 'graphql-type-json';
 
 @InputType()
@@ -18,7 +19,8 @@ export class CreateAssetInput {
   description?: string;
 
   @Field({ nullable: true })
-  @IsDateString()
+  @Type(() => Date)
+  @IsDate()
   @IsOptional()
   purchaseDate?: Date;
 
@@ -66,7 +68,8 @@ export class CreateAssetInput {
   condition?: string;
 
   @Field({ nullable: true })
-  @IsDateString()
+  @Type(() => Date)
+  @IsDate()
   @IsOptional()
   warrantyExpiryDate?: Date;
 
@@ -136,7 +139,8 @@ export class UpdateAssetInput {
   description?: string;
 
   @Field({ nullable: true })
-  @IsDateString()
+  @Type(() => Date)
+  @IsDate()
   @IsOptional()
   purchaseDate?: Date;
 
@@ -184,7 +188,8 @@ export class UpdateAssetInput {
   condition?: string;
 
   @Field({ nullable: true })
-  @IsDateString()
+  @Type(() => Date)
+  @IsDate()
   @IsOptional()
   warrantyExpiryDate?: Date;
 

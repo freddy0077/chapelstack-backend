@@ -9,22 +9,22 @@ export class JournalEntryEntity {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   journalEntryNumber: string;
 
-  @Field()
+  @Field(() => Date)
   entryDate: Date;
 
   @Field(() => JournalEntryType)
   entryType: JournalEntryType;
 
-  @Field()
+  @Field(() => String)
   sourceModule: string;
 
   @Field(() => String, { nullable: true })
   sourceTransactionId?: string | null;
 
-  @Field()
+  @Field(() => String)
   description: string;
 
   @Field(() => String, { nullable: true })
@@ -42,7 +42,7 @@ export class JournalEntryEntity {
   @Field(() => Date, { nullable: true })
   postingDate?: Date | null;
 
-  @Field()
+  @Field(() => Boolean)
   isReversed: boolean;
 
   // Void Tracking
@@ -62,16 +62,16 @@ export class JournalEntryEntity {
   @Field(() => String, { nullable: true })
   postedBy?: string | null;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
   @Field(() => String, { nullable: true })
   branchId: string | null;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   @Field(() => Int, { nullable: true })

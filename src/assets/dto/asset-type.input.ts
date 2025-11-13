@@ -39,6 +39,11 @@ export class CreateAssetTypeInput {
   @IsOptional()
   customFields?: any;
 
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  branchId?: string;
+
   @Field()
   @IsString()
   organisationId: string;
@@ -85,4 +90,9 @@ export class UpdateAssetTypeInput {
   @Field(() => GraphQLJSON, { nullable: true })
   @IsOptional()
   customFields?: any;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  branchId?: string;
 }

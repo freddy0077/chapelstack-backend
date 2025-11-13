@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
 import { HttpModule } from '@nestjs/axios';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WorkflowsModule } from '../workflows/workflows.module';
 import { CommunicationsModule } from '../communications/communications.module';
+// Note: avoid importing EngagementModule to prevent circular dependency.
+// Notifications are enqueued via Bull 'notifications' queue from this module.
 import { ScheduleModule } from '@nestjs/schedule';
 
 // Services
@@ -32,8 +35,9 @@ import { OrganizationManagementResolver } from './resolvers/organization-managem
       timeout: 10000,
       maxRedirects: 5,
     }),
-    WorkflowsModule,
+    forwardRef(() => WorkflowsModule),
     CommunicationsModule,
+    BullModule.registerQueue({ name: 'notifications' }),
     ScheduleModule.forRoot(), // Enable cron jobs
   ],
   providers: [

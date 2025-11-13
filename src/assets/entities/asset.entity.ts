@@ -7,16 +7,16 @@ export class Asset {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   assetCode: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
   description?: string;
 
-  @Field()
+  @Field(() => String)
   assetTypeId: string;
 
   @Field(() => AssetType, { nullable: true })
@@ -43,7 +43,7 @@ export class Asset {
   @Field({ nullable: true })
   assignedToDepartment?: string;
 
-  @Field()
+  @Field(() => String)
   status: string;
 
   @Field({ nullable: true })
@@ -76,12 +76,12 @@ export class Asset {
   @Field({ nullable: true })
   branchId?: string;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

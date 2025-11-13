@@ -38,7 +38,7 @@ export class PastoralVisitEntity extends BaseEntity {
   @Field(() => VisitType)
   visitType: VisitType;
 
-  @Field()
+  @Field(() => Date)
   visitDate: Date;
 
   @Field({ nullable: true })

@@ -27,7 +27,7 @@ export class Transaction {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
   @Field({ nullable: true })
@@ -51,7 +51,7 @@ export class Transaction {
   @Field(() => Float)
   amount: number;
 
-  @Field()
+  @Field(() => Date)
   date: Date;
 
   @Field({ nullable: true })
@@ -70,7 +70,7 @@ export class Transaction {
   @Field({ nullable: true })
   createdBy?: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
   @Field({ nullable: true })
@@ -95,7 +95,7 @@ export class Transaction {
   originalTransactionId?: string;
 
   // Reconciliation Fields
-  @Field()
+  @Field(() => Boolean)
   isReconciled: boolean;
 
   @Field({ nullable: true })
@@ -107,10 +107,10 @@ export class Transaction {
   @Field({ nullable: true })
   accountingPeriodId?: string;
 
-  @Field()
+  @Field(() => Boolean)
   periodClosed: boolean;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   // Relations

@@ -9,10 +9,10 @@ export class BankReconciliationEntity {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   bankAccountId: string;
 
-  @Field()
+  @Field(() => Date)
   reconciliationDate: Date;
 
   @Field(() => Float)
@@ -33,10 +33,10 @@ export class BankReconciliationEntity {
   @Field(() => String, { nullable: true })
   notes?: string | null;
 
-  @Field()
+  @Field(() => String)
   reconciledBy: string;
 
-  @Field()
+  @Field(() => Date)
   reconciledAt: Date;
 
   @Field(() => ReconciliationStatus)
@@ -62,16 +62,16 @@ export class BankReconciliationEntity {
   @Field(() => String, { nullable: true })
   bankStatementFileUrl?: string | null;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
-  @Field()
+  @Field(() => String)
   branchId: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   @Field(() => Int, { nullable: true })

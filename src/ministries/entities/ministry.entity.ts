@@ -7,16 +7,16 @@ export class Ministry {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field(() => String, { nullable: true })
   description: string | null;
 
-  @Field()
+  @Field(() => String)
   type: string;
 
-  @Field()
+  @Field(() => String)
   status: string;
 
   @Field(() => ID, { nullable: true })
@@ -28,10 +28,10 @@ export class Ministry {
   @Field(() => ID, { nullable: true })
   parentId: string | null;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   @Field(() => [GroupMember], { nullable: true })

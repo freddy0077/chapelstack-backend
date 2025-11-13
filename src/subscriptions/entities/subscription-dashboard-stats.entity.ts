@@ -39,31 +39,31 @@ export class SubscriptionDashboardStats {
 
 @ObjectType()
 export class SubscriptionActivityItem {
-  @Field()
+  @Field(() => String)
   id: string;
 
-  @Field()
+  @Field(() => String)
   type: string; // 'ORGANIZATION_CREATED', 'SUBSCRIPTION_RENEWED', 'PAYMENT_FAILED', etc.
 
-  @Field()
+  @Field(() => String)
   description: string;
 
-  @Field()
+  @Field({ nullable: true })
   organizationName?: string;
 
-  @Field()
+  @Field({ nullable: true })
   organizationId?: string;
 
-  @Field()
+  @Field({ nullable: true })
   subscriptionId?: string;
 
-  @Field()
+  @Field(() => String)
   timestamp: string;
 
   @Field(() => GraphQLJSON, { nullable: true })
   metadata?: any;
 
-  @Field()
+  @Field(() => String)
   severity: string; // 'INFO', 'WARNING', 'ERROR', 'SUCCESS'
 }
 

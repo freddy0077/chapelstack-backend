@@ -9,7 +9,7 @@ export class CreateAssetDisposalInput {
 
   @Field()
   @IsDateString()
-  disposalDate: Date;
+  disposalDate: string; // ISO 8601 string
 
   @Field()
   @IsString()
@@ -80,10 +80,10 @@ export class AssetDisposalFilterInput {
   @Field({ nullable: true })
   @IsDateString()
   @IsOptional()
-  startDate?: Date;
+  startDate?: string; // ISO 8601 string
 
   @Field({ nullable: true })
   @IsDateString()
   @IsOptional()
-  endDate?: Date;
+  endDate?: string; // ISO 8601 string
 }

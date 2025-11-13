@@ -13,7 +13,7 @@ export class BranchActivitiesResolver {
   constructor(private branchActivitiesService: BranchActivitiesService) {}
 
   @Query(() => [BranchActivity], { name: 'branchActivities' })
-  // @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MODERATOR, Role.USER, Role.MEMBER)
+  // @Roles(Role.ADMIN, Role.ADMIN, Role.MODERATOR, Role.USER, Role.MEMBER)
   async getBranchActivities(
     @Args('branchId', { type: () => String }) branchId: string,
     @Args('limit', { type: () => Number, nullable: true }) limit?: number,

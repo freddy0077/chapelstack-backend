@@ -8,28 +8,28 @@ export class EmailTemplate {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
   description?: string;
 
-  @Field()
+  @Field(() => String)
   subject: string;
 
-  @Field()
+  @Field(() => String)
   bodyHtml: string;
 
   @Field({ nullable: true })
   bodyText?: string;
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   @Field(() => Branch, { nullable: true })

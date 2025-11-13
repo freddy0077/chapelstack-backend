@@ -1,21 +1,21 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType, Int } from '@nestjs/graphql';;
 import { SystemHealth } from '../../admin/entities/system-health.entity';
 
 @ObjectType()
 export class OrganisationInfo {
-  @Field()
+  @Field(() => String)
   id: string;
-  @Field()
+  @Field(() => String)
   name: string;
-  @Field()
+  @Field(() => Int)
   branchCount: number;
-  @Field()
+  @Field(() => Int)
   adminCount: number;
 }
 
 @ObjectType()
 export class OrganisationOverview {
-  @Field()
+  @Field(() => Int)
   total: number;
   @Field(() => [OrganisationInfo])
   organisations: OrganisationInfo[];
@@ -23,9 +23,9 @@ export class OrganisationOverview {
 
 @ObjectType()
 export class BranchInfo {
-  @Field()
+  @Field(() => String)
   id: string;
-  @Field()
+  @Field(() => String)
   name: string;
   @Field({ nullable: true })
   organisation?: string;
@@ -35,7 +35,7 @@ export class BranchInfo {
 
 @ObjectType()
 export class BranchesSummary {
-  @Field()
+  @Field(() => Int)
   total: number;
   @Field(() => [BranchInfo])
   branches: BranchInfo[];
@@ -43,7 +43,7 @@ export class BranchesSummary {
 
 @ObjectType()
 export class MemberSummary {
-  @Field()
+  @Field(() => Int)
   total: number;
   @Field({ nullable: true })
   newMembersThisMonth?: number;
@@ -51,37 +51,37 @@ export class MemberSummary {
 
 @ObjectType()
 export class TopGivingBranch {
-  @Field()
+  @Field(() => String)
   branchId: string;
 
-  @Field()
+  @Field(() => String)
   branchName: string;
 
-  @Field()
+  @Field(() => Int)
   totalGiven: number;
 }
 
 @ObjectType()
 export class FinancialOverview {
-  @Field()
+  @Field(() => Int)
   totalContributions: number;
 
-  @Field()
+  @Field(() => Int)
   tithes: number;
 
-  @Field()
+  @Field(() => Int)
   expenses: number;
 
-  @Field()
+  @Field(() => Int)
   pledge: number;
 
-  @Field()
+  @Field(() => Int)
   offering: number;
 
-  @Field()
+  @Field(() => Int)
   donation: number;
 
-  @Field()
+  @Field(() => Int)
   specialContribution: number;
 
   @Field(() => [TopGivingBranch])
@@ -90,23 +90,23 @@ export class FinancialOverview {
 
 @ObjectType()
 export class AttendanceOverview {
-  @Field()
+  @Field(() => Int)
   totalAttendance: number;
 }
 
 @ObjectType()
 export class SacramentsOverview {
-  @Field()
+  @Field(() => Int)
   totalSacraments: number;
 }
 
 @ObjectType()
 export class EventInfo {
-  @Field()
+  @Field(() => String)
   id: string;
-  @Field()
+  @Field(() => String)
   title: string;
-  @Field()
+  @Field(() => Date)
   startDate: Date;
 }
 
@@ -120,11 +120,11 @@ export class ActivityEngagement {
 
 @ObjectType()
 export class AnnouncementInfo {
-  @Field()
+  @Field(() => String)
   id: string;
-  @Field()
+  @Field(() => String)
   title: string;
-  @Field()
+  @Field(() => Date)
   startDate: Date;
 }
 

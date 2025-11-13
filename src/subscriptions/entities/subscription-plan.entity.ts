@@ -22,7 +22,7 @@ export class SubscriptionPlan {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
@@ -31,7 +31,7 @@ export class SubscriptionPlan {
   @Field(() => Float)
   amount: number;
 
-  @Field({ defaultValue: 'NGN' })
+  @Field({ defaultValue: 'GHS' })
   currency: string;
 
   @Field(() => SubscriptionInterval)
@@ -67,9 +67,9 @@ export class SubscriptionPlan {
   @Field(() => Int, { nullable: true })
   activeSubscriptionsCount?: number;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

@@ -18,16 +18,16 @@ export class TransactionAuditLog {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   transactionId: string;
 
   @Field(() => AuditAction)
   action: AuditAction;
 
-  @Field()
+  @Field(() => String)
   performedBy: string;
 
-  @Field()
+  @Field(() => Date)
   performedAt: Date;
 
   @Field(() => GraphQLJSON, { nullable: true })

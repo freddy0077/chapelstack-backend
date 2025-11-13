@@ -20,7 +20,7 @@ export class SubscriptionPayment {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   subscriptionId: string;
 
   @Field(() => Subscription, { nullable: true })
@@ -50,10 +50,10 @@ export class SubscriptionPayment {
   @Field({ nullable: true })
   failedAt?: Date;
 
-  @Field()
+  @Field(() => Date)
   periodStart: Date;
 
-  @Field()
+  @Field(() => Date)
   periodEnd: Date;
 
   @Field({ nullable: true })
@@ -65,9 +65,9 @@ export class SubscriptionPayment {
   @Field(() => GraphQLJSON, { nullable: true })
   metadata?: any;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

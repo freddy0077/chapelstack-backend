@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -19,12 +20,16 @@ import { GenerateQRTokenInput } from './dto/generate-qr-token.input';
 import { CardScanInput } from './dto/card-scan.input';
 import { randomBytes } from 'crypto';
 import { WorkflowsService } from '../workflows/services/workflows.service';
+import { AuditLogService } from '../audit/services/audit-log.service';
 
 @Injectable()
 export class AttendanceService {
+  private readonly logger = new Logger(AttendanceService.name);
+
   constructor(
     private prisma: PrismaService,
     private readonly workflowsService: WorkflowsService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async createAttendanceSession(data: CreateAttendanceSessionInput) {
@@ -277,6 +282,29 @@ export class AttendanceService {
       },
     });
 
+    // Log attendance record - scoped to branch
+    try {
+      await this.auditLogService.create({
+        action: 'RECORD_ATTENDANCE',
+        entityType: 'AttendanceRecord',
+        entityId: attendanceRecord.id,
+        description: `Attendance recorded for ${attendanceRecord.member ? `${attendanceRecord.member.firstName} ${attendanceRecord.member.lastName}` : attendanceRecord.visitorName}`,
+        userId: data.recordedById,
+        branchId: finalBranchId || undefined, // 🔒 Branch-scoped: log belongs to attendance's branch
+        metadata: {
+          memberName: attendanceRecord.member ? `${attendanceRecord.member.firstName} ${attendanceRecord.member.lastName}` : undefined,
+          visitorName: attendanceRecord.visitorName,
+          checkInMethod: attendanceRecord.checkInMethod,
+          sessionId: data.sessionId,
+          eventId: data.eventId,
+        },
+      });
+    } catch (auditError) {
+      this.logger.error(
+        `Failed to create audit log for attendance ${attendanceRecord.id}: ${(auditError as Error).message}`,
+      );
+    }
+
     // Trigger workflow automation for attendance recorded
     try {
       const organisationId = attendanceRecord.member?.organisationId || '';
@@ -422,6 +450,10 @@ export class AttendanceService {
     // Validate attendance record exists
     const record = await this.prisma.attendanceRecord.findUnique({
       where: { id: data.recordId },
+      include: {
+        member: true,
+        branch: true,
+      },
     });
 
     if (!record) {
@@ -430,7 +462,7 @@ export class AttendanceService {
       );
     }
 
-    return this.prisma.attendanceRecord.update({
+    const updatedRecord = await this.prisma.attendanceRecord.update({
       where: { id: data.recordId },
       data: {
         checkOutTime: data.checkOutTime || new Date(),
@@ -442,6 +474,28 @@ export class AttendanceService {
         branch: true,
       },
     });
+
+    // Log check-out - scoped to branch
+    try {
+      await this.auditLogService.create({
+        action: 'CHECK_OUT',
+        entityType: 'AttendanceRecord',
+        entityId: updatedRecord.id,
+        description: `Check-out recorded for ${record.member ? `${record.member.firstName} ${record.member.lastName}` : record.visitorName}`,
+        branchId: record.branchId || undefined, // 🔒 Branch-scoped: log belongs to attendance's branch
+        metadata: {
+          memberName: record.member ? `${record.member.firstName} ${record.member.lastName}` : undefined,
+          visitorName: record.visitorName,
+          checkOutTime: updatedRecord.checkOutTime,
+        },
+      });
+    } catch (auditError) {
+      this.logger.error(
+        `Failed to create audit log for check-out ${updatedRecord.id}: ${(auditError as Error).message}`,
+      );
+    }
+
+    return updatedRecord;
   }
 
   async findAttendanceRecords(

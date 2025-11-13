@@ -6,13 +6,13 @@ import {
 
 @ObjectType()
 export class BrandingSettings {
-  @Field()
+  @Field(() => String)
   primaryColor: string;
 
-  @Field()
+  @Field(() => String)
   secondaryColor: string;
 
-  @Field()
+  @Field(() => String)
   fontFamily: string;
 }
 

@@ -39,4 +39,14 @@ export class SignUpDto {
   @MaxLength(20) // Example length, adjust as needed
   @Field(() => PhoneNumberScalar, { nullable: true })
   phoneNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @Field(() => String, { nullable: true })
+  organisationId?: string;
+
+  @IsOptional()
+  @IsString()
+  @Field(() => String, { nullable: true })
+  branchId?: string;
 }

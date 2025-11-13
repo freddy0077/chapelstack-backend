@@ -1,26 +1,26 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, Int } from '@nestjs/graphql';;
 
 @ObjectType()
 export class BranchAdminDto {
-  @Field()
+  @Field(() => String)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 }
 
 @ObjectType()
 export class BranchInfoDto {
-  @Field()
+  @Field(() => String)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
   organisation?: string;
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 
   @Field(() => [BranchAdminDto])
@@ -29,28 +29,28 @@ export class BranchInfoDto {
 
 @ObjectType()
 export class MemberMonthlyTrendDto {
-  @Field()
+  @Field(() => Int)
   month: number;
 
-  @Field()
+  @Field(() => Int)
   year: number;
 
-  @Field()
+  @Field(() => Int)
   totalMembers: number;
 
-  @Field()
+  @Field(() => Int)
   newMembers: number;
 }
 
 @ObjectType()
 export class MemberStatsDto {
-  @Field()
+  @Field(() => Int)
   total: number;
 
-  @Field()
+  @Field(() => Int)
   newMembersThisMonth: number;
 
-  @Field()
+  @Field(() => Int)
   growthRate: number;
 
   @Field(() => [MemberMonthlyTrendDto])
@@ -59,19 +59,19 @@ export class MemberStatsDto {
 
 @ObjectType()
 export class FinanceMonthlyTrendDto {
-  @Field()
+  @Field(() => Int)
   month: number;
 
-  @Field()
+  @Field(() => Int)
   year: number;
 
-  @Field()
+  @Field(() => Int)
   contributions: number;
 
-  @Field()
+  @Field(() => Int)
   expenses: number;
 
-  @Field()
+  @Field(() => Int)
   netIncome: number;
 }
 
@@ -110,31 +110,31 @@ export class FinanceStatsDto {
 
 @ObjectType()
 export class AttendanceMonthlyTrendDto {
-  @Field()
+  @Field(() => Int)
   month: number;
 
-  @Field()
+  @Field(() => Int)
   year: number;
 
-  @Field()
+  @Field(() => Int)
   totalAttendance: number;
 
-  @Field()
+  @Field(() => Int)
   uniqueAttendees: number;
 }
 
 @ObjectType()
 export class AttendanceStatsDto {
-  @Field()
+  @Field(() => Int)
   totalAttendance: number;
 
-  @Field()
+  @Field(() => Int)
   uniqueAttendeesThisMonth: number;
 
-  @Field()
+  @Field(() => Int)
   averageAttendance: number;
 
-  @Field()
+  @Field(() => Int)
   growthRate: number;
 
   @Field(() => [AttendanceMonthlyTrendDto])
@@ -143,25 +143,25 @@ export class AttendanceStatsDto {
 
 @ObjectType()
 export class SacramentBreakdownDto {
-  @Field()
+  @Field(() => String)
   type: string;
 
-  @Field()
+  @Field(() => Int)
   count: number;
 }
 
 @ObjectType()
 export class SacramentMonthlyTrendDto {
-  @Field()
+  @Field(() => Int)
   month: number;
 
-  @Field()
+  @Field(() => Int)
   count: number;
 }
 
 @ObjectType()
 export class SacramentStatsDto {
-  @Field()
+  @Field(() => Int)
   totalSacraments: number;
 
   @Field(() => [SacramentBreakdownDto])
@@ -173,25 +173,25 @@ export class SacramentStatsDto {
 
 @ObjectType()
 export class EventDto {
-  @Field()
+  @Field(() => String)
   id: string;
 
-  @Field()
+  @Field(() => String)
   title: string;
 
-  @Field()
+  @Field(() => Date)
   startDate: Date;
 }
 
 @ObjectType()
 export class RecentMemberDto {
-  @Field()
+  @Field(() => String)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
-  @Field()
+  @Field(() => Date)
   joinedAt: Date;
 }
 
@@ -212,34 +212,34 @@ export class RecentContributionDto {
 
 @ObjectType()
 export class RecentSacramentDto {
-  @Field()
+  @Field(() => String)
   id: string;
 
-  @Field()
+  @Field(() => String)
   type: string;
 
-  @Field()
+  @Field(() => Date)
   date: Date;
 
-  @Field()
+  @Field(() => String)
   memberName: string;
 }
 
 @ObjectType()
 export class ActivitySummaryDto {
-  @Field()
+  @Field(() => Int)
   newMembersCount: number;
 
-  @Field()
+  @Field(() => Int)
   contributionsCount: number;
 
-  @Field()
+  @Field(() => Int)
   sacramentsCount: number;
 
-  @Field()
+  @Field(() => Int)
   attendanceRecordsCount: number;
 
-  @Field()
+  @Field(() => Int)
   totalActivities: number;
 }
 
@@ -266,43 +266,43 @@ export class ActivityStatsDto {
 
 @ObjectType()
 export class MemoryUsageDto {
-  @Field()
+  @Field(() => Int)
   rss: number;
 
-  @Field()
+  @Field(() => Int)
   heapTotal: number;
 
-  @Field()
+  @Field(() => Int)
   heapUsed: number;
 
-  @Field()
+  @Field(() => Int)
   external: number;
 }
 
 @ObjectType()
 export class CpuUsageDto {
-  @Field()
+  @Field(() => Int)
   user: number;
 
-  @Field()
+  @Field(() => Int)
   system: number;
 }
 
 @ObjectType()
 export class SystemDatabaseDto {
-  @Field()
+  @Field(() => String)
   status: string;
 
-  @Field()
+  @Field(() => Int)
   latency: number;
 }
 
 @ObjectType()
 export class SystemInfoDto {
-  @Field()
+  @Field(() => Int)
   totalMemory: number;
 
-  @Field()
+  @Field(() => Int)
   freeMemory: number;
 
   @Field(() => MemoryUsageDto)
@@ -311,22 +311,22 @@ export class SystemInfoDto {
   @Field(() => CpuUsageDto)
   cpuUsage: CpuUsageDto;
 
-  @Field()
+  @Field(() => Int)
   systemUptime: number;
 
-  @Field()
+  @Field(() => Int)
   processUptime: number;
 
-  @Field()
+  @Field(() => String)
   platform: string;
 
-  @Field()
+  @Field(() => String)
   nodeVersion: string;
 }
 
 @ObjectType()
 export class SystemStatusDto {
-  @Field()
+  @Field(() => Date)
   timestamp: Date;
 
   @Field(() => SystemDatabaseDto)

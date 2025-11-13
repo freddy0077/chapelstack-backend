@@ -15,7 +15,9 @@ import {
   UpdateSmallGroupInput,
 } from '../dto/small-group.input';
 import { GroupMember } from '../entities/group-member.entity';
+import { GroupExecutive } from '../entities/group-executive.entity';
 import { GroupMembersService } from '../services/group-members.service';
+import { GroupExecutivesService } from '../services/group-executives.service';
 import { Ministry } from '../entities/ministry.entity';
 import { MinistriesService } from '../services/ministries.service';
 
@@ -24,6 +26,7 @@ export class SmallGroupsResolver {
   constructor(
     private readonly smallGroupsService: SmallGroupsService,
     private readonly groupMembersService: GroupMembersService,
+    private readonly groupExecutivesService: GroupExecutivesService,
     private readonly ministriesService: MinistriesService,
   ) {}
 
@@ -66,6 +69,11 @@ export class SmallGroupsResolver {
   @ResolveField(() => [GroupMember])
   async members(@Parent() smallGroup: SmallGroup): Promise<GroupMember[]> {
     return this.groupMembersService.getMembersBySmallGroup(smallGroup.id);
+  }
+
+  @ResolveField(() => [GroupExecutive])
+  async executives(@Parent() smallGroup: SmallGroup): Promise<GroupExecutive[]> {
+    return this.groupExecutivesService.getExecutivesBySmallGroup(smallGroup.id);
   }
 
   @ResolveField(() => Ministry, { nullable: true })

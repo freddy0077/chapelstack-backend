@@ -10,6 +10,9 @@ import { EmailMessageDto } from '../dto/email-message.dto';
 import { SendMessageResponse } from '../dto/send-message-response.dto';
 import { TemplateService } from './template.service';
 import { RecipientService } from './recipient.service';
+import { EmailSettingsService } from '../../settings/services/email-settings.service';
+import * as nodemailer from 'nodemailer';
+import * as crypto from 'crypto';
 
 /**
  * Interface for transactional email options
@@ -38,6 +41,7 @@ export class EmailService {
     private readonly configService: ConfigService,
     private readonly templateService: TemplateService,
     private readonly recipientService: RecipientService,
+    private readonly emailSettingsService: EmailSettingsService,
   ) {
     this.defaultSender =
       this.configService.get<string>('EMAIL_SENDER') || 'info@chapelstack.com';
@@ -257,7 +261,7 @@ export class EmailService {
       }
 
       // Send the emails
-      const provider = await this.getEmailProvider();
+      const provider = await this.getEmailProvider(branchId);
       for (const emailRecord of emailRecords) {
         this.logger.log(
           `Sending email to recipient: ${emailRecord.recipients[0]}`,
@@ -413,7 +417,7 @@ export class EmailService {
       }
 
       // Send immediately
-      const provider = await this.getEmailProvider();
+      const provider = await this.getEmailProvider(branchId);
       
       // Send to all recipients (in production, you might want to batch this)
       await provider.sendEmail({
@@ -471,7 +475,7 @@ export class EmailService {
       );
 
       // Send the email directly without saving to database
-      const provider = await this.getEmailProvider();
+      const provider = await this.getEmailProvider(options.branchId);
 
       this.logger.log(`Sending transactional email to: ${to}`);
 
@@ -1143,10 +1147,30 @@ export class EmailService {
 
   /**
    * Get configured email provider
+   * Tries to use branch-specific settings first, falls back to environment variables
+   * @param branchId Optional branch ID to get branch-specific settings
    * @returns Promise<EmailProvider>
    * @private
    */
-  private async getEmailProvider(): Promise<any> {
+  private async getEmailProvider(branchId?: string): Promise<any> {
+    // Try to use branch-specific settings if branchId is provided
+    if (branchId) {
+      try {
+        const branchSettings = await this.emailSettingsService.getEmailSettings(branchId);
+        
+        if (branchSettings && branchSettings.isActive && branchSettings.smtpHost) {
+          this.logger.log(`Using branch-specific email settings for branch ${branchId}`);
+          return await this.createTransporterFromBranchSettings(branchSettings);
+        } else {
+          this.logger.debug(`Branch ${branchId} has no active email settings, falling back to default provider`);
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to get branch email settings for ${branchId}, falling back to default provider:`, error);
+      }
+    }
+
+    // Fall back to environment-based provider (SendGrid or SES)
+    this.logger.debug('Using default email provider from environment variables');
     const providerType =
       this.configService.get<string>('EMAIL_PROVIDER') || 'sendgrid';
 
@@ -1180,6 +1204,94 @@ export class EmailService {
         accessKeyId,
         secretAccessKey,
       });
+    }
+  }
+
+  /**
+   * Create a nodemailer transporter from branch-specific email settings
+   * @param settings EmailSettings from database
+   * @returns Nodemailer transporter wrapped in EmailProvider interface
+   * @private
+   */
+  private async createTransporterFromBranchSettings(settings: any): Promise<any> {
+    // Decrypt password
+    const decryptedPassword = settings.smtpPassword 
+      ? this.decryptPassword(settings.smtpPassword) 
+      : '';
+
+    // Create nodemailer transporter
+    const transporter = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: settings.smtpPort || 587,
+      secure: settings.smtpEncryption === 'SSL', // true for SSL, false for TLS
+      auth: settings.smtpUsername && decryptedPassword ? {
+        user: settings.smtpUsername,
+        pass: decryptedPassword,
+      } : undefined,
+      tls: settings.smtpEncryption === 'TLS' ? {
+        rejectUnauthorized: false, // Allow self-signed certificates
+      } : undefined,
+    });
+
+    // Test the connection
+    try {
+      await transporter.verify();
+      this.logger.log('Branch SMTP connection verified successfully');
+    } catch (error) {
+      this.logger.error('Branch SMTP connection verification failed:', error);
+      throw new Error(`SMTP connection failed: ${error.message}`);
+    }
+
+    // Wrap transporter in EmailProvider-compatible interface
+    return {
+      sendEmail: async (options: {
+        from: string;
+        to: string[];
+        subject: string;
+        html?: string;
+        text?: string;
+      }) => {
+        const mailOptions = {
+          from: settings.fromEmail && settings.fromName 
+            ? `"${settings.fromName}" <${settings.fromEmail}>`
+            : options.from,
+          to: options.to.join(', '),
+          replyTo: settings.replyToEmail || undefined,
+          subject: options.subject,
+          html: options.html,
+          text: options.text,
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        this.logger.log(`Email sent via branch SMTP: ${info.messageId}`);
+        return info;
+      },
+    };
+  }
+
+  /**
+   * Decrypt password using the same algorithm as EmailSettingsService
+   * @param encryptedText Encrypted password string
+   * @returns Decrypted password
+   * @private
+   */
+  private decryptPassword(encryptedText: string): string {
+    try {
+      const encryptionKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
+      const textParts = encryptedText.split(':');
+      const iv = Buffer.from(textParts.shift()!, 'hex');
+      const encrypted = Buffer.from(textParts.join(':'), 'hex');
+      const decipher = crypto.createDecipheriv(
+        'aes-256-cbc',
+        Buffer.from(encryptionKey.padEnd(32, '0').slice(0, 32)),
+        iv,
+      );
+      let decrypted = decipher.update(encrypted);
+      decrypted = Buffer.concat([decrypted, decipher.final()]);
+      return decrypted.toString();
+    } catch (error) {
+      this.logger.error('Failed to decrypt password:', error);
+      throw new Error('Failed to decrypt SMTP password');
     }
   }
 

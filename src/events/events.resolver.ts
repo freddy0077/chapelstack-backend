@@ -4,6 +4,7 @@ import {
   Mutation,
   Args,
   ID,
+  Int,
   ResolveField,
   Parent,
 } from '@nestjs/graphql';
@@ -18,6 +19,7 @@ import { Branch } from '../branches/entities/branch.entity';
 import { BranchesService } from '../branches/branches.service';
 import { EventRegistration } from './entities/event-registration.entity';
 import { EventRSVP } from './entities/event-rsvp.entity';
+import { EventStatistics } from './entities/event-statistics.entity';
 import {
   CreateEventRegistrationInput,
   UpdateEventRegistrationInput,
@@ -169,6 +171,65 @@ export class EventsResolver {
     return true;
   }
 
+  /**
+   * Verify Paystack payment and create event registration
+   * SECURE: Backend verifies payment reference before creating registration
+   */
+  @Mutation(() => EventRegistration)
+  async verifyAndRegisterForEvent(
+    @Args('paymentReference') paymentReference: string,
+    @Args('eventId') eventId: string,
+    @Args('guestName') guestName: string,
+    @Args('guestEmail') guestEmail: string,
+    @Args('guestPhone', { nullable: true }) guestPhone?: string,
+    @Args('numberOfGuests', { type: () => Int, nullable: true }) numberOfGuests?: number,
+    @Args('specialRequests', { nullable: true }) specialRequests?: string,
+    @Args('memberId', { nullable: true }) memberId?: string,
+  ): Promise<EventRegistration> {
+    const result = await this.eventsService.verifyAndRegisterForEvent(
+      paymentReference,
+      eventId,
+      {
+        guestName,
+        guestEmail,
+        guestPhone,
+        numberOfGuests,
+        specialRequests,
+        memberId,
+      },
+      'guest', // userId for guest registrations
+    );
+    return result as EventRegistration;
+  }
+
+  /**
+   * Register for free event (no payment required)
+   */
+  @Mutation(() => EventRegistration)
+  async registerForFreeEvent(
+    @Args('eventId') eventId: string,
+    @Args('guestName') guestName: string,
+    @Args('guestEmail') guestEmail: string,
+    @Args('guestPhone', { nullable: true }) guestPhone?: string,
+    @Args('numberOfGuests', { type: () => Int, nullable: true }) numberOfGuests?: number,
+    @Args('specialRequests', { nullable: true }) specialRequests?: string,
+    @Args('memberId', { nullable: true }) memberId?: string,
+  ): Promise<EventRegistration> {
+    const result = await this.eventsService.registerForFreeEvent(
+      eventId,
+      {
+        guestName,
+        guestEmail,
+        guestPhone,
+        numberOfGuests,
+        specialRequests,
+        memberId,
+      },
+      'guest',
+    );
+    return result as EventRegistration;
+  }
+
   // ===================================
   // EVENT RSVP RESOLVERS
   // ===================================
@@ -207,5 +268,52 @@ export class EventsResolver {
   ): Promise<boolean> {
     await this.eventsService.deleteEventRSVP(id);
     return true;
+  }
+
+  // Event Statistics and Dashboard Queries
+  @Query(() => EventStatistics)
+  async eventStatistics(
+    @Args('days', { type: () => Int, nullable: true }) days?: number,
+  ): Promise<EventStatistics> {
+    return this.eventsService.getEventStatistics(days);
+  }
+
+  @Query(() => [EventRegistration])
+  async recentRegistrations(
+    @Args('limit', { type: () => Int, nullable: true }) limit?: number,
+  ): Promise<EventRegistration[]> {
+    const results = await this.eventsService.getRecentRegistrations(limit);
+    return results as EventRegistration[];
+  }
+
+  // Approval Workflow Mutations
+  @Mutation(() => EventRegistration)
+  @RequirePermissions({ action: 'update', subject: 'EventRegistration' })
+  async approveRegistration(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('notes', { nullable: true }) notes?: string,
+    @CurrentUser() user?: any,
+  ): Promise<EventRegistration> {
+    const result = await this.eventsService.approveRegistration(
+      id,
+      user?.id,
+      notes,
+    );
+    return result as EventRegistration;
+  }
+
+  @Mutation(() => EventRegistration)
+  @RequirePermissions({ action: 'update', subject: 'EventRegistration' })
+  async rejectRegistration(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('reason') reason: string,
+    @CurrentUser() user?: any,
+  ): Promise<EventRegistration> {
+    const result = await this.eventsService.rejectRegistration(
+      id,
+      reason,
+      user?.id,
+    );
+    return result as EventRegistration;
   }
 }

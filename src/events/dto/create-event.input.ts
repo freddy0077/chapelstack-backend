@@ -16,7 +16,7 @@ import {
   ValidationOptions,
   ValidationArguments,
   IsEmail,
-  IsDecimal,
+  IsNumber,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { EventType, EventStatus } from '@prisma/client';
@@ -247,7 +247,7 @@ export class CreateEventInput {
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsDecimal()
+  @IsNumber()
   ticketPrice?: number;
 
   @Field({ nullable: true, defaultValue: 'GHS' })

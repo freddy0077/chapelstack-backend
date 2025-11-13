@@ -18,7 +18,7 @@ export class DataOperationResolver {
   constructor(private readonly dataOperationService: DataOperationService) {}
 
   @Mutation(() => DataOperation)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN', 'ADMIN')
   async createDataImport(
     @Args('input') input: CreateDataImportInput,
     @Context() context: any,
@@ -36,7 +36,7 @@ export class DataOperationResolver {
   }
 
   @Mutation(() => DataOperation)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN', 'ADMIN')
   async createDataExport(
     @Args('input') input: CreateDataExportInput,
     @Context() context: any,
@@ -54,7 +54,7 @@ export class DataOperationResolver {
   }
 
   @Query(() => DataOperation)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN', 'ADMIN')
   async dataOperation(
     @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
   ): Promise<DataOperation> {
@@ -62,7 +62,7 @@ export class DataOperationResolver {
   }
 
   @Query(() => [DataOperation])
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN', 'ADMIN')
   async dataOperations(
     @Args('filter', { nullable: true }) filter?: DataOperationFilterInput,
   ): Promise<DataOperation[]> {
@@ -70,7 +70,7 @@ export class DataOperationResolver {
   }
 
   @Mutation(() => DataOperation)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN', 'ADMIN')
   async cancelDataOperation(
     @Args('id', { type: () => ID }, ParseUUIDPipe) id: string,
     @Context() context: any,

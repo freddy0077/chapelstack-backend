@@ -14,19 +14,19 @@ export class FiscalPeriodEntity {
   @Field(() => Int)
   periodNumber: number;
 
-  @Field()
+  @Field(() => String)
   periodName: string;
 
-  @Field()
+  @Field(() => Date)
   startDate: Date;
 
-  @Field()
+  @Field(() => Date)
   endDate: Date;
 
   @Field(() => FiscalPeriodStatus)
   status: FiscalPeriodStatus;
 
-  @Field()
+  @Field(() => Boolean)
   isAdjustmentPeriod: boolean;
 
   @Field(() => Date, { nullable: true })
@@ -35,15 +35,15 @@ export class FiscalPeriodEntity {
   @Field(() => String, { nullable: true })
   closedBy?: string | null;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
   @Field(() => String, { nullable: true })
   branchId: string | null;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

@@ -10,9 +10,10 @@ import { AbsenteeResolver } from './resolvers/absentee.resolver';
 import { ReportsController } from './reports.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WorkflowsModule } from '../workflows/workflows.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  imports: [PrismaModule, WorkflowsModule],
+  imports: [PrismaModule, WorkflowsModule, AuditModule],
   controllers: [ReportsController],
   providers: [
     AttendanceResolver,

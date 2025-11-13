@@ -193,7 +193,7 @@ export class SetupWizardService {
         userId: user.id,
       });
 
-      // Assign SUPER_ADMIN role to user (User.roles relation)
+      // Assign ADMIN role to user (User.roles relation)
       await this.prisma.user.update({
         where: { id: user.id },
         data: {
@@ -229,7 +229,7 @@ export class SetupWizardService {
     try {
       const superAdminRole = await this.prisma.role.findFirst({
         where: {
-          name: 'SUPER_ADMIN',
+          name: 'ADMIN',
         },
       });
 
@@ -237,7 +237,7 @@ export class SetupWizardService {
         // Create the role if it doesn't exist
         const newRole = await this.prisma.role.create({
           data: {
-            name: 'SUPER_ADMIN',
+            name: 'ADMIN',
             description: 'Full system access',
           },
         });

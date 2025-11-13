@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WorkflowsService } from '../../workflows/services/workflows.service';
-import { EmailService } from '../../communications/services/email.service';
+import { InjectQueue } from '@nestjs/bull';
+import type { Queue } from 'bull';
 import { SubscriptionStatus } from '@prisma/client';
 import {
   WorkflowActionType,
@@ -26,7 +27,7 @@ export class SubscriptionWorkflowService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workflowsService: WorkflowsService,
-    private readonly emailService: EmailService,
+    @InjectQueue('notifications') private readonly notificationsQueue: Queue,
   ) {}
 
   // Trigger workflow when payment fails
@@ -246,7 +247,7 @@ export class SubscriptionWorkflowService {
           where: {
             roles: {
               some: {
-                name: { in: ['ADMIN', 'SUPER_ADMIN'] },
+                name: { in: ['ADMIN', 'ADMIN'] },
               },
             },
           },
@@ -255,13 +256,14 @@ export class SubscriptionWorkflowService {
     });
 
     if (organization && organization.users.length > 0) {
-      const recipients = organization.users.map((user) => user.id);
+      const recipients = organization.users.map((user) => ({ id: user.id, email: user.email }));
 
-      await this.emailService.sendEmail({
+      await this.notificationsQueue.add('send', {
+        channel: 'EMAIL',
         recipients,
-        subject: 'Payment Failed - Action Required',
         templateId: 'payment_failed_template_id',
-        templateData: {
+        variables: {
+          subject: 'Payment Failed - Action Required',
           organizationName: organization.name,
           amount: data.amount,
           subscriptionId: data.subscriptionId,
@@ -281,7 +283,7 @@ export class SubscriptionWorkflowService {
           where: {
             roles: {
               some: {
-                name: { in: ['ADMIN', 'SUPER_ADMIN'] },
+                name: { in: ['ADMIN', 'ADMIN'] },
               },
             },
           },
@@ -290,13 +292,14 @@ export class SubscriptionWorkflowService {
     });
 
     if (organization && organization.users.length > 0) {
-      const recipients = organization.users.map((user) => user.id);
+      const recipients = organization.users.map((user) => ({ id: user.id, email: user.email }));
 
-      await this.emailService.sendEmail({
+      await this.notificationsQueue.add('send', {
+        channel: 'EMAIL',
         recipients,
-        subject: 'Subscription Renewal Reminder',
         templateId: 'subscription_expiring_template_id',
-        templateData: {
+        variables: {
+          subject: 'Subscription Renewal Reminder',
           organizationName: organization.name,
           subscriptionId: data.subscriptionId,
         },
@@ -315,7 +318,7 @@ export class SubscriptionWorkflowService {
           where: {
             roles: {
               some: {
-                name: { in: ['ADMIN', 'SUPER_ADMIN'] },
+                name: { in: ['ADMIN', 'ADMIN'] },
               },
             },
           },
@@ -324,13 +327,14 @@ export class SubscriptionWorkflowService {
     });
 
     if (organization && organization.users.length > 0) {
-      const recipients = organization.users.map((user) => user.id);
+      const recipients = organization.users.map((user) => ({ id: user.id, email: user.email }));
 
-      await this.emailService.sendEmail({
+      await this.notificationsQueue.add('send', {
+        channel: 'EMAIL',
         recipients,
-        subject: 'Organization Access Suspended',
         templateId: 'organization_suspended_template_id',
-        templateData: {
+        variables: {
+          subject: 'Organization Access Suspended',
           organizationName: organization.name,
           reason: data.reason,
         },
@@ -349,7 +353,7 @@ export class SubscriptionWorkflowService {
           where: {
             roles: {
               some: {
-                name: { in: ['ADMIN', 'SUPER_ADMIN'] },
+                name: { in: ['ADMIN', 'ADMIN'] },
               },
             },
           },
@@ -358,13 +362,14 @@ export class SubscriptionWorkflowService {
     });
 
     if (organization && organization.users.length > 0) {
-      const recipients = organization.users.map((user) => user.id);
+      const recipients = organization.users.map((user) => ({ id: user.id, email: user.email }));
 
-      await this.emailService.sendEmail({
+      await this.notificationsQueue.add('send', {
+        channel: 'EMAIL',
         recipients,
-        subject: 'Subscription Renewed Successfully',
         templateId: 'subscription_renewed_template_id',
-        templateData: {
+        variables: {
+          subject: 'Subscription Renewed Successfully',
           organizationName: organization.name,
           subscriptionId: data.subscriptionId,
         },
@@ -437,7 +442,7 @@ export class SubscriptionWorkflowService {
           where: {
             roles: {
               some: {
-                name: { in: ['ADMIN', 'SUPER_ADMIN'] },
+                name: { in: ['ADMIN', 'ADMIN'] },
               },
             },
           },
@@ -446,13 +451,14 @@ export class SubscriptionWorkflowService {
     });
 
     if (organization && organization.users.length > 0) {
-      const recipients = organization.users.map((user) => user.id);
+      const recipients = organization.users.map((user) => ({ id: user.id, email: user.email }));
 
-      await this.emailService.sendEmail({
+      await this.notificationsQueue.add('send', {
+        channel: 'EMAIL',
         recipients,
-        subject: 'Account Reactivation Instructions',
         templateId: 'reactivation_instructions_template_id',
-        templateData: {
+        variables: {
+          subject: 'Account Reactivation Instructions',
           organizationName: organization.name,
           reason: data.reason,
         },
@@ -471,7 +477,7 @@ export class SubscriptionWorkflowService {
           where: {
             roles: {
               some: {
-                name: { in: ['ADMIN', 'SUPER_ADMIN'] },
+                name: { in: ['ADMIN', 'ADMIN'] },
               },
             },
           },
@@ -480,7 +486,7 @@ export class SubscriptionWorkflowService {
     });
 
     if (organization && organization.users.length > 0) {
-      const recipients = organization.users.map((user) => user.id);
+      const recipients = organization.users.map((user) => ({ id: user.id, email: user.email }));
 
       // Determine notification urgency based on days overdue
       const daysOverdue = data.daysOverdue || 0;
@@ -495,11 +501,12 @@ export class SubscriptionWorkflowService {
         template = 'payment_overdue_second_template_id';
       }
 
-      await this.emailService.sendEmail({
+      await this.notificationsQueue.add('send', {
+        channel: 'EMAIL',
         recipients,
-        subject,
         templateId: template,
-        templateData: {
+        variables: {
+          subject,
           organizationName: organization.name,
           daysOverdue,
           amount: data.amount,

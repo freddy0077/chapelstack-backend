@@ -1,21 +1,22 @@
 import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
 import { Asset } from './asset.entity';
+import { Member } from '../../members/entities/member.entity';
 
 @ObjectType()
 export class AssetDisposal {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   assetId: string;
 
   @Field(() => Asset, { nullable: true })
   asset?: Asset;
 
-  @Field()
+  @Field(() => Date)
   disposalDate: Date;
 
-  @Field()
+  @Field(() => String)
   disposalMethod: string;
 
   @Field({ nullable: true })
@@ -29,6 +30,9 @@ export class AssetDisposal {
 
   @Field({ nullable: true })
   approvedByMemberId?: string;
+
+  @Field(() => Member, { nullable: true })
+  approvedByMember?: Member;
 
   @Field({ nullable: true })
   disposalNotes?: string;
@@ -45,12 +49,12 @@ export class AssetDisposal {
   @Field({ nullable: true })
   branchId?: string;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

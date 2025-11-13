@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
+import { ObjectType, Field, ID, registerEnumType, Int } from '@nestjs/graphql';;
 import {
   WorkflowType,
   WorkflowStatus,
@@ -21,16 +21,16 @@ export class WorkflowAction {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   workflowId: string;
 
-  @Field()
+  @Field(() => Int)
   stepNumber: number;
 
   @Field(() => WorkflowActionType)
   actionType: WorkflowActionType;
 
-  @Field()
+  @Field(() => String)
   actionConfig: string; // JSON string
 
   @Field({ nullable: true })
@@ -39,10 +39,10 @@ export class WorkflowAction {
   @Field({ nullable: true })
   conditions?: string; // JSON string
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }
 
@@ -51,7 +51,7 @@ export class WorkflowTemplate {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
@@ -69,7 +69,7 @@ export class WorkflowTemplate {
   @Field({ nullable: true })
   triggerConfig?: string; // JSON string
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
   @Field({ nullable: true })
@@ -78,13 +78,13 @@ export class WorkflowTemplate {
   @Field(() => [WorkflowAction])
   actions: WorkflowAction[];
 
-  @Field()
+  @Field(() => String)
   createdBy: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   // Optional resolved fields
@@ -103,7 +103,7 @@ export class WorkflowExecution {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   workflowId: string;
 
   @Field(() => WorkflowExecutionStatus)
@@ -133,16 +133,16 @@ export class WorkflowExecution {
   @Field({ nullable: true })
   errorMessage?: string;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
   @Field({ nullable: true })
   branchId?: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   // Optional resolved fields
@@ -161,10 +161,10 @@ export class WorkflowActionExecution {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   executionId: string;
 
-  @Field()
+  @Field(() => String)
   actionId: string;
 
   @Field(() => WorkflowExecutionStatus)
@@ -182,10 +182,10 @@ export class WorkflowActionExecution {
   @Field({ nullable: true })
   result?: string; // JSON string
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   // Optional resolved fields
@@ -198,13 +198,13 @@ export class WorkflowTrigger {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   workflowId: string;
 
   @Field(() => WorkflowTriggerType)
   triggerType: WorkflowTriggerType;
 
-  @Field()
+  @Field(() => String)
   triggerConfig: string; // JSON string
 
   @Field({ nullable: true })
@@ -213,22 +213,22 @@ export class WorkflowTrigger {
   @Field({ nullable: true })
   nextRunAt?: Date;
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 
   @Field({ nullable: true })
   lastTriggeredAt?: Date;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
   @Field({ nullable: true })
   branchId?: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   // Optional resolved fields
@@ -238,30 +238,30 @@ export class WorkflowTrigger {
 
 @ObjectType()
 export class WorkflowStats {
-  @Field()
+  @Field(() => Int)
   totalWorkflows: number;
 
-  @Field()
+  @Field(() => Int)
   activeWorkflows: number;
 
-  @Field()
+  @Field(() => Int)
   totalExecutions: number;
 
-  @Field()
+  @Field(() => Int)
   successfulExecutions: number;
 
-  @Field()
+  @Field(() => Int)
   failedExecutions: number;
 
-  @Field()
+  @Field(() => Int)
   averageExecutionTime: number;
 
-  @Field()
+  @Field(() => Int)
   executionsToday: number;
 
-  @Field()
+  @Field(() => Int)
   executionsThisWeek: number;
 
-  @Field()
+  @Field(() => Int)
   executionsThisMonth: number;
 }

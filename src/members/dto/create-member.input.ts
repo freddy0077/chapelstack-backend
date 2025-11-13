@@ -54,10 +54,10 @@ export class CreateMemberInput {
   @IsEmail()
   alternativeEmail?: string;
 
-  @Field(() => String, { nullable: true })
-  @IsOptional()
+  @Field(() => String)
+  @IsNotEmpty()
   @IsString()
-  phoneNumber?: string;
+  phoneNumber: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -74,10 +74,10 @@ export class CreateMemberInput {
   @IsString()
   nfcId?: string;
 
-  @Field(() => String, { nullable: true })
-  @IsOptional()
+  @Field(() => String)
+  @IsNotEmpty()
   @IsString()
-  address?: string;
+  address: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()

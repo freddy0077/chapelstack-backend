@@ -31,7 +31,7 @@ export class SpiritualMilestoneEntity extends BaseEntity {
   @Field(() => MilestoneType)
   type: MilestoneType;
 
-  @Field()
+  @Field(() => Date)
   milestoneDate: Date;
 
   @Field({ nullable: true })

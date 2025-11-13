@@ -22,11 +22,11 @@ export class SuperAdminDashboardService {
       total: organisations.length,
       organisations: organisations.map((org) => {
         const branches = allBranches.filter((b) => b.organisationId === org.id);
-        // Admins: users with a role named 'super_admin' or 'admin' and matching organisationId
+        // Admins: users with a role named 'admin' or 'admin' and matching organisationId
         const admins = allUsers.filter(
           (u) =>
             u.organisationId === org.id &&
-            u.roles.some((r) => r.name === 'super_admin' || r.name === 'admin'),
+            u.roles.some((r) => r.name === 'admin' || r.name === 'admin'),
         );
         return {
           id: org.id,

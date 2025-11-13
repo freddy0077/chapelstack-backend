@@ -23,6 +23,12 @@ import { EmailModule } from '../email/email.module';
 import { CommunicationsGateway } from './gateways/communications.gateway';
 import { ConversationService } from './services/conversation.service';
 import { ConversationResolver } from './resolvers/conversation.resolver';
+import { SettingsModule } from '../settings/settings.module';
+import { AnnouncementService } from './services/announcement.service';
+import { AnnouncementNotificationService } from './services/announcement-notification.service';
+import { AnnouncementTemplateService } from './services/announcement-template.service';
+import { AnnouncementResolver } from './resolvers/announcement.resolver';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -30,6 +36,8 @@ import { ConversationResolver } from './resolvers/conversation.resolver';
     PrismaModule,
     ConfigModule,
     HttpModule,
+    SettingsModule,
+    AuditModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -48,6 +56,9 @@ import { ConversationResolver } from './resolvers/conversation.resolver';
     StatsService,
     RecipientService,
     ConversationService,
+    AnnouncementService,
+    AnnouncementNotificationService,
+    AnnouncementTemplateService,
 
     // Resolvers
     EmailResolver,
@@ -59,6 +70,7 @@ import { ConversationResolver } from './resolvers/conversation.resolver';
     // RecipientResolver, // Temporarily disabled
     RecipientCountResolver,
     ConversationResolver,
+    AnnouncementResolver,
 
     // Gateways
     CommunicationsGateway,
@@ -73,6 +85,9 @@ import { ConversationResolver } from './resolvers/conversation.resolver';
     StatsService,
     RecipientService,
     ConversationService,
+    AnnouncementService,
+    AnnouncementNotificationService,
+    AnnouncementTemplateService,
     CommunicationsGateway,
   ],
 })

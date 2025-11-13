@@ -10,7 +10,7 @@ import {
   DataOperationStatus,
   DataOperationType,
 } from '../entities/data-operation.entity';
-import { AuditLogService } from './audit-log.service';
+import { AuditLogService } from '../../audit/services/audit-log.service';
 import * as fs from 'fs';
 import * as path from 'path';
 // @ts-ignore - csv-parser doesn't have proper TypeScript types
@@ -88,7 +88,7 @@ export class DataOperationService {
     });
 
     // Log the action
-    await this.auditLogService.createAuditLog({
+    await this.auditLogService.create({
       action: 'DATA_IMPORT_CREATED',
       entityType: 'DataOperation',
       entityId: dataOperation.id,
@@ -127,7 +127,7 @@ export class DataOperationService {
     });
 
     // Log the action
-    await this.auditLogService.createAuditLog({
+    await this.auditLogService.create({
       action: 'DATA_EXPORT_CREATED',
       entityType: 'DataOperation',
       entityId: dataOperation.id,
@@ -213,7 +213,7 @@ export class DataOperationService {
     });
 
     // Log the action
-    await this.auditLogService.createAuditLog({
+    await this.auditLogService.create({
       action: 'DATA_OPERATION_CANCELLED',
       entityType: 'DataOperation',
       entityId: id,

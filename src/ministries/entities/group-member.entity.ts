@@ -8,10 +8,10 @@ export class GroupMember {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   role: string;
 
-  @Field()
+  @Field(() => Date)
   joinDate: Date;
 
   @Field(() => Date, { nullable: true })
@@ -20,10 +20,10 @@ export class GroupMember {
   @Field(() => String, { nullable: true })
   leaveReason?: string | null;
 
-  @Field()
+  @Field(() => String)
   status: string;
 
-  @Field()
+  @Field(() => String)
   memberId: string;
 
   @Field(() => String, { nullable: true })
@@ -32,10 +32,10 @@ export class GroupMember {
   @Field(() => String, { nullable: true })
   smallGroupId: string | null;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   @Field(() => Ministry, { nullable: true })

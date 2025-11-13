@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventInput, RecurrenceType } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
@@ -20,6 +20,8 @@ import {
   Prisma,
 } from '@prisma/client';
 import { WorkflowsService } from '../workflows/services/workflows.service';
+import { EventNotificationService } from './services/event-notification.service';
+import { AuditLogService } from '../audit/services/audit-log.service';
 import {
   addDays,
   addWeeks,
@@ -31,9 +33,13 @@ import {
 
 @Injectable()
 export class EventsService {
+  private readonly logger = new Logger(EventsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly workflowsService: WorkflowsService,
+    private readonly eventNotificationService: EventNotificationService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   // Helper method to convert Prisma Decimal fields to numbers for GraphQL compatibility
@@ -102,6 +108,27 @@ export class EventsService {
     try {
       // Create the event
       const event = await this.prisma.event.create({ data });
+
+      // Log event creation - scoped to branch
+      try {
+        await this.auditLogService.create({
+          action: 'CREATE_EVENT',
+          entityType: 'Event',
+          entityId: event.id,
+          description: `Event created: ${event.title}`,
+          branchId: event.branchId || undefined, // 🔒 Branch-scoped: log belongs to event's branch
+          metadata: {
+            title: event.title,
+            startDate: event.startDate,
+            endDate: event.endDate,
+            location: event.location,
+          },
+        });
+      } catch (auditError) {
+        this.logger.error(
+          `Failed to create audit log for event ${event.id}: ${(auditError as Error).message}`,
+        );
+      }
 
       // Trigger workflow automation for new event
       try {
@@ -476,7 +503,7 @@ export class EventsService {
       throw new Error('Registration already exists for this event');
     }
 
-    return this.prisma.eventRegistration
+    const registration = await this.prisma.eventRegistration
       .create({
         data: {
           ...input,
@@ -488,6 +515,28 @@ export class EventsService {
         },
       })
       .then((registration) => this.convertDecimalFields(registration));
+
+    // Send confirmation email asynchronously
+    this.eventNotificationService
+      .sendRegistrationConfirmation(registration.id)
+      .catch((error) => {
+        this.logger.warn(
+          `Failed to send registration confirmation email: ${error.message}`,
+        );
+      });
+
+    // Optionally send SMS if phone number is provided
+    if (input.guestPhone || registration.member?.phoneNumber) {
+      this.eventNotificationService
+        .sendSmsConfirmation(registration.id)
+        .catch((error) => {
+          this.logger.debug(
+            `Failed to send SMS confirmation: ${error.message}`,
+          );
+        });
+    }
+
+    return registration;
   }
 
   async updateEventRegistration(
@@ -504,12 +553,23 @@ export class EventsService {
 
     const { id, ...updateData } = input;
 
-    return this.prisma.eventRegistration
+    // Track if approval status changed
+    const approvalStatusChanged =
+      updateData.approvalStatus &&
+      updateData.approvalStatus !== registration.approvalStatus;
+    const newApprovalStatus = updateData.approvalStatus;
+
+    const updatedRegistration = await this.prisma.eventRegistration
       .update({
         where: { id },
         data: {
           ...updateData,
           updatedBy,
+          // Set approvedAt timestamp when approved
+          ...(updateData.approvalStatus === 'APPROVED' && {
+            approvedAt: new Date(),
+            approvedBy: updatedBy,
+          }),
         },
         include: {
           event: true,
@@ -517,6 +577,29 @@ export class EventsService {
         },
       })
       .then((registration) => this.convertDecimalFields(registration));
+
+    // Send notification if approval status changed
+    if (approvalStatusChanged) {
+      if (newApprovalStatus === 'APPROVED') {
+        this.eventNotificationService
+          .sendApprovalNotification(id)
+          .catch((error) => {
+            this.logger.warn(
+              `Failed to send approval notification: ${error.message}`,
+            );
+          });
+      } else if (newApprovalStatus === 'REJECTED') {
+        this.eventNotificationService
+          .sendRejectionNotification(id)
+          .catch((error) => {
+            this.logger.warn(
+              `Failed to send rejection notification: ${error.message}`,
+            );
+          });
+      }
+    }
+
+    return updatedRegistration;
   }
 
   async findEventRegistrations(
@@ -799,5 +882,484 @@ export class EventsService {
     });
 
     return this.convertDecimalFields(updatedEvent);
+  }
+
+  // Event Statistics for Dashboard
+  async getEventStatistics(days: number = 30): Promise<{
+    totalEvents: number;
+    totalRegistrations: number;
+    totalRevenue: number;
+    pendingApprovals: number;
+    confirmedRegistrations: number;
+    averageAttendanceRate: number;
+  }> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    // Total events in period
+    const totalEvents = await this.prisma.event.count({
+      where: {
+        createdAt: {
+          gte: startDate,
+        },
+      },
+    });
+
+    // Total registrations
+    const totalRegistrations = await this.prisma.eventRegistration.count({
+      where: {
+        registrationDate: {
+          gte: startDate,
+        },
+      },
+    });
+
+    // Total revenue (sum of amountPaid)
+    const revenueData = await this.prisma.eventRegistration.aggregate({
+      where: {
+        registrationDate: {
+          gte: startDate,
+        },
+        paymentStatus: 'completed',
+      },
+      _sum: {
+        amountPaid: true,
+      },
+    });
+    const totalRevenue = revenueData._sum.amountPaid
+      ? parseFloat(revenueData._sum.amountPaid.toString())
+      : 0;
+
+    // Pending approvals
+    const pendingApprovals = await this.prisma.eventRegistration.count({
+      where: {
+        approvalStatus: 'PENDING',
+      },
+    });
+
+    // Confirmed registrations
+    const confirmedRegistrations = await this.prisma.eventRegistration.count({
+      where: {
+        approvalStatus: 'APPROVED',
+        registrationDate: {
+          gte: startDate,
+        },
+      },
+    });
+
+    // Average attendance rate
+    const attendedCount = await this.prisma.eventRegistration.count({
+      where: {
+        status: 'ATTENDED' as any,
+        registrationDate: {
+          gte: startDate,
+        },
+      },
+    });
+
+    const averageAttendanceRate =
+      totalRegistrations > 0
+        ? Math.round((attendedCount / totalRegistrations) * 100)
+        : 0;
+
+    return {
+      totalEvents,
+      totalRegistrations,
+      totalRevenue,
+      pendingApprovals,
+      confirmedRegistrations,
+      averageAttendanceRate,
+    };
+  }
+
+  // Get recent registrations
+  async getRecentRegistrations(limit: number = 10) {
+    const registrations = await this.prisma.eventRegistration.findMany({
+      take: limit,
+      orderBy: {
+        registrationDate: 'desc',
+      },
+      include: {
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
+        event: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    return registrations.map((reg) => this.convertDecimalFields(reg));
+  }
+
+  // Approve registration
+  async approveRegistration(
+    id: string,
+    approvedBy?: string,
+    notes?: string,
+  ): Promise<EventRegistration> {
+    const registration = await this.prisma.eventRegistration.findUnique({
+      where: { id },
+      include: {
+        event: true,
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
+      },
+    });
+
+    if (!registration) {
+      throw new NotFoundException(`Registration with ID ${id} not found`);
+    }
+
+    // Update registration
+    const updatedRegistration = await this.prisma.eventRegistration.update({
+      where: { id },
+      data: {
+        approvalStatus: 'APPROVED',
+        status: 'CONFIRMED' as any,
+        approvedBy,
+        approvedAt: new Date(),
+        notes: notes || registration.notes,
+      },
+      include: {
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
+        event: true,
+      },
+    });
+
+    // Send approval notification
+    try {
+      await this.eventNotificationService.sendRegistrationApprovalEmail(
+        updatedRegistration,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send approval email for registration ${id}: ${error.message}`,
+      );
+    }
+
+    return this.convertDecimalFields(updatedRegistration);
+  }
+
+  // Reject registration
+  async rejectRegistration(
+    id: string,
+    reason: string,
+    rejectedBy?: string,
+  ): Promise<EventRegistration> {
+    const registration = await this.prisma.eventRegistration.findUnique({
+      where: { id },
+      include: {
+        event: true,
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
+      },
+    });
+
+    if (!registration) {
+      throw new NotFoundException(`Registration with ID ${id} not found`);
+    }
+
+    // Update registration
+    const updatedRegistration = await this.prisma.eventRegistration.update({
+      where: { id },
+      data: {
+        approvalStatus: 'REJECTED',
+        status: 'CANCELLED',
+        rejectionReason: reason,
+        updatedBy: rejectedBy,
+      },
+      include: {
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
+        event: true,
+      },
+    });
+
+    // Send rejection notification
+    try {
+      await this.eventNotificationService.sendRegistrationRejectionEmail(
+        updatedRegistration,
+        reason,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send rejection email for registration ${id}: ${error.message}`,
+      );
+    }
+
+    return this.convertDecimalFields(updatedRegistration);
+  }
+
+  /**
+   * Verify Paystack payment and create event registration
+   * SECURE: Backend verifies payment before creating registration
+   */
+  async verifyAndRegisterForEvent(
+    paymentReference: string,
+    eventId: string,
+    registrationData: {
+      guestName: string;
+      guestEmail: string;
+      guestPhone?: string;
+      numberOfGuests?: number;
+      specialRequests?: string;
+      memberId?: string;
+    },
+    userId: string,
+  ): Promise<EventRegistration> {
+    this.logger.log(
+      `🔍 [PAYMENT VERIFICATION] Starting verification for payment: ${paymentReference}`,
+    );
+
+    // Step 1: Verify event exists
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      this.logger.error(`❌ [PAYMENT VERIFICATION] Event not found: ${eventId}`);
+      throw new NotFoundException('Event not found');
+    }
+
+    if (!event.registrationRequired) {
+      throw new Error('This event does not require registration');
+    }
+
+    // Step 2: Check registration deadline
+    if (event.registrationDeadline && new Date() > event.registrationDeadline) {
+      throw new Error('Registration deadline has passed');
+    }
+
+    // Step 3: Check capacity
+    if (event.capacity) {
+      const currentRegistrations = await this.prisma.eventRegistration.count({
+        where: {
+          eventId: eventId,
+          status: { in: ['ATTENDING', 'PENDING'] },
+        },
+      });
+
+      if (currentRegistrations >= event.capacity) {
+        throw new Error('Event is at full capacity');
+      }
+    }
+
+    // Step 4: Check for duplicate registration
+    const existingRegistration = await this.prisma.eventRegistration.findFirst({
+      where: {
+        eventId: eventId,
+        OR: [
+          { memberId: registrationData.memberId },
+          { guestEmail: registrationData.guestEmail },
+        ],
+      },
+    });
+
+    if (existingRegistration) {
+      throw new Error('You are already registered for this event');
+    }
+
+    // Step 5: Check if payment reference was already used
+    const existingPayment = await this.prisma.eventRegistration.findFirst({
+      where: {
+        transactionId: paymentReference,
+      },
+    });
+
+    if (existingPayment) {
+      this.logger.warn(
+        `⚠️ [PAYMENT VERIFICATION] Duplicate payment reference: ${paymentReference}`,
+      );
+      throw new Error('This payment has already been used');
+    }
+
+    // Step 6: Create registration with payment reference
+    // Payment will be verified via webhook when Paystack confirms it
+    this.logger.log(
+      `📝 [PAYMENT VERIFICATION] Creating registration with payment reference: ${paymentReference}`,
+    );
+
+    const registration = await this.prisma.eventRegistration.create({
+      data: {
+        eventId: eventId,
+        memberId: registrationData.memberId,
+        guestName: registrationData.guestName,
+        guestEmail: registrationData.guestEmail,
+        guestPhone: registrationData.guestPhone,
+        numberOfGuests: registrationData.numberOfGuests || 1,
+        specialRequests: registrationData.specialRequests,
+        status: event.requiresApproval ? 'PENDING' : 'ATTENDING',
+        
+        // Payment info - will be updated by webhook
+        paymentStatus: 'pending',
+        paymentMethod: 'paystack',
+        transactionId: paymentReference,
+        
+        // Audit info
+        createdBy: userId,
+      },
+      include: {
+        event: true,
+        member: true,
+      },
+    });
+
+    this.logger.log(
+      `✅ [PAYMENT VERIFICATION] Registration created: ${registration.id}`,
+    );
+
+    // Send confirmation email
+    this.eventNotificationService
+      .sendRegistrationConfirmation(registration.id)
+      .catch((error) => {
+        this.logger.warn(
+          `Failed to send registration confirmation email: ${error.message}`,
+        );
+      });
+
+    return this.convertDecimalFields(registration);
+  }
+
+  /**
+   * Register for free event (no payment required)
+   */
+  async registerForFreeEvent(
+    eventId: string,
+    registrationData: {
+      guestName: string;
+      guestEmail: string;
+      guestPhone?: string;
+      numberOfGuests?: number;
+      specialRequests?: string;
+      memberId?: string;
+    },
+    userId: string,
+  ): Promise<EventRegistration> {
+    this.logger.log(`🆓 [FREE EVENT] Creating registration for free event: ${eventId}`);
+
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    if (!event.isFree) {
+      throw new Error('This is a paid event, use verifyAndRegisterForEvent instead');
+    }
+
+    if (!event.registrationRequired) {
+      throw new Error('This event does not require registration');
+    }
+
+    // Check registration deadline
+    if (event.registrationDeadline && new Date() > event.registrationDeadline) {
+      throw new Error('Registration deadline has passed');
+    }
+
+    // Check capacity
+    if (event.capacity) {
+      const currentRegistrations = await this.prisma.eventRegistration.count({
+        where: {
+          eventId: eventId,
+          status: { in: ['ATTENDING', 'PENDING'] },
+        },
+      });
+
+      if (currentRegistrations >= event.capacity) {
+        throw new Error('Event is at full capacity');
+      }
+    }
+
+    // Check for duplicate registration
+    const existingRegistration = await this.prisma.eventRegistration.findFirst({
+      where: {
+        eventId: eventId,
+        OR: [
+          { memberId: registrationData.memberId },
+          { guestEmail: registrationData.guestEmail },
+        ],
+      },
+    });
+
+    if (existingRegistration) {
+      throw new Error('You are already registered for this event');
+    }
+
+    const registration = await this.prisma.eventRegistration.create({
+      data: {
+        eventId: eventId,
+        memberId: registrationData.memberId,
+        guestName: registrationData.guestName,
+        guestEmail: registrationData.guestEmail,
+        guestPhone: registrationData.guestPhone,
+        numberOfGuests: registrationData.numberOfGuests || 1,
+        specialRequests: registrationData.specialRequests,
+        status: event.requiresApproval ? 'PENDING' : 'ATTENDING',
+        
+        // No payment for free events
+        paymentStatus: 'not_required',
+        
+        // Audit info
+        createdBy: userId,
+      },
+      include: {
+        event: true,
+        member: true,
+      },
+    });
+
+    this.logger.log(`✅ [FREE EVENT] Registration created: ${registration.id}`);
+
+    // Send confirmation email
+    this.eventNotificationService
+      .sendRegistrationConfirmation(registration.id)
+      .catch((error) => {
+        this.logger.warn(
+          `Failed to send registration confirmation email: ${error.message}`,
+        );
+      });
+
+    return this.convertDecimalFields(registration);
   }
 }

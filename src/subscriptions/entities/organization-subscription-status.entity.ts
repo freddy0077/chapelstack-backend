@@ -3,7 +3,7 @@ import { Subscription } from './subscription.entity';
 
 @ObjectType()
 export class OrganizationSubscriptionStatus {
-  @Field()
+  @Field(() => Boolean)
   hasActiveSubscription: boolean;
 
   @Field(() => Subscription, { nullable: true })

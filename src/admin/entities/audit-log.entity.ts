@@ -8,16 +8,16 @@ export class AuditLog {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   action: string;
 
-  @Field()
+  @Field(() => String)
   entityType: string;
 
   @Field({ nullable: true })
   entityId?: string;
 
-  @Field()
+  @Field(() => String)
   description: string;
 
   @Field(() => GraphQLJSON, { nullable: true })

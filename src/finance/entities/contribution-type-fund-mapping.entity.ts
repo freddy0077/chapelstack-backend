@@ -1,17 +1,17 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Int } from '@nestjs/graphql';;
 
 @ObjectType()
 export class ContributionTypeInfo {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
   description?: string;
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 }
 
@@ -20,13 +20,13 @@ export class FundInfo {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
   description?: string;
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 }
 
@@ -35,10 +35,10 @@ export class ContributionTypeFundMapping {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   contributionTypeId: string;
 
-  @Field()
+  @Field(() => String)
   fundId: string;
 
   @Field({ nullable: true })
@@ -47,13 +47,13 @@ export class ContributionTypeFundMapping {
   @Field({ nullable: true })
   organisationId?: string;
 
-  @Field()
+  @Field(() => Boolean)
   isActive: boolean;
 
-  @Field()
+  @Field(() => String)
   createdAt: string;
 
-  @Field()
+  @Field(() => String)
   updatedAt: string;
 
   @Field({ nullable: true })
@@ -72,13 +72,13 @@ export class ContributionTypeFundMapping {
 
 @ObjectType()
 export class FundMappingConfiguration {
-  @Field()
+  @Field(() => String)
   branchId: string;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
-  @Field()
+  @Field(() => String)
   lastUpdated: string;
 
   @Field(() => [ContributionTypeFundMapping])
@@ -93,7 +93,7 @@ export class FundMappingConfiguration {
 
 @ObjectType()
 export class PaginatedContributionTypeFundMappings {
-  @Field()
+  @Field(() => Int)
   total: number;
 
   @Field(() => [ContributionTypeFundMapping])

@@ -6,7 +6,7 @@ import {
   IsInt,
   Min,
   IsEnum,
-  IsDecimal,
+  IsNumber,
 } from 'class-validator';
 import { RSVPStatus } from '@prisma/client';
 
@@ -55,7 +55,7 @@ export class CreateEventRegistrationInput {
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsDecimal()
+  @IsNumber()
   amountPaid?: number;
 
   @Field({ nullable: true })
@@ -108,7 +108,7 @@ export class UpdateEventRegistrationInput {
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsDecimal()
+  @IsNumber()
   amountPaid?: number;
 
   @Field({ nullable: true })

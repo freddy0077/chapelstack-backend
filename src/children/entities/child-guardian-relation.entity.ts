@@ -8,13 +8,13 @@ export class ChildGuardianRelation {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   childId: string;
 
-  @Field()
+  @Field(() => String)
   guardianId: string;
 
-  @Field()
+  @Field(() => String)
   relationship: string;
 
   @Field(() => GraphQLISODateTime)

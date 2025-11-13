@@ -10,16 +10,16 @@ export class EmailMessage {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   subject: string;
 
-  @Field()
+  @Field(() => String)
   bodyHtml: string;
 
   @Field({ nullable: true })
   bodyText?: string;
 
-  @Field()
+  @Field(() => String)
   senderEmail: string;
 
   @Field(() => [String])
@@ -49,9 +49,9 @@ export class EmailMessage {
   @Field(() => String, { nullable: true })
   organisationId?: string | null;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 }

@@ -36,7 +36,7 @@ export class License {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   key: string;
 
   @Field(() => LicenseType)

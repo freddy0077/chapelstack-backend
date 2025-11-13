@@ -9,6 +9,6 @@ export class PaginatedUsers {
   @Field(() => Int)
   totalCount: number;
 
-  @Field()
+  @Field(() => Boolean)
   hasNextPage: boolean;
 }

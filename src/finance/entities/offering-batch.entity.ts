@@ -10,13 +10,13 @@ export class OfferingBatchEntity {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   batchNumber: string;
 
-  @Field()
+  @Field(() => Date)
   batchDate: Date;
 
-  @Field()
+  @Field(() => String)
   serviceName: string;
 
   @Field(() => String, { nullable: true })
@@ -82,22 +82,22 @@ export class OfferingBatchEntity {
   @Field(() => OfferingBatchStatus)
   status: OfferingBatchStatus;
 
-  @Field()
+  @Field(() => Boolean)
   isPostedToGL: boolean;
 
   @Field(() => String, { nullable: true })
   journalEntryId?: string | null;
 
-  @Field()
+  @Field(() => String)
   organisationId: string;
 
-  @Field()
+  @Field(() => String)
   branchId: string;
 
-  @Field()
+  @Field(() => Date)
   createdAt: Date;
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Date;
 
   @Field({ nullable: true })

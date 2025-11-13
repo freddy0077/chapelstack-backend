@@ -38,6 +38,8 @@ import { MemberStatus } from '../entities/member.entity';
 import { IpAddress, UserAgent } from '../../common/decorators';
 import { Prisma } from '@prisma/client';
 import { MemberStatistics } from '../dto/member-statistics.output';
+import { PaginatedResult } from '../../base/dto';
+import { PaginatedMembersOutput } from '../dto/paginated-members.output';
 import { MemberDashboard } from '../dto/member-dashboard.dto';
 import { S3UploadService } from '../../content/services/s3-upload.service';
 import { FileUpload, GraphQLUpload } from 'graphql-upload';
@@ -60,19 +62,19 @@ export class MembersResolver {
   @Mutation(() => Member)
   async createMember(
     @Args('createMemberInput') createMemberInput: CreateMemberInput,
-    @CurrentUser() userId?: string,
+    @CurrentUser() user?: any,
     @IpAddress() ipAddress?: string,
     @UserAgent() userAgent?: string,
   ): Promise<Member> {
     return this.membersService.create(
       createMemberInput,
-      userId,
+      user?.id,
       ipAddress,
       userAgent,
     );
   }
 
-  @Query(() => [Member], { name: 'members' })
+  @Query(() => PaginatedMembersOutput, { name: 'members' })
   async findAll(
     @Args('organisationId', { type: () => String, nullable: true })
     organisationId?: string,
@@ -105,22 +107,22 @@ export class MembersResolver {
     hasPhone?: boolean,
     @Args('isRegularAttendee', { type: () => Boolean, nullable: true })
     isRegularAttendee?: boolean,
-    @Args('includeDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
-    includeDeactivated?: boolean,
-    @Args('onlyDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
-    onlyDeactivated?: boolean,
-  ): Promise<Member[]> {
+    @Args('isDeactivated', { type: () => Boolean, nullable: true })
+    isDeactivated?: boolean,
+  ): Promise<PaginatedResult<Member>> {
     const where: Prisma.MemberWhereInput = {};
 
     // Handle deactivation filtering
-    if (onlyDeactivated) {
+    if (isDeactivated === true) {
       // Show only deactivated members
       where.isDeactivated = true;
-    } else if (!includeDeactivated) {
-      // Exclude deactivated members by default
+    } else if (isDeactivated === false) {
+      // Show only active members
+      where.isDeactivated = false;
+    } else {
+      // Default: exclude deactivated members
       where.isDeactivated = false;
     }
-    // If includeDeactivated is true and onlyDeactivated is false, show all members
 
     if (branchId) {
       where.branchId = branchId;
@@ -215,12 +217,18 @@ export class MembersResolver {
       where.isRegularAttendee = isRegularAttendee;
     }
 
+    // Add search to where clause if provided
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
     return this.membersService.findAll(
-      skip ?? 0,
-      take ?? 10,
       where,
-      undefined,
-      search,
+      { page: Math.floor((skip ?? 0) / (take ?? 10)) + 1, limit: take ?? 10 },
     );
   }
 
@@ -576,22 +584,22 @@ export class MembersResolver {
     hasPhone?: boolean,
     @Args('isRegularAttendee', { type: () => Boolean, nullable: true })
     isRegularAttendee?: boolean,
-    @Args('includeDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
-    includeDeactivated?: boolean,
-    @Args('onlyDeactivated', { type: () => Boolean, nullable: true, defaultValue: false })
-    onlyDeactivated?: boolean,
+    @Args('isDeactivated', { type: () => Boolean, nullable: true })
+    isDeactivated?: boolean,
   ): Promise<number> {
     const where: Prisma.MemberWhereInput = {};
 
     // Handle deactivation filtering
-    if (onlyDeactivated) {
+    if (isDeactivated === true) {
       // Show only deactivated members
       where.isDeactivated = true;
-    } else if (!includeDeactivated) {
-      // Exclude deactivated members by default
+    } else if (isDeactivated === false) {
+      // Show only active members
+      where.isDeactivated = false;
+    } else {
+      // Default: exclude deactivated members
       where.isDeactivated = false;
     }
-    // If includeDeactivated is true and onlyDeactivated is false, show all members
 
     if (branchId) {
       where.branchId = branchId;

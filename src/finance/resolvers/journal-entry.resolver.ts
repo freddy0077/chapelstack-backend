@@ -10,6 +10,7 @@ import {
 } from '../dto/journal-entry.input';
 import { DateRangeInput } from '../../common/dto/date-range.input';
 import { JournalEntryEntity, JournalEntryListResponse } from '../entities/journal-entry.entity';
+import { JournalEntryPublicDTO, mapToJournalEntryPublicDTO } from '../dto/journal-entry-public.dto';
 import { DashboardStatsEntity } from '../entities/dashboard-stats.entity';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -65,18 +66,19 @@ export class JournalEntryResolver {
   /**
    * Create journal entry
    */
-  @Mutation(() => JournalEntryEntity)
+  @Mutation(() => JournalEntryPublicDTO)
   async createJournalEntry(
     @Args('input') input: CreateJournalEntryInput,
     @CurrentUser() user: any,
-  ): Promise<JournalEntryEntity> {
+  ): Promise<JournalEntryPublicDTO> {
     const entryDate = new Date(input.entryDate);
-    const fiscalYear = entryDate.getFullYear();
-    const fiscalPeriod = entryDate.getMonth() + 1;
+    const fiscalYear = input.fiscalYear || entryDate.getFullYear();
+    const fiscalPeriod = input.fiscalPeriod || entryDate.getMonth() + 1;
 
-    return this.journalEntryService.createJournalEntry(
+    const entry = await this.journalEntryService.createJournalEntry(
       {
         entryDate,
+        postingDate: input.postingDate ? new Date(input.postingDate) : undefined,
         entryType: input.entryType,
         sourceModule: input.sourceModule,
         sourceTransactionId: input.sourceTransactionId,
@@ -85,12 +87,15 @@ export class JournalEntryResolver {
         memo: input.memo,
         fiscalYear,
         fiscalPeriod,
+        status: input.status || 'DRAFT',
         organisationId: input.organisationId,
         branchId: input.branchId,
       } as any,
       input.lines,
-      user.id,
+      input.createdBy || user.id,
     );
+
+    return mapToJournalEntryPublicDTO(entry);
   }
 
   /**

@@ -16,6 +16,8 @@ import './communications/queue/sms.processor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Enable CORS FIRST before any other middleware
   app.enableCors({
     origin: [
       'http://localhost:3000',
@@ -25,6 +27,8 @@ async function bootstrap() {
       'http://chapelstack.com',
     ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Apollo-Require-Preflight'],
   });
 
   // Increase body size limit for JSON requests

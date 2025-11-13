@@ -33,8 +33,6 @@ import { FormsModule } from './forms/forms.module';
 import { ReportingModule } from './reporting/reporting.module';
 import { ContentModule } from './content/content.module';
 import { CommunicationsModule } from './communications/communications.module';
-import { PrayerRequestsModule } from './prayer-requests/prayer-requests.module';
-import { BudgetsModule } from './budgets/budgets.module';
 import { PledgesModule } from './pledges/pledges.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { FundsModule } from './funds/funds.module';
@@ -46,7 +44,6 @@ import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { TransactionModule } from './finance/transaction.module';
 import { TransfersModule } from './transfers/transfers.module';
 import { WorkflowsModule } from './workflows/workflows.module';
-import { PastoralCareModule } from './pastoral-care/pastoral-care.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { DeathRegisterModule } from './death-register/death-register.module';
 import { BirthRegistryModule } from './birth-registry/birth-registry.module';
@@ -54,6 +51,11 @@ import { ZonesModule } from './zones/zones.module';
 import { ReportsModule } from './reports/reports.module';
 import { AssetsModule } from './assets/assets.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { BroadcastsModule } from './broadcasts/broadcasts.module';
+import { EngagementModule } from './engagement/engagement.module';
+import { MessageTemplatesModule } from './message-templates/message-templates.module';
+import { AutomationsModule } from './automations/automations.module';
+import { GodModeModule } from './god-mode/god-mode.module';
 
 import { registerEnumType } from '@nestjs/graphql';
 
@@ -109,8 +111,6 @@ registerEnumType(AttendanceStatsPeriod, {
     ReportingModule,
     ContentModule,
     CommunicationsModule,
-    PrayerRequestsModule,
-    BudgetsModule,
     PledgesModule,
     ExpensesModule,
     FundsModule,
@@ -122,13 +122,17 @@ registerEnumType(AttendanceStatsPeriod, {
     TransactionModule,
     TransfersModule,
     WorkflowsModule,
-    PastoralCareModule,
     SubscriptionsModule,
     DeathRegisterModule,
     BirthRegistryModule,
     ZonesModule,
     ReportsModule,
     AssetsModule,
+    BroadcastsModule,
+    EngagementModule,
+    MessageTemplatesModule,
+    AutomationsModule,
+    GodModeModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppResolver],

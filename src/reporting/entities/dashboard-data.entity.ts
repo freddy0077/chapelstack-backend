@@ -10,11 +10,11 @@ import GraphQLJSON from 'graphql-type-json';
 export enum DashboardType {
   PASTORAL = 'PASTORAL',
   ADMIN = 'ADMIN',
+  SYSTEM_ADMIN = 'SYSTEM_ADMIN',
   FINANCE = 'FINANCE',
   MINISTRY = 'MINISTRY',
   MEMBER = 'MEMBER', // Added for regular church members
   BRANCH_ADMIN = 'BRANCH_ADMIN', // Added for branch admin dashboard
-  SUPER_ADMIN = 'SUPER_ADMIN', // Added for super admin dashboard
 }
 
 registerEnumType(DashboardType, {

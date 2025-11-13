@@ -42,7 +42,7 @@ export class DataOperation {
   @Field(() => DataOperationStatus)
   status: DataOperationStatus;
 
-  @Field()
+  @Field(() => String)
   entityType: string;
 
   @Field({ nullable: true })

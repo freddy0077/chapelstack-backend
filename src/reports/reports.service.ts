@@ -204,15 +204,99 @@ export class ReportsService {
       ...(branchId && { branchId }),
     };
 
-    // Apply date range filter
-    if (filters.startDate || filters.endDate) {
-      where.createdAt = {};
-      if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
-      if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
+    // Apply date range filter with proper date boundaries
+    if (filters.startDate && filters.endDate) {
+      const startDate = new Date(filters.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(filters.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      where.checkInTime = {
+        gte: startDate,
+        lte: endDate,
+      };
+    } else if (filters.startDate) {
+      const startDate = new Date(filters.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      where.checkInTime = { gte: startDate };
+    } else if (filters.endDate) {
+      const endDate = new Date(filters.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      where.checkInTime = { lte: endDate };
+    }
+
+    // Apply time range filter
+    if (filters.startTime && filters.endTime) {
+      // If both start and end time are provided, we need to filter by time of day
+      // This will be done in post-processing since Prisma doesn't support time-only filters
+    }
+
+    // Apply attendance status filter
+    if (filters.attendanceStatus && filters.attendanceStatus !== 'ALL') {
+      where.status = filters.attendanceStatus;
+    }
+
+    // Build member filter
+    const memberWhere: any = {};
+    
+    if (filters.gender && filters.gender !== 'ALL') {
+      memberWhere.gender = filters.gender;
+    }
+
+    if (filters.membershipType && filters.membershipType !== 'ALL') {
+      memberWhere.membershipType = filters.membershipType;
+    }
+
+    if (filters.membershipStatus && filters.membershipStatus !== 'ALL') {
+      memberWhere.membershipStatus = filters.membershipStatus;
+    }
+
+    if (filters.zoneId && filters.zoneId !== 'ALL') {
+      memberWhere.zoneId = filters.zoneId;
+    }
+
+    if (filters.ageGroup && filters.ageGroup !== 'ALL') {
+      // Calculate age range based on age group
+      const now = new Date();
+      let minAge = 0;
+      let maxAge = 150;
+      
+      switch (filters.ageGroup) {
+        case 'CHILDREN':
+          minAge = 0;
+          maxAge = 12;
+          break;
+        case 'YOUTH':
+          minAge = 13;
+          maxAge = 24;
+          break;
+        case 'ADULTS':
+          minAge = 25;
+          maxAge = 59;
+          break;
+        case 'SENIORS':
+          minAge = 60;
+          maxAge = 150;
+          break;
+      }
+      
+      const maxBirthDate = new Date(now.getFullYear() - minAge, now.getMonth(), now.getDate());
+      const minBirthDate = new Date(now.getFullYear() - maxAge - 1, now.getMonth(), now.getDate());
+      
+      memberWhere.dateOfBirth = {
+        gte: minBirthDate,
+        lte: maxBirthDate,
+      };
+    }
+
+    // Add member filter to where clause if any member filters exist
+    if (Object.keys(memberWhere).length > 0) {
+      where.member = memberWhere;
     }
 
     // Fetch attendance records
-    const attendanceRecords = await this.prisma.attendanceRecord.findMany({
+    let attendanceRecords = await this.prisma.attendanceRecord.findMany({
       where,
       include: {
         member: {
@@ -220,6 +304,7 @@ export class ReportsService {
             id: true,
             firstName: true,
             lastName: true,
+            phoneNumber: true,
             gender: true,
             dateOfBirth: true,
             membershipType: true,
@@ -233,14 +318,61 @@ export class ReportsService {
             },
           },
         },
+        session: {
+          select: {
+            id: true,
+            name: true,
+            date: true,
+          },
+        },
         event: {
           select: {
             id: true,
             title: true,
+            startDate: true,
           },
         },
       },
+      orderBy: {
+        checkInTime: 'desc',
+      },
     });
+
+    // Post-process for time range filter
+    if (filters.startTime && filters.endTime) {
+      attendanceRecords = attendanceRecords.filter((record) => {
+        if (!record.checkInTime) return false;
+        
+        const checkInTime = new Date(record.checkInTime);
+        const hours = checkInTime.getHours();
+        const minutes = checkInTime.getMinutes();
+        const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        
+        return timeString >= filters.startTime && timeString <= filters.endTime;
+      });
+    } else if (filters.startTime) {
+      attendanceRecords = attendanceRecords.filter((record) => {
+        if (!record.checkInTime) return false;
+        
+        const checkInTime = new Date(record.checkInTime);
+        const hours = checkInTime.getHours();
+        const minutes = checkInTime.getMinutes();
+        const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        
+        return timeString >= filters.startTime;
+      });
+    } else if (filters.endTime) {
+      attendanceRecords = attendanceRecords.filter((record) => {
+        if (!record.checkInTime) return false;
+        
+        const checkInTime = new Date(record.checkInTime);
+        const hours = checkInTime.getHours();
+        const minutes = checkInTime.getMinutes();
+        const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        
+        return timeString <= filters.endTime;
+      });
+    }
 
     // Calculate metrics
     const totalRecords = attendanceRecords.length;
@@ -349,6 +481,15 @@ export class ReportsService {
       {} as Record<string, number>,
     );
 
+    const byStatus = members.reduce(
+      (acc, member) => {
+        const status = member.membershipStatus || 'Unknown';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     const totalMembers = members.length;
     const activeMembers = members.filter(
       (m) => m.membershipStatus === 'ACTIVE_MEMBER',
@@ -361,6 +502,7 @@ export class ReportsService {
       femaleCount,
       byZone,
       byType,
+      byStatus,
     };
 
     return {

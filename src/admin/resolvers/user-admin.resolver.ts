@@ -13,6 +13,7 @@ import { CreateBranchAdminInput } from '../dto/create-branch-admin.input';
 import { UserRoleFilterInput } from '../dto/user-role-search.input';
 import { PaginatedUserResponse } from '../dto/paginated-user-response.dto';
 import { CreateUserFromMemberInput } from '../dto/create-user-from-member.input';
+import { UpdateUserInput } from '../dto/update-user.input';
 
 @Resolver()
 @UseGuards(GqlAuthGuard, RolesGuard)
@@ -47,9 +48,13 @@ export class UserAdminResolver {
       branchAdminRoleId,
     );
 
-    return {
+    const result = {
       ...userBranch,
       branchId: userBranch.branchId ?? undefined,
+      role: userBranch.role ? {
+        ...userBranch.role,
+        displayName: userBranch.role.displayName ?? undefined,
+      } : userBranch.role,
       branch: userBranch.branch
         ? {
             id: userBranch.branch.id,
@@ -100,10 +105,12 @@ export class UserAdminResolver {
           }
         : undefined,
     };
+
+    return result as UserBranch;
   }
 
   @Query(() => PaginatedUsers, { name: 'adminUsers' })
-  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN')
   async findAllUsers(
     @Args('pagination', { nullable: true })
     paginationInput: PaginationInput = { skip: 0, take: 10 },
@@ -113,13 +120,22 @@ export class UserAdminResolver {
   }
 
   @Query(() => User, { name: 'adminUser' })
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async findUserById(@Args('id', { type: () => ID }) id: string) {
     return this.userAdminService.findUserById(id);
   }
 
   @Mutation(() => User)
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  async updateUser(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('input') input: UpdateUserInput,
+  ) {
+    return this.userAdminService.updateUser(id, input);
+  }
+
+  @Mutation(() => User)
+  @Roles('ADMIN', 'SYSTEM_ADMIN')
   async updateUserActiveStatus(
     @Args('id', { type: () => ID }) id: string,
     @Args('isActive') isActive: boolean,
@@ -128,7 +144,7 @@ export class UserAdminResolver {
   }
 
   @Mutation(() => User)
-  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async assignRoleToUser(
     @Args('userId', { type: () => ID }) userId: string,
     @Args('roleId', { type: () => ID }) roleId: string,
@@ -137,7 +153,7 @@ export class UserAdminResolver {
   }
 
   @Mutation(() => User)
-  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN')
   async removeRoleFromUser(
     @Args('userId', { type: () => ID }) userId: string,
     @Args('roleId', { type: () => ID }) roleId: string,
@@ -146,7 +162,7 @@ export class UserAdminResolver {
   }
 
   @Mutation(() => UserBranch)
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async assignBranchRoleToUser(
     @Args('userId', { type: () => ID }) userId: string,
     @Args('branchId', { type: () => ID }) branchId: string,
@@ -167,7 +183,7 @@ export class UserAdminResolver {
   }
 
   @Mutation(() => UserBranch)
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async removeBranchRoleFromUser(
     @Args('userId', { type: () => ID }) userId: string,
     @Args('branchId', { type: () => ID }) branchId: string,
@@ -181,7 +197,7 @@ export class UserAdminResolver {
   }
 
   @Query(() => PaginatedUserResponse, { name: 'searchUsersByRole' })
-  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
   async searchUsersByRole(
     @Args('filter') filter: UserRoleFilterInput,
     @Args('pagination', { nullable: true })
@@ -191,7 +207,7 @@ export class UserAdminResolver {
   }
 
   @Query(() => PaginatedUserResponse, { name: 'searchPastors' })
-  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
   async searchPastors(
     @Args('organisationId', { type: () => ID }) organisationId: string,
     @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
@@ -206,7 +222,7 @@ export class UserAdminResolver {
   }
 
   @Query(() => PaginatedUserResponse, { name: 'searchPastoralStaff' })
-  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN', 'PASTOR', 'STAFF')
   async searchPastoralStaff(
     @Args('organisationId', { type: () => ID }) organisationId: string,
     @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
@@ -221,7 +237,7 @@ export class UserAdminResolver {
   }
 
   @Mutation(() => User)
-  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async linkMemberToUser(
     @Args('userId', { type: () => ID }) userId: string,
     @Args('memberId', { type: () => ID }) memberId: string,
@@ -230,7 +246,7 @@ export class UserAdminResolver {
   }
 
   @Mutation(() => User)
-  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async unlinkMemberFromUser(
     @Args('userId', { type: () => ID }) userId: string,
   ) {
@@ -238,7 +254,7 @@ export class UserAdminResolver {
   }
 
   @Mutation(() => User)
-  // @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
+  // @Roles('ADMIN', 'SYSTEM_ADMIN', 'BRANCH_ADMIN')
   async createUserFromMember(
     @Args('input') input: CreateUserFromMemberInput,
   ) {

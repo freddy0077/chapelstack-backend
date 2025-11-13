@@ -2,13 +2,13 @@ import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
 
 @ObjectType()
 export class MemberReportSummary {
-  @Field()
+  @Field(() => String)
   title: string;
 
-  @Field()
+  @Field(() => String)
   startDate: string;
 
-  @Field()
+  @Field(() => String)
   endDate: string;
 
   @Field(() => Int)
@@ -53,7 +53,7 @@ export class MemberReportSummary {
 
 @ObjectType()
 export class MemberReportData {
-  @Field()
+  @Field(() => String)
   period: string;
 
   @Field(() => Int)
@@ -83,10 +83,10 @@ export class MemberReportData {
 
 @ObjectType()
 export class MemberDemographic {
-  @Field()
+  @Field(() => String)
   category: string;
 
-  @Field()
+  @Field(() => String)
   value: string;
 
   @Field(() => Int)
@@ -98,10 +98,10 @@ export class MemberDemographic {
 
 @ObjectType()
 export class MemberEngagement {
-  @Field()
+  @Field(() => String)
   memberId: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
@@ -125,7 +125,7 @@ export class MemberEngagement {
 
 @ObjectType()
 export class MemberGeographic {
-  @Field()
+  @Field(() => String)
   location: string;
 
   @Field(() => Int)
@@ -143,10 +143,10 @@ export class MemberGeographic {
 
 @ObjectType()
 export class MemberReportChart {
-  @Field()
+  @Field(() => String)
   type: string;
 
-  @Field()
+  @Field(() => String)
   title: string;
 
   @Field(() => [String])
@@ -161,7 +161,7 @@ export class MemberReportChart {
 
 @ObjectType()
 export class MemberReport {
-  @Field()
+  @Field(() => String)
   id: string;
 
   @Field(() => MemberReportSummary)
@@ -182,7 +182,7 @@ export class MemberReport {
   @Field(() => [MemberReportChart], { nullable: true })
   charts?: MemberReportChart[];
 
-  @Field()
+  @Field(() => String)
   generatedAt: string;
 
   @Field({ nullable: true })

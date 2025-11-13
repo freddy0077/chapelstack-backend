@@ -25,6 +25,11 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    return requiredRoles.some((role) => user.roles.includes(role));
+    // Extract role names from role objects (roles can be objects with 'name' property or strings)
+    const userRoleNames = user.roles.map((role: any) => 
+      typeof role === 'string' ? role : role.name
+    );
+
+    return requiredRoles.some((role) => userRoleNames.includes(role));
   }
 }

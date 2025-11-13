@@ -34,12 +34,16 @@ export class SmallGroupsService {
       where,
       include: {
         members: true,
+        executives: {
+          where: { status: 'ACTIVE' },
+          include: { member: true },
+        },
         ministry: true,
       },
       orderBy: {
         createdAt: 'desc',
       },
-    });
+    }) as any;
   }
 
   async findOne(id: string): Promise<SmallGroup> {
@@ -47,6 +51,10 @@ export class SmallGroupsService {
       where: { id },
       include: {
         members: true,
+        executives: {
+          where: { status: 'ACTIVE' },
+          include: { member: true },
+        },
         ministry: true,
       },
     });
@@ -55,7 +63,7 @@ export class SmallGroupsService {
       throw new NotFoundException(`Small Group with ID ${id} not found`);
     }
 
-    return smallGroup;
+    return smallGroup as any;
   }
 
   async create(input: CreateSmallGroupInput): Promise<SmallGroup> {

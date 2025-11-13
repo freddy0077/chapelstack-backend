@@ -7,7 +7,7 @@ export class AttendanceSession {
   @Field(() => ID)
   id: string;
 
-  @Field()
+  @Field(() => String)
   name: string;
 
   @Field({ nullable: true })
@@ -22,10 +22,10 @@ export class AttendanceSession {
   @Field(() => GraphQLISODateTime, { nullable: true })
   endTime?: Date;
 
-  @Field()
+  @Field(() => String)
   type: string;
 
-  @Field()
+  @Field(() => String)
   status: string;
 
   @Field({ nullable: true })
