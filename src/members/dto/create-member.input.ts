@@ -348,4 +348,9 @@ export class CreateMemberInput {
   @IsOptional()
   @IsUUID('4', { each: true })
   groupIds?: string[];
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsUUID()
+  zoneId?: string;
 }
