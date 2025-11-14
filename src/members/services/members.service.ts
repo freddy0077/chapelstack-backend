@@ -227,8 +227,15 @@ export class MembersService extends CrudService<Member, CreateMemberInput, Updat
       }
 
       // Extract relation IDs and other problematic fields for proper handling
-      const { organisationId, branchId, parentId, spouseId, ...memberData } =
-        createMemberInput;
+      const {
+        organisationId,
+        branchId,
+        parentId,
+        spouseId,
+        zoneId,
+        groupIds,
+        ...memberData
+      } = createMemberInput;
 
       // Create the member with enhanced fields and proper defaults
       const member = await this.prisma.member.create({
@@ -259,6 +266,12 @@ export class MembersService extends CrudService<Member, CreateMemberInput, Updat
           ...(spouseId && {
             spouse: {
               connect: { id: spouseId },
+            },
+          }),
+          // Set zone relation if provided (use relation connect for checked create input)
+          ...(zoneId && {
+            zone: {
+              connect: { id: zoneId },
             },
           }),
           // Set GDPR compliance defaults if not provided
@@ -444,6 +457,7 @@ export class MembersService extends CrudService<Member, CreateMemberInput, Updat
         branchId,
         organisationId,
         groupIds,
+        zoneId,
         ...memberData
       } = updateMemberInput as any;
 
@@ -476,6 +490,13 @@ export class MembersService extends CrudService<Member, CreateMemberInput, Updat
       if (organisationId) {
         updateData.organisation = {
           connect: { id: organisationId },
+        };
+      }
+
+      // Handle zone if zoneId is provided (use relation connect)
+      if (zoneId) {
+        updateData.zone = {
+          connect: { id: zoneId },
         };
       }
 
