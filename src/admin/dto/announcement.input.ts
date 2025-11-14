@@ -9,7 +9,7 @@ import {
   IsArray,
 } from 'class-validator';
 
-@InputType()
+@InputType('SystemCreateAnnouncementInput')
 export class CreateAnnouncementInput {
   @Field()
   @IsNotEmpty()
@@ -44,7 +44,7 @@ export class CreateAnnouncementInput {
   targetBranchIds?: string[];
 }
 
-@InputType()
+@InputType('SystemUpdateAnnouncementInput')
 export class UpdateAnnouncementInput {
   @Field({ nullable: true })
   @IsOptional()
