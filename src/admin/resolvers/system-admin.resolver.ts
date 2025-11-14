@@ -23,7 +23,7 @@ export class SystemAdminResolver {
     return this.systemAdminService.getSystemHealth();
   }
 
-  @Query(() => [SystemAnnouncement], { name: 'announcements' })
+  @Query(() => [SystemAnnouncement], { name: 'systemAnnouncements' })
   async getAnnouncements(
     @CurrentUser() user: any,
     @Args('branchId', { type: () => ID, nullable: true }) branchId?: string,
@@ -31,7 +31,7 @@ export class SystemAdminResolver {
     return this.systemAdminService.getActiveAnnouncements(user.id, branchId);
   }
 
-  @Mutation(() => SystemAnnouncement)
+  @Mutation(() => SystemAnnouncement, { name: 'systemCreateAnnouncement' })
   @Roles('ADMIN', 'SYSTEM_ADMIN')
   async createAnnouncement(
     @Args('input') createAnnouncementInput: CreateAnnouncementInput,
@@ -55,7 +55,7 @@ export class SystemAdminResolver {
     );
   }
 
-  @Mutation(() => SystemAnnouncement)
+  @Mutation(() => SystemAnnouncement, { name: 'systemUpdateAnnouncement' })
   @Roles('ADMIN', 'SYSTEM_ADMIN')
   async updateAnnouncement(
     @Args('id', { type: () => ID }) id: string,
@@ -83,7 +83,7 @@ export class SystemAdminResolver {
     );
   }
 
-  @Mutation(() => SystemAnnouncement)
+  @Mutation(() => SystemAnnouncement, { name: 'systemDeleteAnnouncement' })
   @Roles('ADMIN', 'SYSTEM_ADMIN')
   async deleteAnnouncement(@Args('id', { type: () => ID }) id: string) {
     return this.systemAdminService.deleteAnnouncement(id);
