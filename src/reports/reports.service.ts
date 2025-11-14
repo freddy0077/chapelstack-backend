@@ -702,25 +702,76 @@ export class ReportsService {
     const { organisationId, branchId } = input;
     const filters = typeof input.filters === 'string' ? JSON.parse(input.filters) : input.filters || {};
 
+    // Base where clause
+    const where: any = {
+      organisationId,
+      ...(branchId && { branchId }),
+    };
+
+    // Apply simple filters
+    if (filters.zoneId && filters.zoneId !== 'ALL') {
+      where.id = filters.zoneId;
+    }
+    if (filters.zoneStatus && filters.zoneStatus !== 'ALL') {
+      where.status = filters.zoneStatus;
+    }
+    if (filters.location) {
+      where.location = { contains: String(filters.location), mode: 'insensitive' };
+    }
+
+    // Fetch zones with members count
     const zones = await this.prisma.zone.findMany({
-      where: {
-        organisationId,
-        ...(branchId && { branchId }),
-      },
+      where,
       include: {
         _count: {
           select: { members: true },
         },
       },
+      orderBy: { name: 'asc' },
     });
 
+    // Filter by member count range, if provided
+    let filteredZones = zones;
+    if (filters.minMembers || filters.maxMembers) {
+      filteredZones = zones.filter((z: any) => {
+        const count = z._count.members || 0;
+        if (filters.minMembers && count < parseInt(filters.minMembers)) return false;
+        if (filters.maxMembers && count > parseInt(filters.maxMembers)) return false;
+        return true;
+      });
+    }
+
+    // Compute summary metrics
+    const totalZones = filteredZones.length;
+    const totalMembers = filteredZones.reduce((sum: number, z: any) => sum + (z._count.members || 0), 0);
+    const averageZoneSize = totalZones > 0 ? Math.round(totalMembers / totalZones) : 0;
+    const activeZones = filteredZones.filter((z: any) => z.status === 'ACTIVE').length;
+    const inactiveZones = filteredZones.filter((z: any) => z.status === 'INACTIVE').length;
+    const largestZone = filteredZones.length > 0 ? Math.max(...filteredZones.map((z: any) => z._count.members || 0)) : 0;
+
     const summary = {
-      totalZones: zones.length,
-      totalMembers: zones.reduce((sum, z) => sum + z._count.members, 0),
+      totalZones,
+      totalMembers,
+      averageZoneSize,
+      activeZones,
+      inactiveZones,
+      largestZone,
     };
 
+    // Format results to align with frontend columns
+    const results = filteredZones.map((z: any) => ({
+      id: z.id,
+      name: z.name,
+      location: z.location,
+      memberCount: z._count.members || 0,
+      leaderName: z.leaderName || null,
+      leaderPhone: z.leaderPhone || null,
+      status: z.status,
+      description: z.description,
+    }));
+
     return {
-      results: zones,
+      results,
       summary,
     };
   }
