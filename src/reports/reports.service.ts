@@ -846,10 +846,39 @@ export class ReportsService {
       orderBy: { startDate: 'desc' },
     });
 
-    // Filter by attendance range if specified
+    // Apply statusRange (time-based status) if provided
+    // - UPCOMING: startDate > now and not CANCELLED
+    // - ONGOING: startDate <= now and (endDate >= now if provided) and not CANCELLED
+    // - COMPLETED: status === 'COMPLETED' OR (startDate < now and not CANCELLED)
     let filteredEvents = events;
+    if (filters.statusRange) {
+      const now = new Date();
+      filteredEvents = events.filter((e: any) => {
+        const start = e.startDate ? new Date(e.startDate) : null;
+        const end = e.endDate ? new Date(e.endDate) : null;
+        const notCancelled = e.status !== 'CANCELLED';
+
+        switch (filters.statusRange) {
+          case 'UPCOMING':
+            return !!start && start > now && notCancelled;
+          case 'ONGOING':
+            if (!start) return false;
+            // If end date exists, ensure now is between start and end; otherwise assume same-day ongoing when start is today
+            if (end) return start <= now && end >= now && notCancelled;
+            // Fallback: treat events starting today as ongoing if not cancelled
+            const sameDay = start.toDateString() === now.toDateString();
+            return start <= now && sameDay && notCancelled;
+          case 'COMPLETED':
+            return e.status === 'COMPLETED' || (!!start && start < now && notCancelled);
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Filter by attendance range if specified
     if (filters.minAttendance || filters.maxAttendance) {
-      filteredEvents = events.filter((event) => {
+      filteredEvents = filteredEvents.filter((event) => {
         const count = event._count.attendanceRecords + event._count.eventRegistrations;
         if (filters.minAttendance && count < parseInt(filters.minAttendance)) return false;
         if (filters.maxAttendance && count > parseInt(filters.maxAttendance)) return false;
