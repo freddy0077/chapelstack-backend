@@ -11,8 +11,11 @@ import { CreateAnnouncementInput } from '../dto/create-announcement.input';
 import { UpdateAnnouncementInput } from '../dto/update-announcement.input';
 import { CreateAnnouncementTemplateInput } from '../dto/create-announcement-template.input';
 import { AnnouncementFiltersInput } from '../dto/announcement-filters.input';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Resolver(() => Announcement)
+@UseGuards(GqlAuthGuard)
 export class AnnouncementResolver {
   constructor(
     private readonly announcementService: AnnouncementService,
@@ -114,12 +117,13 @@ export class AnnouncementResolver {
    */
   @Mutation(() => Announcement)
   async createAnnouncement(
+    @CurrentUser() user: any,
     @Args('input') input: CreateAnnouncementInput,
   ): Promise<Announcement> {
     return this.announcementService.create(
       input,
-      'system-user',
-      'system-branch',
+      user.id,
+      user.branchId,
     ) as any;
   }
 
@@ -128,14 +132,15 @@ export class AnnouncementResolver {
    */
   @Mutation(() => Announcement)
   async updateAnnouncement(
+    @CurrentUser() user: any,
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateAnnouncementInput,
   ): Promise<Announcement> {
     return this.announcementService.update(
       id,
       input,
-      'system-user',
-      'system-branch',
+      user.id,
+      user.branchId,
     ) as any;
   }
 
@@ -144,12 +149,13 @@ export class AnnouncementResolver {
    */
   @Mutation(() => Boolean)
   async deleteAnnouncement(
+    @CurrentUser() user: any,
     @Args('id', { type: () => ID }) id: string,
   ): Promise<boolean> {
     return this.announcementService.delete(
       id,
-      'system-user',
-      'system-branch',
+      user.id,
+      user.branchId,
     );
   }
 
@@ -158,12 +164,13 @@ export class AnnouncementResolver {
    */
   @Mutation(() => Announcement)
   async publishAnnouncement(
+    @CurrentUser() user: any,
     @Args('id', { type: () => ID }) id: string,
   ): Promise<Announcement> {
     const announcement = await this.announcementService.publish(
       id,
-      'system-user',
-      'system-branch',
+      user.id,
+      user.branchId,
     );
 
     this.announcementNotificationService
@@ -180,14 +187,15 @@ export class AnnouncementResolver {
    */
   @Mutation(() => Announcement)
   async scheduleAnnouncement(
+    @CurrentUser() user: any,
     @Args('id', { type: () => ID }) id: string,
     @Args('scheduledFor') scheduledFor: Date,
   ): Promise<Announcement> {
     return this.announcementService.schedule(
       id,
       scheduledFor,
-      'system-user',
-      'system-branch',
+      user.id,
+      user.branchId,
     ) as any;
   }
 
@@ -196,12 +204,13 @@ export class AnnouncementResolver {
    */
   @Mutation(() => Announcement)
   async archiveAnnouncement(
+    @CurrentUser() user: any,
     @Args('id', { type: () => ID }) id: string,
   ): Promise<Announcement> {
     return this.announcementService.archive(
       id,
-      'system-user',
-      'system-branch',
+      user.id,
+      user.branchId,
     ) as any;
   }
 
@@ -210,9 +219,10 @@ export class AnnouncementResolver {
    */
   @Mutation(() => Boolean)
   async markAnnouncementAsRead(
+    @CurrentUser() user: any,
     @Args('id', { type: () => ID }) id: string,
   ): Promise<boolean> {
-    return this.announcementService.markAsRead(id, 'system-user');
+    return this.announcementService.markAsRead(id, user.id);
   }
 
   /**
@@ -220,12 +230,13 @@ export class AnnouncementResolver {
    */
   @Mutation(() => AnnouncementTemplate)
   async createAnnouncementTemplate(
+    @CurrentUser() user: any,
     @Args('input') input: CreateAnnouncementTemplateInput,
   ): Promise<AnnouncementTemplate> {
     return this.announcementTemplateService.createTemplate(
       input,
-      'system-user',
-      'system-branch',
+      user.id,
+      user.branchId,
     ) as any;
   }
 
@@ -234,12 +245,13 @@ export class AnnouncementResolver {
    */
   @Mutation(() => Boolean)
   async deleteAnnouncementTemplate(
+    @CurrentUser() user: any,
     @Args('id', { type: () => ID }) id: string,
   ): Promise<boolean> {
     return this.announcementTemplateService.deleteTemplate(
       id,
-      'system-user',
-      'system-branch',
+      user.id,
+      user.branchId,
     );
   }
 
