@@ -68,7 +68,13 @@ export class ReportsResolver {
     @Args('input') input: ExecuteReportInput,
     @CurrentUser() user: any,
   ): Promise<ReportResult> {
-    return this.reportsService.executeReport(input, user?.id || 'system');
+    // Normalize filters defensively at resolver level
+    const parsedFilters = typeof (input as any)?.filters === 'string'
+      ? JSON.parse((input as any).filters as any)
+      : ((input as any)?.filters || {});
+    const normalizedInput = { ...input, filters: parsedFilters } as ExecuteReportInput;
+    try { console.debug('resolver.executeReport filters keys:', Object.keys(parsedFilters)); } catch {}
+    return this.reportsService.executeReport(normalizedInput, user?.id || 'system');
   }
 
   @Query(() => [ReportExecution])

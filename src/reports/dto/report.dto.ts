@@ -1,5 +1,5 @@
 import { InputType, Field, ObjectType, registerEnumType } from '@nestjs/graphql';
-import { IsString, IsOptional, IsEnum, IsBoolean, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsBoolean, IsArray, IsObject } from 'class-validator';
 import GraphQLJSON from 'graphql-type-json';
 
 export enum ReportCategory {
@@ -50,6 +50,8 @@ export class CreateReportTemplateInput {
   category: ReportCategory;
 
   @Field(() => GraphQLJSON)
+  @IsOptional()
+  @IsObject()
   filters: any;
 
   @Field(() => GraphQLJSON)
