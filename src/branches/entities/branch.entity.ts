@@ -47,6 +47,9 @@ export class Branch {
   description?: string;
 
   @Field(() => String, { nullable: true })
+  logoUrl?: string;
+
+  @Field(() => String, { nullable: true })
   emailDisplayName?: string;
 
   @Field(() => String, { nullable: true })
