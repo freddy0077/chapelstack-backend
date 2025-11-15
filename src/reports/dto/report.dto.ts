@@ -1,5 +1,6 @@
 import { InputType, Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { IsString, IsOptional, IsEnum, IsBoolean, IsArray, Allow } from 'class-validator';
+import GraphQLJSON from 'graphql-type-json';
 
 export enum ReportCategory {
   ATTENDANCE = 'ATTENDANCE',
@@ -48,15 +49,15 @@ export class CreateReportTemplateInput {
   @IsEnum(ReportCategory)
   category: ReportCategory;
 
-  @Field(() => Object)
+  @Field(() => GraphQLJSON)
   @IsOptional()
   @Allow()
   filters: any;
 
-  @Field(() => Object)
+  @Field(() => GraphQLJSON)
   metrics: any;
 
-  @Field(() => Object, { nullable: true })
+  @Field(() => GraphQLJSON, { nullable: true })
   @IsOptional()
   columns?: any;
 
@@ -87,15 +88,15 @@ export class UpdateReportTemplateInput {
   @IsOptional()
   description?: string;
 
-  @Field(() => Object, { nullable: true })
+  @Field(() => GraphQLJSON, { nullable: true })
   @IsOptional()
   filters?: any;
 
-  @Field(() => Object, { nullable: true })
+  @Field(() => GraphQLJSON, { nullable: true })
   @IsOptional()
   metrics?: any;
 
-  @Field(() => Object, { nullable: true })
+  @Field(() => GraphQLJSON, { nullable: true })
   @IsOptional()
   columns?: any;
 
@@ -119,13 +120,13 @@ export class ReportTemplate {
   @Field(() => ReportCategory)
   category: ReportCategory;
 
-  @Field(() => Object)
+  @Field(() => GraphQLJSON)
   filters: any;
 
-  @Field(() => Object)
+  @Field(() => GraphQLJSON)
   metrics: any;
 
-  @Field(() => Object, { nullable: true })
+  @Field(() => GraphQLJSON, { nullable: true })
   columns?: any | null;
 
   @Field()
@@ -159,7 +160,7 @@ export class ExecuteReportInput {
   @IsEnum(ReportCategory)
   category: ReportCategory;
 
-  @Field(() => Object)
+  @Field(() => GraphQLJSON)
   filters: any;
 
   @Field()
@@ -177,7 +178,7 @@ export class ReportSummary {
   @Field()
   totalRecords: number;
 
-  @Field(() => Object)
+  @Field(() => GraphQLJSON)
   metrics: any;
 }
 
@@ -192,13 +193,13 @@ export class ReportExecution {
   @Field(() => ReportCategory)
   category: ReportCategory;
 
-  @Field(() => Object)
+  @Field(() => GraphQLJSON)
   filters: any;
 
-  @Field(() => Object)
+  @Field(() => GraphQLJSON)
   results: any;
 
-  @Field(() => Object, { nullable: true })
+  @Field(() => GraphQLJSON, { nullable: true })
   summary?: any | null;
 
   @Field()
@@ -219,13 +220,13 @@ export class ReportResult {
   @Field(() => ReportSummary)
   summary: ReportSummary;
 
-  @Field(() => Object)
+  @Field(() => GraphQLJSON)
   data: any;
 
   @Field(() => ReportExecution, { nullable: true })
   execution?: ReportExecution;
 
-  @Field(() => Object, { nullable: true })
+  @Field(() => GraphQLJSON, { nullable: true })
   charts?: any;
 }
 
@@ -271,7 +272,7 @@ export class CreateScheduledReportInput {
   @IsEnum(ReportCategory)
   category: ReportCategory;
 
-  @Field(() => Object)
+  @Field(() => GraphQLJSON)
   filters: any;
 
   @Field(() => ReportFrequency)
@@ -309,7 +310,7 @@ export class ScheduledReport {
   @Field(() => ReportCategory, { nullable: true })
   category?: ReportCategory | null;
 
-  @Field(() => Object, { nullable: true })
+  @Field(() => GraphQLJSON, { nullable: true })
   filters?: any | null;
 
   @Field(() => ReportFrequency)
