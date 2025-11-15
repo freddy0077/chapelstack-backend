@@ -1,5 +1,5 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ReportsService } from './reports.service';
@@ -64,6 +64,7 @@ export class ReportsResolver {
 
   @Mutation(() => ReportResult)
   @UseGuards(GqlAuthGuard)
+  @UsePipes(new ValidationPipe({ whitelist: false, transform: false }))
   async executeReport(
     @Args('input') input: ExecuteReportInput,
     @CurrentUser() user: any,
