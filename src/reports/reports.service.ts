@@ -816,11 +816,19 @@ export class ReportsService {
       ...(branchId && { branchId }),
     };
 
-    // Apply date range filter
+    // Apply date range filter (inclusive day boundaries)
     if (filters.startDate || filters.endDate) {
       where.startDate = {};
-      if (filters.startDate) where.startDate.gte = new Date(filters.startDate);
-      if (filters.endDate) where.startDate.lte = new Date(filters.endDate);
+      if (filters.startDate) {
+        const start = new Date(filters.startDate);
+        start.setHours(0, 0, 0, 0);
+        where.startDate.gte = start;
+      }
+      if (filters.endDate) {
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        where.startDate.lte = end;
+      }
     }
 
     // Apply event type filter
