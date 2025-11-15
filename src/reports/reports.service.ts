@@ -816,7 +816,9 @@ export class ReportsService {
 
   private async executeEventsReport(input: ExecuteReportInput) {
     const { organisationId, branchId } = input;
-    const filters = typeof input.filters === 'string' ? JSON.parse(input.filters) : input.filters || {};
+    const filters = (input as any).filters || {};
+    // Debug: verify filters reaching here
+    try { console.debug('executeEventsReport filters keys:', Object.keys(filters)); } catch {}
 
     const where: any = {
       organisationId,
