@@ -17,60 +17,36 @@ import { AuditLogService } from '../audit/services/audit-log.service';
 function toGraphQLBranch(
   prismaBranch: PrismaBranch & { settings?: any[] },
 ): Branch {
-  return {
-    ...prismaBranch,
-
-    address: prismaBranch.address === null ? undefined : prismaBranch.address,
-
-    city: prismaBranch.city === null ? undefined : prismaBranch.city,
-
-    state: prismaBranch.state === null ? undefined : prismaBranch.state,
-
-    postalCode:
-      prismaBranch.postalCode === null ? undefined : prismaBranch.postalCode,
-
-    country: prismaBranch.country === null ? undefined : prismaBranch.country,
-
-    phoneNumber:
-      prismaBranch.phoneNumber === null ? undefined : prismaBranch.phoneNumber,
-
-    email: prismaBranch.email === null ? undefined : prismaBranch.email,
-
-    website: prismaBranch.website === null ? undefined : prismaBranch.website,
-
-    establishedAt:
-      prismaBranch.establishedAt === null
-        ? undefined
-        : prismaBranch.establishedAt,
-
-    description:
-      prismaBranch.description === null ? undefined : prismaBranch.description,
-
-    emailDisplayName:
-      prismaBranch.emailDisplayName === null
-        ? undefined
-        : prismaBranch.emailDisplayName,
-
-    emailSignature:
-      prismaBranch.emailSignature === null
-        ? undefined
-        : prismaBranch.emailSignature,
-
-    smsDisplayName:
-      prismaBranch.smsDisplayName === null
-        ? undefined
-        : prismaBranch.smsDisplayName,
-
-    // Map settings if they are included in the query result
-    settings:
-      prismaBranch.settings === null ? undefined : prismaBranch.settings,
-
-    // Convert organisationId from null to undefined if needed
-    organisationId:
-      prismaBranch.organisationId === null
-        ? undefined
-        : prismaBranch.organisationId,
+  const branch: Branch = {
+    id: prismaBranch.id,
+    name: prismaBranch.name,
+    isActive: prismaBranch.isActive,
+    createdAt: prismaBranch.createdAt,
+    updatedAt: prismaBranch.updatedAt,
   };
+
+  if (prismaBranch.address != null) branch.address = prismaBranch.address;
+  if (prismaBranch.city != null) branch.city = prismaBranch.city;
+  if (prismaBranch.state != null) branch.state = prismaBranch.state;
+  if (prismaBranch.postalCode != null) branch.postalCode = prismaBranch.postalCode;
+  if (prismaBranch.country != null) branch.country = prismaBranch.country;
+  if (prismaBranch.phoneNumber != null) branch.phoneNumber = prismaBranch.phoneNumber;
+  if (prismaBranch.email != null) branch.email = prismaBranch.email;
+  if (prismaBranch.website != null) branch.website = prismaBranch.website;
+  if (prismaBranch.description != null) branch.description = prismaBranch.description;
+  if (prismaBranch.logoUrl != null) branch.logoUrl = prismaBranch.logoUrl;
+  if (prismaBranch.establishedAt != null) branch.establishedAt = prismaBranch.establishedAt;
+  if (prismaBranch.emailDisplayName != null)
+    branch.emailDisplayName = prismaBranch.emailDisplayName;
+  if (prismaBranch.emailSignature != null)
+    branch.emailSignature = prismaBranch.emailSignature;
+  if (prismaBranch.smsDisplayName != null)
+    branch.smsDisplayName = prismaBranch.smsDisplayName;
+  if (prismaBranch.settings != null) branch.settings = prismaBranch.settings as any;
+  if (prismaBranch.organisationId != null)
+    branch.organisationId = prismaBranch.organisationId;
+
+  return branch;
 }
 
 @Injectable()
