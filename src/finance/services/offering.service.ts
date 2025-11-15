@@ -668,6 +668,7 @@ export class OfferingService {
   /**
    * Generate batch number
    * Format: OFR-YYYY-NNNN
+   * Includes timestamp-based suffix for uniqueness under concurrency
    */
   private async generateBatchNumber(
     organisationId: string,
@@ -693,10 +694,20 @@ export class OfferingService {
     if (lastBatch) {
       const lastNumber = parseInt(
         lastBatch.batchNumber.replace(prefix, ''),
+        10,
       );
-      nextNumber = lastNumber + 1;
+      // Guard against NaN
+      if (!Number.isFinite(lastNumber)) {
+        nextNumber = 1;
+      } else {
+        nextNumber = lastNumber + 1;
+      }
     }
 
-    return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
+    // Add timestamp-based microsecond suffix to reduce collisions under concurrency
+    const now = Date.now();
+    const microSuffix = (now % 10000).toString().padStart(4, '0');
+    
+    return `${prefix}${nextNumber.toString().padStart(4, '0')}-${microSuffix}`;
   }
 }
