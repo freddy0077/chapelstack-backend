@@ -179,42 +179,57 @@ export class JournalEntryService {
     }
 
     // ===== ALL VALIDATIONS PASSED - CREATE ENTRY =====
-    // Generate journal entry number
-    const journalEntryNumber = await this.generateJournalEntryNumber(
-      organisationId,
-      branchId,
-    );
+    // Create journal entry with retry on unique constraint violation
+    for (let attempt = 0; attempt < 5; attempt++) {
+      // Generate journal entry number
+      const journalEntryNumber = await this.generateJournalEntryNumber(
+        organisationId,
+        branchId,
+      );
 
-    // Create journal entry with lines
-    return this.prisma.journalEntry.create({
-      data: {
-        ...data,
-        journalEntryNumber,
-        createdBy,
-        lines: {
-          create: lines.map((line, index) => ({
-            lineNumber: index + 1,
-            accountId: line.accountId,
-            description: line.description,
-            debitAmount: line.debitAmount,
-            creditAmount: line.creditAmount,
-            fundId: line.fundId,
-            ministryId: line.ministryId,
-            memberId: line.memberId,
-          })),
-        },
-      },
-      include: {
-        lines: {
-          include: {
-            account: true,
-            fund: true,
-            ministry: true,
-            member: true,
+      try {
+        // Create journal entry with lines
+        return await this.prisma.journalEntry.create({
+          data: {
+            ...data,
+            journalEntryNumber,
+            createdBy,
+            lines: {
+              create: lines.map((line, index) => ({
+                lineNumber: index + 1,
+                accountId: line.accountId,
+                description: line.description,
+                debitAmount: line.debitAmount,
+                creditAmount: line.creditAmount,
+                fundId: line.fundId,
+                ministryId: line.ministryId,
+                memberId: line.memberId,
+              })),
+            },
           },
-        },
-      },
-    });
+          include: {
+            lines: {
+              include: {
+                account: true,
+                fund: true,
+                ministry: true,
+                member: true,
+              },
+            },
+          },
+        });
+      } catch (e: any) {
+        // P2002 = unique constraint violation
+        if (e.code === 'P2002' && attempt < 4) {
+          // Small jitter to reduce contention on retry
+          await new Promise(r => setTimeout(r, 10 + Math.random() * 40));
+          continue;
+        }
+        throw e;
+      }
+    }
+
+    throw new Error('Failed to allocate unique journal entry number after retries');
   }
 
   /**
@@ -487,7 +502,8 @@ export class JournalEntryService {
 
   /**
    * Generate journal entry number
-   * Format: JE-YYYY-NNNN
+   * Format: JE-YYYY-NNNN-SSSS
+   * Includes timestamp-based suffix for uniqueness under concurrency
    */
   private async generateJournalEntryNumber(
     organisationId: string,
@@ -511,12 +527,21 @@ export class JournalEntryService {
 
     let nextNumber = 1;
     if (lastEntry) {
-      const lastNumber = parseInt(
-        lastEntry.journalEntryNumber.replace(prefix, ''),
-      );
-      nextNumber = lastNumber + 1;
+      // Extract just the numeric part (before the timestamp suffix)
+      const parts = lastEntry.journalEntryNumber.replace(prefix, '').split('-');
+      const lastNumber = parseInt(parts[0], 10);
+      // Guard against NaN
+      if (!Number.isFinite(lastNumber)) {
+        nextNumber = 1;
+      } else {
+        nextNumber = lastNumber + 1;
+      }
     }
 
-    return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
+    // Add timestamp-based suffix to reduce collisions under concurrency
+    const now = Date.now();
+    const microSuffix = (now % 10000).toString().padStart(4, '0');
+
+    return `${prefix}${nextNumber.toString().padStart(4, '0')}-${microSuffix}`;
   }
 }
