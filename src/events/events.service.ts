@@ -1168,6 +1168,11 @@ export class EventsService {
 
     // Step 1.5: Validate payment settings for paid events
     if (!event.isFree) {
+      if (!event.branchId) {
+        this.logger.error(`❌ [PAYMENT VERIFICATION] Event has no branch ID`);
+        throw new BadRequestException('Event branch not configured');
+      }
+
       const paymentSettings = await this.paymentSettingsService.getPaymentSettings(event.branchId);
       
       if (!paymentSettings) {
@@ -1175,8 +1180,8 @@ export class EventsService {
         throw new BadRequestException('Payment settings not configured for this branch');
       }
 
-      const enabledMethods = paymentSettings.enabledMethods || [];
-      if (enabledMethods.length === 0) {
+      const enabledMethods = (paymentSettings.enabledMethods as string[]) || [];
+      if (!Array.isArray(enabledMethods) || enabledMethods.length === 0) {
         this.logger.error(`❌ [PAYMENT VERIFICATION] No payment methods enabled for branch: ${event.branchId}`);
         throw new BadRequestException('No payment methods configured for this branch');
       }
@@ -1323,6 +1328,11 @@ export class EventsService {
     }
 
     // Validate payment settings are configured (even for free events)
+    if (!event.branchId) {
+      this.logger.error(`❌ [FREE EVENT] Event has no branch ID`);
+      throw new BadRequestException('Event branch not configured');
+    }
+
     const paymentSettings = await this.paymentSettingsService.getPaymentSettings(event.branchId);
     
     if (!paymentSettings) {

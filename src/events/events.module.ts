@@ -7,11 +7,12 @@ import { WorkflowsModule } from '../workflows/workflows.module';
 import { CommunicationsModule } from '../communications/communications.module';
 import { EngagementModule } from '../engagement/engagement.module';
 import { AuditModule } from '../audit/audit.module';
+import { SettingsModule } from '../settings/settings.module';
 // Import to register GraphQL enums
 import './enums/graphql-enums';
 
 @Module({
-  imports: [BranchesModule, WorkflowsModule, CommunicationsModule, forwardRef(() => EngagementModule), AuditModule],
+  imports: [BranchesModule, WorkflowsModule, CommunicationsModule, forwardRef(() => EngagementModule), AuditModule, SettingsModule],
   providers: [EventsService, EventsResolver, EventNotificationService],
   exports: [EventsService],
 })
