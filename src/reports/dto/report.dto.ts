@@ -160,8 +160,9 @@ export class ExecuteReportInput {
   @IsEnum(ReportCategory)
   category: ReportCategory;
 
-  @Field(() => GraphQLJSON)
-  filters: any;
+  @Field(() => String)
+  @IsString()
+  filtersJson: string;
 
   @Field()
   @IsString()

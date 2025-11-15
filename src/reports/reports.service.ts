@@ -88,61 +88,57 @@ export class ReportsService {
 
   // ==================== Report Execution ====================
 
-  async executeReport(input: ExecuteReportInput, userId: string) {
-    // Normalize/parse filters once and propagate
-    const parsedFilters = typeof input.filters === 'string'
-      ? JSON.parse(input.filters)
-      : (input.filters || {});
-
-    const normalizedInput: ExecuteReportInput = { ...input, filters: parsedFilters } as ExecuteReportInput;
+  async executeReport(input: any, userId: string) {
+    // Extract filters from input (already parsed by resolver)
+    const filters = input.filters || {};
 
     // Execute report based on category
     let results: any;
     let summary: any;
 
-    switch (normalizedInput.category) {
+    switch (input.category) {
       case ReportCategory.ATTENDANCE:
-        ({ results, summary } = await this.executeAttendanceReport(normalizedInput));
+        ({ results, summary } = await this.executeAttendanceReport({ ...input, filters }));
         break;
       case ReportCategory.MEMBERSHIP:
-        ({ results, summary } = await this.executeMembershipReport(normalizedInput));
+        ({ results, summary } = await this.executeMembershipReport({ ...input, filters }));
         break;
       case ReportCategory.FINANCE:
-        ({ results, summary } = await this.executeFinanceReport(normalizedInput));
+        ({ results, summary } = await this.executeFinanceReport({ ...input, filters }));
         break;
       case ReportCategory.BIRTH_REGISTER:
-        ({ results, summary } = await this.executeBirthRegisterReport(normalizedInput));
+        ({ results, summary } = await this.executeBirthRegisterReport({ ...input, filters }));
         break;
       case ReportCategory.DEATH_REGISTER:
-        ({ results, summary } = await this.executeDeathRegisterReport(normalizedInput));
+        ({ results, summary } = await this.executeDeathRegisterReport({ ...input, filters }));
         break;
       case ReportCategory.SACRAMENTS:
-        ({ results, summary } = await this.executeSacramentsReport(normalizedInput));
+        ({ results, summary } = await this.executeSacramentsReport({ ...input, filters }));
         break;
       case ReportCategory.ZONES:
-        ({ results, summary } = await this.executeZonesReport(normalizedInput));
+        ({ results, summary } = await this.executeZonesReport({ ...input, filters }));
         break;
       case ReportCategory.EVENTS:
-        ({ results, summary } = await this.executeEventsReport(normalizedInput));
+        ({ results, summary } = await this.executeEventsReport({ ...input, filters }));
         break;
       case ReportCategory.GROUPS:
-        ({ results, summary } = await this.executeGroupsReport(normalizedInput));
+        ({ results, summary } = await this.executeGroupsReport({ ...input, filters }));
         break;
       default:
-        throw new Error(`Unsupported report category: ${normalizedInput.category}`);
+        throw new Error(`Unsupported report category: ${input.category}`);
     }
 
     // Save execution record
     const execution = await this.prisma.reportExecution.create({
       data: {
-        templateId: normalizedInput.templateId,
-        category: normalizedInput.category,
-        filters: parsedFilters,
+        templateId: input.templateId,
+        category: input.category,
+        filters,
         results,
         summary,
         executedBy: userId,
-        organisationId: normalizedInput.organisationId,
-        branchId: normalizedInput.branchId,
+        organisationId: input.organisationId,
+        branchId: input.branchId,
       },
     });
 

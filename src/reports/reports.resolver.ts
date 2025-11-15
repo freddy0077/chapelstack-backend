@@ -64,17 +64,21 @@ export class ReportsResolver {
 
   @Mutation(() => ReportResult)
   @UseGuards(GqlAuthGuard)
-  @UsePipes(new ValidationPipe({ whitelist: false, transform: false }))
   async executeReport(
     @Args('input') input: ExecuteReportInput,
     @CurrentUser() user: any,
   ): Promise<ReportResult> {
-    // Normalize filters defensively at resolver level
-    const parsedFilters = typeof (input as any)?.filters === 'string'
-      ? JSON.parse((input as any).filters as any)
-      : ((input as any)?.filters || {});
-    const normalizedInput = { ...input, filters: parsedFilters } as ExecuteReportInput;
-    try { console.debug('resolver.executeReport filters keys:', Object.keys(parsedFilters)); } catch {}
+    // Parse filtersJson string into object
+    let filters: any = {};
+    try {
+      filters = JSON.parse(input.filtersJson || '{}');
+    } catch (e) {
+      filters = {};
+    }
+    try { console.debug('resolver.executeReport filters keys:', Object.keys(filters)); } catch {}
+    
+    // Create normalized input with parsed filters
+    const normalizedInput = { ...input, filters } as any;
     return this.reportsService.executeReport(normalizedInput, user?.id || 'system');
   }
 
