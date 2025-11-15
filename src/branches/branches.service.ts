@@ -240,8 +240,12 @@ export class BranchesService {
     }
 
     // Filter out empty strings to avoid unique constraint violations
+    // Convert empty strings to null for fields that should be cleared
     const updateData = Object.fromEntries(
-      Object.entries(updateBranchInput).filter(([_, value]) => value !== '')
+      Object.entries(updateBranchInput).map(([key, value]) => [
+        key,
+        value === '' ? null : value,
+      ])
     );
 
     const updatedBranch = await this.prisma.branch.update({
@@ -351,34 +355,64 @@ export class BranchesService {
 
   private mapPrismaBranchToEntity(prismaBranch: any): Branch {
     // Convert null values to undefined for optional fields
-    return {
+    const branch: Branch = {
       id: prismaBranch.id,
       name: prismaBranch.name,
-      address: prismaBranch.address === null ? undefined : prismaBranch.address,
-      city: prismaBranch.city === null ? undefined : prismaBranch.city,
-      state: prismaBranch.state === null ? undefined : prismaBranch.state,
-      postalCode:
-        prismaBranch.postalCode === null ? undefined : prismaBranch.postalCode,
-      country: prismaBranch.country === null ? undefined : prismaBranch.country,
-      phoneNumber:
-        prismaBranch.phoneNumber === null
-          ? undefined
-          : prismaBranch.phoneNumber,
-      email: prismaBranch.email === null ? undefined : prismaBranch.email,
-      website: prismaBranch.website === null ? undefined : prismaBranch.website,
-      establishedAt:
-        prismaBranch.establishedAt === null
-          ? undefined
-          : prismaBranch.establishedAt,
       isActive: prismaBranch.isActive,
       createdAt: prismaBranch.createdAt,
       updatedAt: prismaBranch.updatedAt,
-      settings:
-        prismaBranch.settings === null ? undefined : prismaBranch.settings,
-      organisationId:
-        prismaBranch.organisationId === null
-          ? undefined
-          : prismaBranch.organisationId,
     };
+
+    // Add optional fields, converting null to undefined
+    if (prismaBranch.address !== null && prismaBranch.address !== undefined) {
+      branch.address = prismaBranch.address;
+    }
+    if (prismaBranch.city !== null && prismaBranch.city !== undefined) {
+      branch.city = prismaBranch.city;
+    }
+    if (prismaBranch.state !== null && prismaBranch.state !== undefined) {
+      branch.state = prismaBranch.state;
+    }
+    if (prismaBranch.postalCode !== null && prismaBranch.postalCode !== undefined) {
+      branch.postalCode = prismaBranch.postalCode;
+    }
+    if (prismaBranch.country !== null && prismaBranch.country !== undefined) {
+      branch.country = prismaBranch.country;
+    }
+    if (prismaBranch.phoneNumber !== null && prismaBranch.phoneNumber !== undefined) {
+      branch.phoneNumber = prismaBranch.phoneNumber;
+    }
+    if (prismaBranch.email !== null && prismaBranch.email !== undefined) {
+      branch.email = prismaBranch.email;
+    }
+    if (prismaBranch.website !== null && prismaBranch.website !== undefined) {
+      branch.website = prismaBranch.website;
+    }
+    if (prismaBranch.description !== null && prismaBranch.description !== undefined) {
+      branch.description = prismaBranch.description;
+    }
+    if (prismaBranch.logoUrl !== null && prismaBranch.logoUrl !== undefined) {
+      branch.logoUrl = prismaBranch.logoUrl;
+    }
+    if (prismaBranch.establishedAt !== null && prismaBranch.establishedAt !== undefined) {
+      branch.establishedAt = prismaBranch.establishedAt;
+    }
+    if (prismaBranch.emailDisplayName !== null && prismaBranch.emailDisplayName !== undefined) {
+      branch.emailDisplayName = prismaBranch.emailDisplayName;
+    }
+    if (prismaBranch.emailSignature !== null && prismaBranch.emailSignature !== undefined) {
+      branch.emailSignature = prismaBranch.emailSignature;
+    }
+    if (prismaBranch.smsDisplayName !== null && prismaBranch.smsDisplayName !== undefined) {
+      branch.smsDisplayName = prismaBranch.smsDisplayName;
+    }
+    if (prismaBranch.settings !== null && prismaBranch.settings !== undefined) {
+      branch.settings = prismaBranch.settings;
+    }
+    if (prismaBranch.organisationId !== null && prismaBranch.organisationId !== undefined) {
+      branch.organisationId = prismaBranch.organisationId;
+    }
+
+    return branch;
   }
 }
