@@ -19,7 +19,16 @@ export class PaystackGateway implements IPaymentGateway {
       throw new BadRequestException('Paystack initiate requires payer email in metadata.email');
     }
     const amount = input.amount;
-    const currency = input.currency || 'NGN';
+    // Force GHS currency for Ghana
+    const currency = 'GHS';
+
+    // Validate payment method is supported for Ghana
+    const paymentMethod = input.metadata?.paymentMethod;
+    if (paymentMethod && !['CARD', 'MOBILE_MONEY'].includes(paymentMethod)) {
+      throw new BadRequestException(
+        `Payment method ${paymentMethod} is not supported for Ghana. Only CARD and MOBILE_MONEY are supported.`
+      );
+    }
 
     const secret = this.config.get<string>('PAYSTACK_SECRET_KEY');
     if (!secret) throw new BadRequestException('Missing PAYSTACK_SECRET_KEY');

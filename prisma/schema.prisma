@@ -4662,11 +4662,15 @@ model PaymentSettings {
   branchId          String   @unique
   branch            Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
   
+  // Country and Currency (Ghana-specific)
+  country           String   @default("GH")   // Country code (GH for Ghana)
+  currency          String   @default("GHS")  // Currency code (GHS for Ghana Cedis)
+  
   // Gateway Configuration (encrypted JSON)
   gateways          Json?    // {paystack: {publicKey, secretKey, webhookSecret}, stripe: {...}, etc.}
   
   // Enabled Methods
-  enabledMethods    Json?    // [CARD, BANK_TRANSFER, MOBILE_MONEY, CASH]
+  enabledMethods    Json?    // [CARD, MOBILE_MONEY] for Ghana
   
   // Settings
   autoReceipt       Boolean  @default(true)
@@ -4677,6 +4681,7 @@ model PaymentSettings {
   updatedAt         DateTime @updatedAt
   
   @@index([branchId])
+  @@index([country])
 }
 
 model ModuleSettings {

@@ -6,6 +6,16 @@ import GraphQLJSON from 'graphql-type-json';
 export class UpdatePaymentSettingsInput {
   @Field({ nullable: true })
   @IsOptional()
+  @IsString()
+  country?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
   @IsBoolean()
   autoReceipt?: boolean;
 

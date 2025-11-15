@@ -569,13 +569,13 @@ export class ReportsService {
     };
 
     if (filters.startDate || filters.endDate) {
-      where.birthDate = {};
-      if (filters.startDate) where.birthDate.gte = new Date(filters.startDate);
-      if (filters.endDate) where.birthDate.lte = new Date(filters.endDate);
+      where.dateOfBirth = {};
+      if (filters.startDate) where.dateOfBirth.gte = new Date(filters.startDate);
+      if (filters.endDate) where.dateOfBirth.lte = new Date(filters.endDate);
     }
 
     if (filters.gender && filters.gender !== 'ALL') {
-      where.gender = filters.gender;
+      where.childGender = filters.gender;
     }
 
     const births = await this.prisma.birthRegistry.findMany({
@@ -607,13 +607,15 @@ export class ReportsService {
     };
 
     if (filters.startDate || filters.endDate) {
-      where.deathDate = {};
-      if (filters.startDate) where.deathDate.gte = new Date(filters.startDate);
-      if (filters.endDate) where.deathDate.lte = new Date(filters.endDate);
+      where.dateOfDeath = {};
+      if (filters.startDate) where.dateOfDeath.gte = new Date(filters.startDate);
+      if (filters.endDate) where.dateOfDeath.lte = new Date(filters.endDate);
     }
 
     if (filters.gender && filters.gender !== 'ALL') {
-      where.gender = filters.gender;
+      where.member = {
+        gender: filters.gender,
+      };
     }
 
     const deaths = await this.prisma.deathRegister.findMany({

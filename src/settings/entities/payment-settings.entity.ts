@@ -9,6 +9,12 @@ export class PaymentSettingsEntity {
   @Field(() => ID)
   branchId: string;
 
+  @Field(() => String)
+  country: string;
+
+  @Field(() => String)
+  currency: string;
+
   @Field(() => Boolean)
   autoReceipt: boolean;
 

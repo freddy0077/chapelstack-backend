@@ -7,6 +7,12 @@ export class PaymentSettingsService {
   private readonly logger = new Logger(PaymentSettingsService.name);
   private readonly encryptionKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
 
+  // Ghana-specific configuration
+  private readonly GHANA_SUPPORTED_METHODS = ['CARD', 'MOBILE_MONEY'];
+  private readonly GHANA_CURRENCY = 'GHS';
+  private readonly GHANA_COUNTRY_CODE = 'GH';
+  private readonly GHANA_SUPPORTED_GATEWAYS = ['PAYSTACK'];
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -33,6 +39,41 @@ export class PaymentSettingsService {
    * Update payment settings
    */
   async updatePaymentSettings(branchId: string, data: any, userId: string) {
+    // Validate enabled methods for Ghana
+    if (data.enabledMethods) {
+      const invalidMethods = data.enabledMethods.filter(
+        (m: string) => !this.GHANA_SUPPORTED_METHODS.includes(m)
+      );
+      if (invalidMethods.length > 0) {
+        throw new HttpException(
+          `Unsupported payment methods for Ghana: ${invalidMethods.join(', ')}. Only CARD and MOBILE_MONEY are supported.`,
+          400
+        );
+      }
+      if (data.enabledMethods.length === 0) {
+        throw new HttpException(
+          'At least one payment method must be enabled',
+          400
+        );
+      }
+    }
+
+    // Validate currency for Ghana
+    if (data.currency && data.currency !== this.GHANA_CURRENCY) {
+      throw new HttpException(
+        `Only ${this.GHANA_CURRENCY} currency is supported for Ghana`,
+        400
+      );
+    }
+
+    // Validate country for Ghana
+    if (data.country && data.country !== this.GHANA_COUNTRY_CODE) {
+      throw new HttpException(
+        `Only Ghana (${this.GHANA_COUNTRY_CODE}) is supported`,
+        400
+      );
+    }
+
     // Encrypt gateway credentials
     if (data.gateways) {
       data.gateways = this.encryptGateways(data.gateways);
@@ -52,6 +93,8 @@ export class PaymentSettingsService {
       settings = await this.prisma.paymentSettings.create({
         data: {
           branchId,
+          country: this.GHANA_COUNTRY_CODE,
+          currency: this.GHANA_CURRENCY,
           ...data,
         },
       });
@@ -128,10 +171,32 @@ export class PaymentSettingsService {
       throw new HttpException('Paystack secret key is required', 400);
     }
 
-    // Test API call to Paystack
-    // This is a placeholder - implement actual Paystack API validation
-    // Example: GET https://api.paystack.co/bank
-    return true;
+    try {
+      // Test API call to Paystack banks endpoint
+      const response = await fetch('https://api.paystack.co/bank', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${credentials.secretKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new HttpException(
+          'Invalid Paystack credentials. Please verify your secret key.',
+          400
+        );
+      }
+
+      this.logger.log('Paystack credentials validated successfully');
+      return true;
+    } catch (error: any) {
+      this.logger.error('Paystack validation failed:', error);
+      throw new HttpException(
+        'Failed to validate Paystack credentials. Please check your secret key and try again.',
+        400
+      );
+    }
   }
 
   /**
@@ -209,9 +274,19 @@ export class PaymentSettingsService {
     return await this.prisma.paymentSettings.create({
       data: {
         branchId,
+        country: this.GHANA_COUNTRY_CODE,
+        currency: this.GHANA_CURRENCY,
         autoReceipt: true,
         feeBearer: 'CUSTOMER',
-        enabledMethods: ['CARD', 'BANK_TRANSFER', 'CASH'],
+        enabledMethods: this.GHANA_SUPPORTED_METHODS,
+        gateways: {
+          PAYSTACK: {
+            publicKey: '',
+            secretKey: '',
+            webhookSecret: '',
+            testMode: true,
+          },
+        },
       },
     });
   }
