@@ -193,13 +193,9 @@ export class ReportsService {
 
   // ==================== Report Generation Methods ====================
 
-  private async executeAttendanceReport(input: ExecuteReportInput) {
+  private async executeAttendanceReport(input: any) {
     const { organisationId, branchId } = input;
-    
-    // Parse filters if they're a string
-    const filters = typeof input.filters === 'string' 
-      ? JSON.parse(input.filters) 
-      : input.filters || {};
+    const filters = input.filters || {};
 
     // Build where clause based on filters
     const where: any = {
@@ -421,9 +417,9 @@ export class ReportsService {
     };
   }
 
-  private async executeMembershipReport(input: ExecuteReportInput) {
+  private async executeMembershipReport(input: any) {
     const { organisationId, branchId } = input;
-    const filters = typeof input.filters === 'string' ? JSON.parse(input.filters) : input.filters || {};
+    const filters = input.filters || {};
 
     const where: any = {
       organisationId,
@@ -514,9 +510,9 @@ export class ReportsService {
     };
   }
 
-  private async executeFinanceReport(input: ExecuteReportInput) {
+  private async executeFinanceReport(input: any) {
     const { organisationId, branchId } = input;
-    const filters = typeof input.filters === 'string' ? JSON.parse(input.filters) : input.filters || {};
+    const filters = input.filters || {};
 
     const where: any = {
       organisationId,
@@ -563,9 +559,9 @@ export class ReportsService {
     };
   }
 
-  private async executeBirthRegisterReport(input: ExecuteReportInput) {
+  private async executeBirthRegisterReport(input: any) {
     const { organisationId, branchId } = input;
-    const filters = typeof input.filters === 'string' ? JSON.parse(input.filters) : input.filters || {};
+    const filters = input.filters || {};
 
     const where: any = {
       organisationId,
@@ -601,9 +597,9 @@ export class ReportsService {
     };
   }
 
-  private async executeDeathRegisterReport(input: ExecuteReportInput) {
+  private async executeDeathRegisterReport(input: any) {
     const { organisationId, branchId } = input;
-    const filters = typeof input.filters === 'string' ? JSON.parse(input.filters) : input.filters || {};
+    const filters = input.filters || {};
 
     const where: any = {
       organisationId,
@@ -648,9 +644,9 @@ export class ReportsService {
     };
   }
 
-  private async executeSacramentsReport(input: ExecuteReportInput) {
+  private async executeSacramentsReport(input: any) {
     const { organisationId, branchId } = input;
-    const filters = typeof input.filters === 'string' ? JSON.parse(input.filters) : input.filters || {};
+    const filters = input.filters || {};
 
     const where: any = {
       organisationId,
@@ -701,9 +697,9 @@ export class ReportsService {
     };
   }
 
-  private async executeZonesReport(input: ExecuteReportInput) {
+  private async executeZonesReport(input: any) {
     const { organisationId, branchId } = input;
-    const filters = typeof input.filters === 'string' ? JSON.parse(input.filters) : input.filters || {};
+    const filters = input.filters || {};
 
     // Base where clause
     const where: any = {
@@ -810,9 +806,9 @@ export class ReportsService {
     }
   }
 
-  private async executeEventsReport(input: ExecuteReportInput) {
+  private async executeEventsReport(input: any) {
     const { organisationId, branchId } = input;
-    const filters = (input as any).filters || {};
+    const filters = input.filters || {};
     // Debug: verify filters reaching here
     try { console.debug('executeEventsReport filters keys:', Object.keys(filters)); } catch {}
 
@@ -943,9 +939,9 @@ export class ReportsService {
     };
   }
 
-  private async executeGroupsReport(input: ExecuteReportInput) {
+  private async executeGroupsReport(input: any) {
     const { organisationId, branchId } = input;
-    const filters = typeof input.filters === 'string' ? JSON.parse(input.filters) : input.filters || {};
+    const filters = input.filters || {};
 
     const where: any = {
       organisationId,
