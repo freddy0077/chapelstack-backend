@@ -96,6 +96,12 @@ export class CreateBranchInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
+  logoUrl?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   @MaxLength(255)
   emailDisplayName?: string;
 

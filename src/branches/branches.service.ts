@@ -239,9 +239,14 @@ export class BranchesService {
       }
     }
 
+    // Filter out empty strings to avoid unique constraint violations
+    const updateData = Object.fromEntries(
+      Object.entries(updateBranchInput).filter(([_, value]) => value !== '')
+    );
+
     const updatedBranch = await this.prisma.branch.update({
       where: { id },
-      data: updateBranchInput,
+      data: updateData,
     });
 
     // Log the branch update - scoped to this branch

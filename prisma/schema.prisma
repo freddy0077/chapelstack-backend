@@ -148,6 +148,7 @@ model Branch {
   state                        String?
   website                      String?
   description                  String?
+  logoUrl                      String?
   emailDisplayName             String?
   emailSignature               String?                       @db.Text
   smsDisplayName               String?

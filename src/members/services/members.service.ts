@@ -636,16 +636,25 @@ export class MembersService extends CrudService<Member, CreateMemberInput, Updat
         });
       }
 
-      // Log the action
-      await this.auditLogService.create({
-        action: 'UPDATE',
-        entityType: 'Member',
-        entityId: updatedMember.id,
-        description: `Updated member: ${updatedMember.firstName} ${updatedMember.lastName}`,
-        userId: userId || '5453df9a-003a-4319-a532-84b527b9e285', // Use super_admin as fallback
-        ipAddress,
-        userAgent,
-      });
+      // Log the action (only if userId is provided)
+      if (userId) {
+        try {
+          await this.auditLogService.create({
+            action: 'UPDATE',
+            entityType: 'Member',
+            entityId: updatedMember.id,
+            description: `Updated member: ${updatedMember.firstName} ${updatedMember.lastName}`,
+            userId,
+            ipAddress,
+            userAgent,
+          });
+        } catch (auditError) {
+          this.logger.warn(
+            `Failed to create audit log for member update: ${(auditError as Error).message}`,
+          );
+          // Don't throw - audit logging failure shouldn't block the update
+        }
+      }
 
       // Trigger workflow automation for member update
       try {
@@ -2151,6 +2160,36 @@ export class MembersService extends CrudService<Member, CreateMemberInput, Updat
         entityType: 'Member',
         entityId: memberId,
         description: 'Deactivated member',
+        userId,
+        ipAddress,
+        userAgent,
+      });
+    }
+
+    return true;
+  }
+
+  async bulkActivate(
+    memberIds: string[],
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    await this.prisma.member.updateMany({
+      where: { id: { in: memberIds } },
+      data: {
+        isDeactivated: false,
+        deactivatedAt: null,
+        deactivatedBy: null,
+      },
+    });
+
+    for (const memberId of memberIds) {
+      await this.auditLogService.create({
+        action: 'ACTIVATE',
+        entityType: 'Member',
+        entityId: memberId,
+        description: 'Activated member',
         userId,
         ipAddress,
         userAgent,

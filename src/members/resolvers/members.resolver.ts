@@ -962,6 +962,22 @@ export class MembersResolver {
 
   @Mutation(() => Boolean)
   @UseGuards(GqlAuthGuard)
+  async bulkActivateMembers(
+    @Args('bulkActivateInput') bulkActivateInput: BulkDeactivateInput,
+    @CurrentUser() user: User,
+    @IpAddress() ipAddress?: string,
+    @UserAgent() userAgent?: string,
+  ): Promise<boolean> {
+    return this.membersService.bulkActivate(
+      bulkActivateInput.memberIds,
+      user.id,
+      ipAddress,
+      userAgent,
+    );
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(GqlAuthGuard)
   async bulkAssignRfidCards(
     @Args('bulkAssignRfidInput') bulkAssignRfidInput: BulkAssignRfidInput,
     @CurrentUser() user: User,
