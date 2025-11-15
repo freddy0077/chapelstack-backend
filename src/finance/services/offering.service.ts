@@ -132,37 +132,51 @@ export class OfferingService {
       throw new BadRequestException(`Total offering amount exceeds maximum allowed (${MAX_AMOUNT})`);
     }
 
-    // Generate batch number
-    const batchNumber = await this.generateBatchNumber(
-      organisationId,
-      branchId,
-    );
-
-    return this.prisma.offeringBatch.create({
-      data: {
-        batchNumber,
-        batchDate: data.batchDate,
-        serviceName: data.serviceName,
-        serviceId: data.serviceId,
-        offeringType: data.offeringType as any || 'GENERAL',
-        cashAmount: data.cashAmount,
-        mobileMoneyAmount: data.mobileMoneyAmount || 0,
-        chequeAmount: data.chequeAmount || 0,
-        foreignCurrencyAmount: data.foreignCurrencyAmount || 0,
-        totalAmount,
-        cashDenominations: data.cashDenominations,
-        counters: data.counters,
-        countedBy: data.countedBy,
-        verifierId: data.verifierId,
-        status: (data.status as any) || 'COUNTING',
+    // Create batch with retry on unique constraint violation
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const batchNumber = await this.generateBatchNumber(
         organisationId,
         branchId,
-        createdBy,
-      },
-      include: {
-        contributions: true,
-      },
-    });
+      );
+
+      try {
+        return await this.prisma.offeringBatch.create({
+          data: {
+            batchNumber,
+            batchDate: data.batchDate,
+            serviceName: data.serviceName,
+            serviceId: data.serviceId,
+            offeringType: data.offeringType as any || 'GENERAL',
+            cashAmount: data.cashAmount,
+            mobileMoneyAmount: data.mobileMoneyAmount || 0,
+            chequeAmount: data.chequeAmount || 0,
+            foreignCurrencyAmount: data.foreignCurrencyAmount || 0,
+            totalAmount,
+            cashDenominations: data.cashDenominations,
+            counters: data.counters,
+            countedBy: data.countedBy,
+            verifierId: data.verifierId,
+            status: (data.status as any) || 'COUNTING',
+            organisationId,
+            branchId,
+            createdBy,
+          },
+          include: {
+            contributions: true,
+          },
+        });
+      } catch (e: any) {
+        // P2002 = unique constraint violation
+        if (e.code === 'P2002' && attempt < 4) {
+          // Small jitter to reduce contention on retry
+          await new Promise(r => setTimeout(r, 10 + Math.random() * 40));
+          continue;
+        }
+        throw e;
+      }
+    }
+
+    throw new Error('Failed to allocate unique batch number after retries');
   }
 
   /**
@@ -648,6 +662,8 @@ export class OfferingService {
       return updatedBatch;
     });
   }
+
+
 
   /**
    * Generate batch number
