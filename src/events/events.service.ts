@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventInput, RecurrenceType } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
@@ -22,6 +22,7 @@ import {
 import { WorkflowsService } from '../workflows/services/workflows.service';
 import { EventNotificationService } from './services/event-notification.service';
 import { AuditLogService } from '../audit/services/audit-log.service';
+import { PaymentSettingsService } from '../settings/services/payment-settings.service';
 import {
   addDays,
   addWeeks,
@@ -40,6 +41,7 @@ export class EventsService {
     private readonly workflowsService: WorkflowsService,
     private readonly eventNotificationService: EventNotificationService,
     private readonly auditLogService: AuditLogService,
+    private readonly paymentSettingsService: PaymentSettingsService,
   ) {}
 
   // Helper method to convert Prisma Decimal fields to numbers for GraphQL compatibility
@@ -1164,6 +1166,34 @@ export class EventsService {
       throw new Error('This event does not require registration');
     }
 
+    // Step 1.5: Validate payment settings for paid events
+    if (!event.isFree) {
+      const paymentSettings = await this.paymentSettingsService.getPaymentSettings(event.branchId);
+      
+      if (!paymentSettings) {
+        this.logger.error(`❌ [PAYMENT VERIFICATION] Payment settings not found for branch: ${event.branchId}`);
+        throw new BadRequestException('Payment settings not configured for this branch');
+      }
+
+      const enabledMethods = paymentSettings.enabledMethods || [];
+      if (enabledMethods.length === 0) {
+        this.logger.error(`❌ [PAYMENT VERIFICATION] No payment methods enabled for branch: ${event.branchId}`);
+        throw new BadRequestException('No payment methods configured for this branch');
+      }
+
+      if (paymentSettings.currency !== 'GHS') {
+        this.logger.error(`❌ [PAYMENT VERIFICATION] Invalid currency for Ghana: ${paymentSettings.currency}`);
+        throw new BadRequestException('Invalid currency configuration for Ghana');
+      }
+
+      if (paymentSettings.country !== 'GH') {
+        this.logger.error(`❌ [PAYMENT VERIFICATION] Invalid country configuration: ${paymentSettings.country}`);
+        throw new BadRequestException('Invalid country configuration');
+      }
+
+      this.logger.log(`✅ [PAYMENT VERIFICATION] Payment settings validated for branch: ${event.branchId}`);
+    }
+
     // Step 2: Check registration deadline
     if (event.registrationDeadline && new Date() > event.registrationDeadline) {
       throw new Error('Registration deadline has passed');
@@ -1291,6 +1321,21 @@ export class EventsService {
     if (!event.registrationRequired) {
       throw new Error('This event does not require registration');
     }
+
+    // Validate payment settings are configured (even for free events)
+    const paymentSettings = await this.paymentSettingsService.getPaymentSettings(event.branchId);
+    
+    if (!paymentSettings) {
+      this.logger.warn(`⚠️ [FREE EVENT] Payment settings not found for branch: ${event.branchId}`);
+      throw new BadRequestException('Payment settings not configured for this branch');
+    }
+
+    if (paymentSettings.currency !== 'GHS') {
+      this.logger.warn(`⚠️ [FREE EVENT] Invalid currency configuration: ${paymentSettings.currency}`);
+      throw new BadRequestException('Invalid currency configuration for Ghana');
+    }
+
+    this.logger.log(`✅ [FREE EVENT] Payment settings validated for branch: ${event.branchId}`);
 
     // Check registration deadline
     if (event.registrationDeadline && new Date() > event.registrationDeadline) {
