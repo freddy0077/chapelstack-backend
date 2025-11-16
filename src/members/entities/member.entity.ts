@@ -3,6 +3,7 @@ import { GraphQLISODateTime } from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-type-json';
 import { Family, FamilyRelationship } from './family.entity';
 import { Branch } from '../../branches/entities/branch.entity';
+import { Zone } from '../../zones/dto/zone.dto';
 import { MinistryMember } from '../../ministries/entities/ministry-member.entity';
 import { Gender } from '../../common/enums/gender.enum';
 
@@ -336,6 +337,10 @@ export class Member {
   @Field(() => String, { nullable: true })
   familyId?: string | null;
 
+  // Zone relation foreign key
+  @Field(() => String, { nullable: true })
+  zoneId?: string | null;
+
   @Field(() => Boolean)
   headOfHousehold: boolean;
 
@@ -423,6 +428,10 @@ export class Member {
   // Relations
   @Field(() => Branch, { nullable: true })
   branch?: Branch | null;
+
+  // Zone relation
+  @Field(() => Zone, { nullable: true })
+  zone?: Zone | null;
 
   @Field(() => [Member], { nullable: true })
   children?: Member[];
