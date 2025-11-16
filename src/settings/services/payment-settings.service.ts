@@ -115,26 +115,53 @@ export class PaymentSettingsService {
     config: any,
     userId: string,
   ) {
-    const settings = await this.getPaymentSettings(branchId);
-    const gateways = (settings.gateways as any) || {};
+    try {
+      const settings = await this.getPaymentSettings(branchId);
+      const gateways = (settings.gateways as any) || {};
 
-    // Encrypt the gateway config
-    gateways[gateway] = this.encryptGatewayConfig(config);
+      // Validate gateway is supported
+      if (!this.GHANA_SUPPORTED_GATEWAYS.includes(gateway.toUpperCase())) {
+        throw new HttpException(
+          `Gateway ${gateway} is not supported. Only ${this.GHANA_SUPPORTED_GATEWAYS.join(', ')} are supported.`,
+          400
+        );
+      }
 
-    const updated = await this.prisma.paymentSettings.update({
-      where: { branchId },
-      data: {
-        gateways: gateways,
-      },
-    });
+      // Encrypt the gateway config
+      gateways[gateway] = this.encryptGatewayConfig(config);
 
-    await this.logSettingsChange(branchId, userId, 'UPDATE', {
-      gateway,
-      action: 'UPDATE_GATEWAY',
-    });
+      this.logger.debug(`Updating gateway ${gateway} with encrypted config`);
 
-    this.logger.log(`Gateway ${gateway} updated for branch ${branchId}`);
-    return updated;
+      const updated = await this.prisma.paymentSettings.update({
+        where: { branchId },
+        data: {
+          gateways: gateways as any,
+        },
+      });
+
+      if (!updated) {
+        throw new Error('Failed to update payment settings');
+      }
+
+      // Decrypt before returning
+      if (updated.gateways) {
+        updated.gateways = this.decryptGateways(updated.gateways as any);
+      }
+
+      await this.logSettingsChange(branchId, userId, 'UPDATE', {
+        gateway,
+        action: 'UPDATE_GATEWAY',
+      });
+
+      this.logger.log(`Gateway ${gateway} updated for branch ${branchId}`);
+      return updated;
+    } catch (error: any) {
+      this.logger.error(`Failed to update gateway ${gateway}:`, error);
+      throw new HttpException(
+        `Failed to update gateway: ${error.message}`,
+        error.status || 500
+      );
+    }
   }
 
   /**

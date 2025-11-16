@@ -1,5 +1,5 @@
 import { Resolver, Mutation, Args, Query, ID, Context } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, HttpException } from '@nestjs/common';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -225,8 +225,22 @@ export class SettingsResolver {
     @Args('input') input: UpdateGatewayInput,
     @Context() context: any,
   ) {
-    const branchId = context.req.user.branchId;
-    const userId = context.req.user.id;
+    const branchId = context?.req?.user?.branchId;
+    const userId = context?.req?.user?.id;
+    
+    if (!branchId) {
+      throw new HttpException(
+        'Branch ID is required. Please ensure user has a branch assigned.',
+        400
+      );
+    }
+    if (!userId) {
+      throw new HttpException(
+        'User ID is required. Please ensure you are authenticated.',
+        401
+      );
+    }
+    
     return this.paymentSettings.updateGateway(branchId, input.gateway, input.config, userId);
   }
 
