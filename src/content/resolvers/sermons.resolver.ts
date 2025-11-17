@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, Int } from '@nestjs/graphql';
 import { SermonsService } from '../services/sermons.service';
 import { CreateSermonInput } from '../dto/create-sermon.input';
 import { UpdateSermonInput } from '../dto/update-sermon.input';
@@ -72,7 +72,7 @@ export class SermonsResolver {
 
   @Query(() => [SermonEntity])
   async findRecent(
-    @Args('limit', { type: () => Number, nullable: true }) limit?: number,
+    @Args('limit', { type: () => Int, nullable: true }) limit?: number,
     @Args('branchId', { nullable: true }) branchId?: string,
   ): Promise<SermonEntity[]> {
     const sermons = await this.sermonsService.findRecent(limit, branchId);
